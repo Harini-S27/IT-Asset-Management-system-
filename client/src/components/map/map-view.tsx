@@ -109,7 +109,7 @@ const MapComponent = () => {
     if (!mapRef.current) return;
     
     // Remove all existing tile layers
-    mapRef.current.eachLayer((layer) => {
+    mapRef.current.eachLayer((layer: any) => {
       if (layer instanceof L.TileLayer) {
         mapRef.current?.removeLayer(layer);
       }
@@ -324,7 +324,7 @@ const MapComponent = () => {
   };
 
   // Get unique device types for filter dropdown
-  const deviceTypes = [...new Set(devices.map(device => device.type))];
+  const deviceTypes = Array.from(new Set(devices.map(device => device.type)));
   
   // Loading state
   if (isLoading) {
@@ -431,7 +431,7 @@ const MapComponent = () => {
         {/* Main Map View */}
         <div className="col-span-3">
           <div className="bg-white rounded-md shadow-sm overflow-hidden">
-            <div id="map" className="w-full" style={{ height: '680px' }}></div>
+            <div id="mapContainer" className="w-full" style={{ height: '680px' }}></div>
           </div>
         </div>
         
