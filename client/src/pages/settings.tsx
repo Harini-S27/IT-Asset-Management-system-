@@ -52,20 +52,22 @@ const mockUsers = [
   { id: 3, name: "Jane Viewer", email: "jane@company.com", role: "Viewer", status: "Inactive", lastLogin: "May 15, 2025 at 11:30 AM" },
 ];
 
-// Roles and permissions
-const permissions = [
-  { resource: "Dashboard", admin: true, manager: true, viewer: true },
-  { resource: "Devices - View", admin: true, manager: true, viewer: true },
-  { resource: "Devices - Add", admin: true, manager: true, viewer: false },
-  { resource: "Devices - Edit", admin: true, manager: true, viewer: false },
-  { resource: "Devices - Delete", admin: true, manager: false, viewer: false },
-  { resource: "Maps", admin: true, manager: true, viewer: true },
-  { resource: "User Management", admin: true, manager: false, viewer: false },
-  { resource: "Settings", admin: true, manager: false, viewer: false },
-];
-
 const SettingsPage = () => {
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("user-management");
+  
+  // State for roles and permissions
+  const [permissions, setPermissions] = useState([
+    { resource: "Dashboard", admin: true, manager: true, viewer: true },
+    { resource: "Devices - View", admin: true, manager: true, viewer: true },
+    { resource: "Devices - Add", admin: true, manager: true, viewer: false },
+    { resource: "Devices - Edit", admin: true, manager: true, viewer: false },
+    { resource: "Devices - Delete", admin: true, manager: false, viewer: false },
+    { resource: "Maps", admin: true, manager: true, viewer: true },
+    { resource: "User Management", admin: true, manager: false, viewer: false },
+    { resource: "Settings", admin: true, manager: false, viewer: false },
+  ]);
+  
   const [orgSettings, setOrgSettings] = useState({
     name: "Acme Corporation",
     logo: null as string | null,
@@ -138,10 +140,16 @@ const SettingsPage = () => {
     });
   };
 
-  const [activeTab, setActiveTab] = useState("user-management");
-
+  // Handler for changing tab
   const handleTabChange = (value: string) => {
     setActiveTab(value);
+  };
+
+  // Handler for toggle permission
+  const handlePermissionChange = (index: number, role: 'admin' | 'manager' | 'viewer', checked: boolean) => {
+    const newPermissions = [...permissions];
+    newPermissions[index][role] = checked;
+    setPermissions(newPermissions);
   };
 
   return (
@@ -292,20 +300,20 @@ const SettingsPage = () => {
                         <TableCell className="text-center">
                           <Switch 
                             checked={permission.admin} 
-                            onCheckedChange={() => {}} 
+                            onCheckedChange={(checked) => handlePermissionChange(index, 'admin', checked)} 
                             disabled={permission.resource === "Dashboard"} 
                           />
                         </TableCell>
                         <TableCell className="text-center">
                           <Switch 
                             checked={permission.manager} 
-                            onCheckedChange={() => {}} 
+                            onCheckedChange={(checked) => handlePermissionChange(index, 'manager', checked)} 
                           />
                         </TableCell>
                         <TableCell className="text-center">
                           <Switch 
                             checked={permission.viewer} 
-                            onCheckedChange={() => {}} 
+                            onCheckedChange={(checked) => handlePermissionChange(index, 'viewer', checked)} 
                           />
                         </TableCell>
                       </TableRow>
