@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import Devices from "@/pages/devices";
 import MapView from "@/pages/map";
+import Settings from "@/pages/settings";
 import Sidebar from "@/components/layout/sidebar";
 
 function Router() {
@@ -19,6 +20,7 @@ function Router() {
             <Route path="/" component={Dashboard} />
             <Route path="/devices" component={Devices} />
             <Route path="/map" component={MapView} />
+            <Route path="/settings" component={Settings} />
             <Route component={NotFound} />
           </Switch>
         </div>
