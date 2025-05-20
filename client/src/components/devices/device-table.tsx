@@ -154,7 +154,7 @@ const DeviceTable = ({
 
   return (
     <DataTable
-      data={devices}
+      data={filteredDevices}
       columns={columns}
       onRowClick={(device) => onViewDeviceDetails(device)}
     />

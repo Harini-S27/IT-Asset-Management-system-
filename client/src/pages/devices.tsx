@@ -230,7 +230,7 @@ const Devices = () => {
               
               <div>
                 <h4 className="text-sm font-medium text-gray-500">Last Updated</h4>
-                <p>{new Date(selectedDevice.lastUpdated).toLocaleString()}</p>
+                <p>{selectedDevice.lastUpdated ? new Date(selectedDevice.lastUpdated as any).toLocaleString() : "N/A"}</p>
               </div>
             </div>
           )}
