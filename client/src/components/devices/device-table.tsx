@@ -94,7 +94,7 @@ const DeviceTable = ({
       accessorKey: "lastUpdated",
       cell: (device: Device) => (
         <span className="text-sm text-gray-500">
-          {formatTimeSince(device.lastUpdated)}
+          {device.lastUpdated ? formatTimeSince(device.lastUpdated) : 'N/A'}
         </span>
       ),
     },
