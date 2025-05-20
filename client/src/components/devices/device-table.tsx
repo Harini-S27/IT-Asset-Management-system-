@@ -25,12 +25,14 @@ interface DeviceTableProps {
   onEditDevice: (device: Device) => void;
   onDeleteDevice: (id: number) => void;
   onViewDeviceDetails: (device: Device) => void;
+  categoryFilter?: string;
 }
 
 const DeviceTable = ({ 
   onEditDevice, 
   onDeleteDevice, 
-  onViewDeviceDetails 
+  onViewDeviceDetails,
+  categoryFilter = "All"
 }: DeviceTableProps) => {
   const { data: devices = [], isLoading, isError } = useQuery<Device[]>({
     queryKey: ['/api/devices'],
@@ -39,6 +41,16 @@ const DeviceTable = ({
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
 
   // Define table columns
+  // Filter devices based on selected category
+  const filteredDevices = devices.filter(device => {
+    if (categoryFilter === "All") return true;
+    if (categoryFilter === "Workstations") return device.type === "Workstation";
+    if (categoryFilter === "Servers") return device.type === "Server";
+    if (categoryFilter === "Network Devices") return ["Router", "Switch", "Firewall", "Access Point"].includes(device.type);
+    if (categoryFilter === "Mobile Devices") return ["Laptop", "Tablet", "Mobile Phone"].includes(device.type);
+    return true;
+  });
+
   const columns = [
     {
       header: "Device",

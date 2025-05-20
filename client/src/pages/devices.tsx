@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Plus, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Device } from "@shared/schema";
@@ -7,8 +7,9 @@ import DeviceTable from "@/components/devices/device-table";
 import AddDeviceDialog from "@/components/devices/add-device-dialog";
 import EditDeviceDialog from "@/components/devices/edit-device-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getQueryFn } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +26,13 @@ const Devices = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string>("All");
+  
+  // Fetch devices
+  const { data: devices = [] } = useQuery({
+    queryKey: ['/api/devices'],
+    queryFn: getQueryFn<Device[]>({ on401: "throw" })
+  });
 
   // Handle edit device
   const handleEditDevice = (device: Device) => {
@@ -97,11 +105,20 @@ const Devices = () => {
       {/* View selector tabs */}
       <div className="border-b border-gray-200 mb-6">
         <nav className="-mb-px flex space-x-6">
-          <a href="#" className="border-[#4299E1] text-[#4299E1] border-b-2 py-3 px-1 font-medium text-sm">All Devices</a>
-          <a href="#" className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2 py-3 px-1 font-medium text-sm">Workstations</a>
-          <a href="#" className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2 py-3 px-1 font-medium text-sm">Servers</a>
-          <a href="#" className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2 py-3 px-1 font-medium text-sm">Network Devices</a>
-          <a href="#" className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2 py-3 px-1 font-medium text-sm">Mobile Devices</a>
+          {['All', 'Workstations', 'Servers', 'Network Devices', 'Mobile Devices'].map((category) => (
+            <button
+              key={category}
+              onClick={() => setActiveCategory(category)}
+              className={cn(
+                "border-b-2 py-3 px-1 font-medium text-sm transition-colors",
+                activeCategory === category 
+                  ? "border-[#4299E1] text-[#4299E1]" 
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              )}
+            >
+              {category}
+            </button>
+          ))}
         </nav>
       </div>
 
@@ -118,6 +135,7 @@ const Devices = () => {
           onEditDevice={handleEditDevice}
           onDeleteDevice={handleDeleteIntent}
           onViewDeviceDetails={handleViewDeviceDetails}
+          categoryFilter={activeCategory}
         />
       </div>
 
