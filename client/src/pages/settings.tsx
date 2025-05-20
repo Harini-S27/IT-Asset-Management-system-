@@ -138,6 +138,12 @@ const SettingsPage = () => {
     });
   };
 
+  const [activeTab, setActiveTab] = useState("user-management");
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -157,7 +163,7 @@ const SettingsPage = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="user-management" className="w-full">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="bg-[#F7FAFC] border mb-6 grid grid-cols-6">
           <TabsTrigger value="user-management" className="flex items-center">
             <Users className="h-4 w-4 mr-2" />
