@@ -5,7 +5,9 @@ import {
   MoreVertical,
   Edit,
   Trash2,
-  Eye
+  Eye,
+  Monitor,
+  Cpu
 } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import { formatTimeSince, getStatusColor, cn } from "@/lib/utils";

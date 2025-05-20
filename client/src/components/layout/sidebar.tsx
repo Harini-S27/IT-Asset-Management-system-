@@ -55,15 +55,15 @@ const Sidebar = () => {
           {navigationItems.map((item) => (
             <li key={item.name} className="mb-1">
               <Link href={item.href}>
-                <a
+                <div
                   className={cn(
-                    "flex items-center py-2 px-4 rounded hover:bg-[#4299E1] transition-colors",
+                    "flex items-center py-2 px-4 rounded hover:bg-[#4299E1] transition-colors cursor-pointer",
                     location === item.href ? "bg-[#4299E1]" : ""
                   )}
                 >
                   <item.icon className="h-5 w-5 mr-3" />
                   {item.name}
-                </a>
+                </div>
               </Link>
             </li>
           ))}
