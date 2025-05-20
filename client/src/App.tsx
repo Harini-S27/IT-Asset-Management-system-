@@ -8,6 +8,7 @@ import Dashboard from "@/pages/dashboard";
 import Devices from "@/pages/devices";
 import MapView from "@/pages/map";
 import Settings from "@/pages/settings";
+import Reports from "@/pages/reports";
 import Sidebar from "@/components/layout/sidebar";
 
 function Router() {
@@ -21,6 +22,7 @@ function Router() {
             <Route path="/devices" component={Devices} />
             <Route path="/map" component={MapView} />
             <Route path="/settings" component={Settings} />
+            <Route path="/reports" component={Reports} />
             <Route component={NotFound} />
           </Switch>
         </div>
