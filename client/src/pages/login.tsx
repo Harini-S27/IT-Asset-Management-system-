@@ -4,10 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, LogIn, Key, User, Eye, EyeOff } from "lucide-react";
+import { Loader2, LogIn, User, Eye, EyeOff, KeyRound } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/auth-context";
+import logoImage from "../assets/logo.png";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -64,8 +65,8 @@ export default function LoginPage() {
         <Card className="shadow-lg">
           <CardHeader className="space-y-1">
             <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 rounded-full bg-[#4299E1] flex items-center justify-center">
-                <Key className="h-8 w-8 text-white" />
+              <div className="w-16 h-16 flex items-center justify-center">
+                <img src={logoImage} alt="IT Asset Manager Logo" className="w-full h-full object-contain" />
               </div>
             </div>
             <CardTitle className="text-2xl text-center">IT Asset Manager</CardTitle>
@@ -93,7 +94,7 @@ export default function LoginPage() {
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
                   <div className="relative">
-                    <Key className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                    <KeyRound className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
