@@ -69,7 +69,10 @@ export default function LoginPage() {
                 <img src={logoImage} alt="IT Asset Manager Logo" className="w-full h-full object-contain" />
               </div>
             </div>
-            <CardTitle className="text-2xl text-center">IT Asset Manager</CardTitle>
+            <div className="text-center mb-2">
+              <div className="text-lg font-bold text-blue-600">GALACTIS</div>
+              <CardTitle className="text-2xl">IT Asset Manager</CardTitle>
+            </div>
             <CardDescription className="text-center">
               Enter your credentials to access your account
             </CardDescription>
