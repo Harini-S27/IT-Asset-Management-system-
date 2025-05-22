@@ -50,7 +50,7 @@ const Sidebar = () => {
     <aside className="sidebar w-64 bg-[#2D3748] text-white p-4 flex flex-col h-screen fixed">
       <div className="mb-8 mt-4">
         <h1 className="text-xl font-bold flex items-center">
-          <img src={logoImage} alt="IT Asset Manager Logo" className="h-7 w-7 mr-2" />
+          <img src={logoImage} alt="IT Asset Manager Logo" className="h-10 w-10 mr-3" />
           IT Asset Manager
         </h1>
       </div>
