@@ -35,16 +35,43 @@ const mockUsers = [
 export default function SettingsPage() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("user-management");
+  const [hasChanges, setHasChanges] = useState(false);
+  
+  // Track form changes
+  React.useEffect(() => {
+    // In a real app, this would compare current vs initial state
+    setHasChanges(true);
+  }, [activeTab]);
   
   const handleTabChange = (value: string) => {
     setActiveTab(value);
   };
   
   const handleSaveSettings = () => {
+    setHasChanges(false);
     toast({
       title: "Settings Saved",
       description: "Your changes have been successfully saved.",
     });
+  };
+  
+  const handleResetSettings = () => {
+    setHasChanges(false);
+    toast({
+      title: "Settings Reset",
+      description: "All settings have been reset to their default values.",
+    });
+    
+    // In a real application, this would reset the form values
+    // Reset could be implemented per-form by passing callback functions to each form component
+    
+    // For this demo, we'll add a brief timeout to simulate the reset
+    setTimeout(() => {
+      toast({
+        title: "Reset Complete",
+        description: "Settings have been restored to their original values.",
+      });
+    }, 500);
   };
 
   return (
@@ -55,10 +82,17 @@ export default function SettingsPage() {
           <p className="text-gray-500">Manage your organization preferences and system settings</p>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline">Reset</Button>
+          <Button 
+            variant="outline" 
+            onClick={handleResetSettings}
+            disabled={!hasChanges}
+          >
+            Reset
+          </Button>
           <Button 
             onClick={handleSaveSettings}
             className="bg-[#48BB78] hover:bg-[#48BB78]/90"
+            disabled={!hasChanges}
           >
             <Save className="h-4 w-4 mr-2" />
             Save Changes
