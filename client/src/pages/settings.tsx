@@ -56,7 +56,6 @@ export default function SettingsPage() {
   };
   
   const handleResetSettings = () => {
-    setHasChanges(false);
     toast({
       title: "Settings Reset",
       description: "All settings have been reset to their default values.",
@@ -67,9 +66,11 @@ export default function SettingsPage() {
     
     // For this demo, we'll add a brief timeout to simulate the reset
     setTimeout(() => {
+      // Set hasChanges to true to allow saving after reset
+      setHasChanges(true);
       toast({
         title: "Reset Complete",
-        description: "Settings have been restored to their original values.",
+        description: "Settings have been restored to default values. You can now save these changes.",
       });
     }, 500);
   };
