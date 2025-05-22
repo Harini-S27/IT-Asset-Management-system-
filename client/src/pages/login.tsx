@@ -65,7 +65,7 @@ export default function LoginPage() {
         <Card className="shadow-lg">
           <CardHeader className="space-y-1">
             <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 flex items-center justify-center">
+              <div className="w-24 h-24 flex items-center justify-center">
                 <img src={logoImage} alt="IT Asset Manager Logo" className="w-full h-full object-contain" />
               </div>
             </div>
