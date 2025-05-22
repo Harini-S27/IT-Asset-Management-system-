@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, LogIn, Key, User, Eye, EyeOff } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useLocation } from "wouter";
+import { useAuth } from "@/contexts/auth-context";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -16,6 +17,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
   const [_, setLocation] = useLocation();
+  const { login } = useAuth();
 
   // Mock credentials for demo purposes
   const mockCredentials = [
@@ -39,12 +41,10 @@ export default function LoginPage() {
           title: "Login Successful",
           description: `Welcome back, ${username}! Role: ${user.role}`,
         });
-        // Store user info in localStorage for persistence
-        if (rememberMe) {
-          localStorage.setItem("user", JSON.stringify({ username, role: user.role }));
-        } else {
-          sessionStorage.setItem("user", JSON.stringify({ username, role: user.role }));
-        }
+        
+        // Use the login function from auth context
+        login(username, user.role, rememberMe);
+        
         // Redirect to dashboard
         setLocation("/");
       } else {
@@ -55,7 +55,7 @@ export default function LoginPage() {
         });
       }
       setIsLoading(false);
-    }, 1500);
+    }, 1000);
   };
 
   return (

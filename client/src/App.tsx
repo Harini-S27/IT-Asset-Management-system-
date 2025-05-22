@@ -19,7 +19,7 @@ function ProtectedRoute({ component: Component, ...rest }: { component: React.Co
   const [location] = useLocation();
   
   if (!isAuthenticated) {
-    return <Redirect to={`/login?redirect=${encodeURIComponent(location)}`} />;
+    return <Redirect to="/login" />;
   }
   
   return <Component {...rest} />;
@@ -36,11 +36,11 @@ function Router() {
           <main className="flex-1 overflow-auto ml-64">
             <div className="p-4 h-full">
               <Switch>
-                <Route path="/" component={() => <ProtectedRoute component={Dashboard} />} />
-                <Route path="/devices" component={() => <ProtectedRoute component={Devices} />} />
-                <Route path="/map" component={() => <ProtectedRoute component={MapView} />} />
-                <Route path="/settings" component={() => <ProtectedRoute component={Settings} />} />
-                <Route path="/reports" component={() => <ProtectedRoute component={Reports} />} />
+                <Route path="/" component={Dashboard} />
+                <Route path="/devices" component={Devices} />
+                <Route path="/map" component={MapView} />
+                <Route path="/settings" component={Settings} />
+                <Route path="/reports" component={Reports} />
                 <Route path="/login" component={LoginPage} />
                 <Route component={NotFound} />
               </Switch>
