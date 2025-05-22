@@ -41,7 +41,9 @@ function Router() {
                 <Route path="/map" component={MapView} />
                 <Route path="/settings" component={Settings} />
                 <Route path="/reports" component={Reports} />
-                <Route path="/login" component={LoginPage} />
+                <Route path="/login">
+                  <Redirect to="/" />
+                </Route>
                 <Route component={NotFound} />
               </Switch>
             </div>
