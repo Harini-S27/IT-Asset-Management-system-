@@ -117,7 +117,7 @@ const DeviceTable = ({
         <div className="text-right">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="p-1 rounded-full hover:bg-gray-100">
+              <button className="p-1 rounded-full hover:bg-gray-100 dropdown-trigger">
                 <MoreVertical className="h-4 w-4 text-gray-500" />
               </button>
             </DropdownMenuTrigger>

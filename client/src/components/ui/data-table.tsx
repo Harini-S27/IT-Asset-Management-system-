@@ -166,7 +166,15 @@ export function DataTable<T extends { id: number }>({
                 <TableRow 
                   key={row.id}
                   className={onRowClick ? "cursor-pointer hover:bg-gray-50" : ""}
-                  onClick={() => onRowClick && onRowClick(row)}
+                  onClick={(e) => {
+                    // Only trigger row click if not clicking on dropdown or buttons
+                    if (
+                      !(e.target as HTMLElement).closest('.dropdown-trigger') &&
+                      !(e.target as HTMLElement).closest('button')
+                    ) {
+                      onRowClick && onRowClick(row);
+                    }
+                  }}
                 >
                   <TableCell className="px-4 py-2">
                     <Checkbox 
