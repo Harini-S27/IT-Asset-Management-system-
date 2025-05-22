@@ -7,12 +7,12 @@ import {
   Map, 
   Settings, 
   FileBarChart, 
-  Cpu,
   LogOut
 } from "lucide-react";
 import { UserMenu } from "./user-menu";
 import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
+import logoImage from "../../assets/logo.png";
 
 const Sidebar = () => {
   const [location] = useLocation();
@@ -50,7 +50,7 @@ const Sidebar = () => {
     <aside className="sidebar w-64 bg-[#2D3748] text-white p-4 flex flex-col h-screen fixed">
       <div className="mb-8 mt-4">
         <h1 className="text-xl font-bold flex items-center">
-          <Cpu className="h-6 w-6 mr-2" />
+          <img src={logoImage} alt="IT Asset Manager Logo" className="h-7 w-7 mr-2" />
           IT Asset Manager
         </h1>
       </div>
