@@ -7,11 +7,16 @@ import {
   Map, 
   Settings, 
   FileBarChart, 
-  Cpu 
+  Cpu,
+  LogOut
 } from "lucide-react";
+import { UserMenu } from "./user-menu";
+import { useAuth } from "@/contexts/auth-context";
+import { Button } from "@/components/ui/button";
 
 const Sidebar = () => {
   const [location] = useLocation();
+  const { user, logout } = useAuth();
 
   const navigationItems = [
     {
@@ -71,15 +76,32 @@ const Sidebar = () => {
       </nav>
       
       <div className="mt-auto pb-4">
-        <div className="flex items-center px-4 py-3">
-          <div className="h-8 w-8 rounded-full bg-gray-600 mr-3 flex items-center justify-center text-sm">
-            AU
+        {user ? (
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center">
+              <UserMenu />
+              <div className="ml-2">
+                <p className="text-sm font-semibold">{user.username}</p>
+                <p className="text-xs text-gray-300">{user.role}</p>
+              </div>
+            </div>
+            <Button 
+              variant="ghost" 
+              className="h-8 w-8 p-0 text-white hover:bg-red-700/20" 
+              onClick={logout}
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
           </div>
-          <div>
-            <p className="text-sm font-semibold">Admin User</p>
-            <p className="text-xs text-gray-300">admin@company.com</p>
+        ) : (
+          <div className="px-4 py-3 text-sm">
+            <Link href="/login">
+              <Button variant="outline" className="w-full bg-blue-600 hover:bg-blue-700 text-white border-0">
+                Log In
+              </Button>
+            </Link>
           </div>
-        </div>
+        )}
       </div>
     </aside>
   );
