@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Plus, Download } from "lucide-react";
+import { Plus, Download, FileSpreadsheet, FileText, FileDown, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Device } from "@shared/schema";
 import DeviceTable from "@/components/devices/device-table";
@@ -18,6 +18,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Devices = () => {
   const { toast } = useToast();
@@ -27,6 +34,7 @@ const Devices = () => {
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>("All");
+  const [isExporting, setIsExporting] = useState(false);
   
   // Fetch devices
   const { data: devices = [] } = useQuery({
@@ -76,6 +84,211 @@ const Devices = () => {
     setSelectedDevice(device);
     setIsDetailsDialogOpen(true);
   };
+  
+  // Export functions
+  const handleExport = (format: string) => {
+    setIsExporting(true);
+    
+    try {
+      // Get filtered devices based on active category
+      const filteredDevices = activeCategory === 'All' 
+        ? devices 
+        : devices.filter(device => {
+            if (activeCategory === 'Workstations') return device.type === 'Workstation';
+            if (activeCategory === 'Servers') return device.type === 'Server';
+            if (activeCategory === 'Network Devices') return device.type === 'Network';
+            if (activeCategory === 'Mobile Devices') return device.type === 'Mobile' || device.type === 'Laptop';
+            return true;
+          });
+      
+      if (filteredDevices.length === 0) {
+        toast({
+          title: "No devices to export",
+          description: "There are no devices matching your current filter.",
+          variant: "destructive",
+        });
+        setIsExporting(false);
+        return;
+      }
+      
+      if (format === 'csv') {
+        exportToCSV(filteredDevices);
+      } else if (format === 'excel') {
+        exportToExcel(filteredDevices);
+      } else if (format === 'pdf') {
+        exportToPDF(filteredDevices);
+      } else if (format === 'json') {
+        exportToJSON(filteredDevices);
+      }
+      
+      toast({
+        title: "Export successful",
+        description: `Device inventory has been exported as ${format.toUpperCase()}.`,
+      });
+    } catch (error) {
+      console.error("Export error:", error);
+      toast({
+        title: "Export failed",
+        description: "There was an error exporting the device inventory.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+  
+  // CSV Export
+  const exportToCSV = (devicesToExport: Device[]) => {
+    // Define the headers
+    const headers = ['ID', 'Name', 'Model', 'Type', 'Status', 'Location', 'IP Address', 'Last Updated'];
+    
+    // Map the device data to CSV rows
+    const rows = devicesToExport.map(device => [
+      device.id.toString(),
+      device.name,
+      device.model,
+      device.type,
+      device.status,
+      device.location,
+      device.ipAddress || 'N/A',
+      device.lastUpdated ? new Date(device.lastUpdated as any).toLocaleString() : 'N/A'
+    ]);
+    
+    // Combine headers and rows
+    const csvData = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+    
+    // Create blob and download link
+    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `device-inventory-${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+  
+  // Excel Export
+  const exportToExcel = (devicesToExport: Device[]) => {
+    // For now, we'll use the CSV approach but change the extension
+    // In a real-world scenario, you would use a library like xlsx for proper Excel files
+    const headers = ['ID', 'Name', 'Model', 'Type', 'Status', 'Location', 'IP Address', 'Last Updated'];
+    
+    const rows = devicesToExport.map(device => [
+      device.id.toString(),
+      device.name,
+      device.model,
+      device.type,
+      device.status,
+      device.location,
+      device.ipAddress || 'N/A',
+      device.lastUpdated ? new Date(device.lastUpdated as any).toLocaleString() : 'N/A'
+    ]);
+    
+    const csvData = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvData], { type: 'application/vnd.ms-excel' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `device-inventory-${new Date().toISOString().split('T')[0]}.xls`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+  
+  // PDF Export
+  const exportToPDF = (devicesToExport: Device[]) => {
+    // Create a printable HTML version of the data
+    let printContent = `
+      <html>
+        <head>
+          <title>Device Inventory</title>
+          <style>
+            body { font-family: Arial, sans-serif; }
+            table { border-collapse: collapse; width: 100%; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+            h1 { color: #333; }
+            .header { display: flex; justify-content: space-between; align-items: center; }
+            .date { margin-top: 8px; color: #666; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Device Inventory</h1>
+            <div class="date">Generated on ${new Date().toLocaleDateString()}</div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Model</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Location</th>
+                <th>IP Address</th>
+                <th>Last Updated</th>
+              </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    devicesToExport.forEach(device => {
+      printContent += `
+        <tr>
+          <td>${device.id}</td>
+          <td>${device.name}</td>
+          <td>${device.model}</td>
+          <td>${device.type}</td>
+          <td>${device.status}</td>
+          <td>${device.location}</td>
+          <td>${device.ipAddress || 'N/A'}</td>
+          <td>${device.lastUpdated ? new Date(device.lastUpdated as any).toLocaleString() : 'N/A'}</td>
+        </tr>
+      `;
+    });
+    
+    printContent += `
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
+    
+    // Open a new window for printing
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.onload = function() {
+        printWindow.print();
+        // printWindow.close(); // Uncomment to auto-close after print dialog
+      };
+    } else {
+      alert('Please allow pop-ups to export as PDF');
+    }
+  };
+  
+  // JSON Export
+  const exportToJSON = (devicesToExport: Device[]) => {
+    const jsonString = JSON.stringify(devicesToExport, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `device-inventory-${new Date().toISOString().split('T')[0]}.json`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="space-y-6">
@@ -85,13 +298,46 @@ const Devices = () => {
           <p className="text-gray-500">Manage and monitor your organization's IT assets</p>
         </div>
         <div className="flex items-center space-x-3">
-          <Button 
-            variant="outline" 
-            className="flex items-center"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="flex items-center"
+                disabled={isExporting}
+              >
+                {isExporting ? (
+                  <>
+                    <div className="h-4 w-4 mr-2 animate-spin rounded-full border-b-2 border-[#4299E1]"></div>
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    Export <ChevronDown className="h-3 w-3 ml-2" />
+                  </>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56">
+              <DropdownMenuItem onClick={() => handleExport('excel')} className="cursor-pointer">
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                <span>Excel (.xls)</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('csv')} className="cursor-pointer">
+                <FileText className="mr-2 h-4 w-4" />
+                <span>CSV (.csv)</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('pdf')} className="cursor-pointer">
+                <FileText className="mr-2 h-4 w-4" />
+                <span>PDF (.pdf)</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleExport('json')} className="cursor-pointer">
+                <FileDown className="mr-2 h-4 w-4" />
+                <span>JSON (.json)</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button 
             onClick={() => setIsAddDialogOpen(true)}
             className="bg-[#4299E1] hover:bg-[#4299E1]/80 flex items-center"
