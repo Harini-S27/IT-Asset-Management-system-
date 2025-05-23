@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -108,8 +108,37 @@ export function OrganizationForm() {
     };
   }, [toast]);
 
+  // Keep track of which fields have been modified
+  const [modifiedFields, setModifiedFields] = useState<Record<string, boolean>>({});
+  
+  // Debounced auto-save for better UX
+  const [debounceSaveTimeout, setDebounceSaveTimeout] = useState<number | null>(null);
+  
   const handleOrgSettingChange = (field: string, value: string) => {
-    setOrgSettings(prev => ({ ...prev, [field]: value }));
+    // Update the field value
+    setOrgSettings((prev: Record<string, any>) => ({ ...prev, [field]: value }));
+    
+    // Mark this field as modified
+    setModifiedFields((prev: Record<string, boolean>) => ({ ...prev, [field]: true }));
+    
+    // Set up debounced save (auto-save after 1 second of inactivity)
+    if (debounceSaveTimeout) {
+      window.clearTimeout(debounceSaveTimeout);
+    }
+    
+    const timeoutId = window.setTimeout(() => {
+      // Show a tiny feedback toast
+      toast({
+        title: "Field Updated",
+        description: `${field.charAt(0).toUpperCase() + field.slice(1)} has been updated.`,
+        duration: 2000
+      });
+      
+      // Reset the modified status for this field after saving
+      setModifiedFields((prev: Record<string, boolean>) => ({ ...prev, [field]: false }));
+    }, 1000);
+    
+    setDebounceSaveTimeout(timeoutId as unknown as number);
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,7 +158,7 @@ export function OrganizationForm() {
         
         // Create preview URL
         const logoUrl = URL.createObjectURL(file);
-        setOrgSettings(prev => ({ ...prev, logo: logoUrl }));
+        setOrgSettings((prev: Record<string, any>) => ({ ...prev, logo: logoUrl }));
         
         toast({
           title: "Logo Uploaded",
@@ -156,58 +185,111 @@ export function OrganizationForm() {
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
-              <div>
+              <div className="relative">
                 <Label htmlFor="org-name">Organization Name</Label>
-                <Input 
-                  id="org-name" 
-                  value={orgSettings.name} 
-                  onChange={(e) => handleOrgSettingChange('name', e.target.value)} 
-                />
+                <div className="relative">
+                  <Input 
+                    id="org-name" 
+                    value={orgSettings.name} 
+                    onChange={(e) => handleOrgSettingChange('name', e.target.value)} 
+                    className={modifiedFields.name ? "border-blue-500 pr-8" : ""}
+                  />
+                  {modifiedFields.name && (
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-blue-500">
+                      <span className="bg-blue-100 text-blue-700 text-xs px-1 py-0.5 rounded">Saving...</span>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div>
+              <div className="relative">
                 <Label htmlFor="org-address">Address</Label>
-                <Input 
-                  id="org-address" 
-                  value={orgSettings.address} 
-                  onChange={(e) => handleOrgSettingChange('address', e.target.value)} 
-                />
+                <div className="relative">
+                  <Input 
+                    id="org-address" 
+                    value={orgSettings.address} 
+                    onChange={(e) => handleOrgSettingChange('address', e.target.value)} 
+                    className={modifiedFields.address ? "border-blue-500 pr-8" : ""}
+                  />
+                  {modifiedFields.address && (
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-blue-500">
+                      <span className="bg-blue-100 text-blue-700 text-xs px-1 py-0.5 rounded">Saving...</span>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div>
+              <div className="relative">
                 <Label htmlFor="org-phone">Phone Number</Label>
-                <Input 
-                  id="org-phone" 
-                  value={orgSettings.phone} 
-                  onChange={(e) => handleOrgSettingChange('phone', e.target.value)} 
-                />
+                <div className="relative">
+                  <Input 
+                    id="org-phone" 
+                    value={orgSettings.phone} 
+                    onChange={(e) => handleOrgSettingChange('phone', e.target.value)} 
+                    className={modifiedFields.phone ? "border-blue-500 pr-8" : ""}
+                  />
+                  {modifiedFields.phone && (
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-blue-500">
+                      <span className="bg-blue-100 text-blue-700 text-xs px-1 py-0.5 rounded">Saving...</span>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div>
+              <div className="relative">
                 <Label htmlFor="org-website">Website</Label>
-                <Input 
-                  id="org-website" 
-                  value={orgSettings.website} 
-                  onChange={(e) => handleOrgSettingChange('website', e.target.value)} 
-                />
+                <div className="relative">
+                  <Input 
+                    id="org-website" 
+                    value={orgSettings.website} 
+                    onChange={(e) => handleOrgSettingChange('website', e.target.value)} 
+                    className={modifiedFields.website ? "border-blue-500 pr-8" : ""}
+                  />
+                  {modifiedFields.website && (
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-blue-500">
+                      <span className="bg-blue-100 text-blue-700 text-xs px-1 py-0.5 rounded">Saving...</span>
+                    </div>
+                  )} 
+                </div>
               </div>
             </div>
             <div className="flex flex-col items-center justify-center border border-dashed rounded-md p-6">
-              <div className="mb-4 w-32 h-32 rounded-md bg-gray-100 flex items-center justify-center overflow-hidden">
+              <div className="mb-4 w-32 h-32 rounded-md bg-gray-100 flex items-center justify-center overflow-hidden relative">
                 {orgSettings.logo ? (
-                  <img 
-                    src={orgSettings.logo} 
-                    alt="Organization Logo" 
-                    className="w-full h-full object-contain" 
-                  />
+                  <>
+                    <img 
+                      src={orgSettings.logo} 
+                      alt="Organization Logo" 
+                      className="w-full h-full object-contain" 
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute bottom-1 right-1 h-6 w-6 rounded-full p-0"
+                      onClick={() => {
+                        setOrgSettings((prev: Record<string, any>) => ({ ...prev, logo: null }));
+                        toast({
+                          title: "Logo Removed",
+                          description: "Your organization logo has been removed."
+                        });
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </>
                 ) : (
                   <Building className="h-16 w-16 text-gray-400" />
                 )}
               </div>
-              <Label 
-                htmlFor="logo-upload" 
-                className="cursor-pointer bg-[#4299E1] text-white hover:bg-[#4299E1]/90 px-4 py-2 rounded-md flex items-center"
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Upload Logo
-              </Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex items-center bg-blue-500 hover:bg-blue-600 text-white transition-colors duration-200"
+                  onClick={() => document.getElementById('logo-upload')?.click()}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload Logo
+                </Button>
+              </div>
               <Input 
                 id="logo-upload" 
                 type="file" 
