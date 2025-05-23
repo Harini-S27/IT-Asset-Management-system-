@@ -150,9 +150,11 @@ const MapComponent = () => {
       mapRef.current.removeLayer(markerClusterGroupRef.current);
     }
     
-    // If clustering is enabled
-    if (clusterMode) {
-      try {
+    // Create markers
+    const markers: L.Marker[] = [];
+    
+    try {
+      if (clusterMode) {
         // Group devices by location (for clustering)
         const locationGroups: Record<string, Device[]> = {};
         filteredDevices.forEach(device => {
@@ -166,8 +168,7 @@ const MapComponent = () => {
           }
         });
         
-        // Create markers
-        const markers: L.Marker[] = [];
+        // Create clustered markers
         Object.entries(locationGroups).forEach(([key, devicesAtLocation]) => {
           const [lat, lng] = key.split('-');
           // Parse the coordinates safely
@@ -203,62 +204,52 @@ const MapComponent = () => {
           
           markers.push(marker);
         });
-        
-        // Add markers to map
-        if (markers.length > 0) {
-          // Create a feature group for all markers
-          const featureGroup = L.featureGroup(markers).addTo(mapRef.current);
-          markerClusterGroupRef.current = featureGroup;
-          
-          // Fit the map bounds to show all markers
-          mapRef.current.fitBounds(featureGroup.getBounds(), {
-            padding: [50, 50],
-            maxZoom: 14
-          });
-        }
-      } catch (error) {
-        console.error("Error adding markers to map:", error);
+      } else {
+        // Add individual markers without clustering
+        filteredDevices.forEach(device => {
+          if (device.latitude && device.longitude) {
+            const latitude = parseFloat(device.latitude);
+            const longitude = parseFloat(device.longitude);
+            
+            // Skip invalid coordinates
+            if (isNaN(latitude) || isNaN(longitude)) return;
+            
+            const position = L.latLng(latitude, longitude);
+            const marker = L.marker(position, { 
+              icon: createMarkerIcon(device.status) 
+            });
+            
+            marker.bindPopup(createDevicePopup(device))
+                  .on('click', () => {
+                    setSelectedDevice(device);
+                  })
+                  .bindTooltip(`${device.name} - ${device.status}`, {
+                    direction: 'top',
+                    offset: L.point(0, -30)
+                  });
+            
+            markers.push(marker);
+          }
+        });
       }
-    } else {
-      // Add individual markers without clustering
-      const markers: L.Marker[] = [];
-      
-      filteredDevices.forEach(device => {
-        if (device.latitude && device.longitude) {
-          const latitude = parseFloat(device.latitude);
-          const longitude = parseFloat(device.longitude);
-          
-          // Skip invalid coordinates
-          if (isNaN(latitude) || isNaN(longitude)) return;
-          
-          const position = L.latLng(latitude, longitude);
-          const marker = L.marker(position, { 
-            icon: createMarkerIcon(device.status) 
-          });
-          
-          marker.bindPopup(createDevicePopup(device))
-                .on('click', () => {
-                  setSelectedDevice(device);
-                })
-                .bindTooltip(`${device.name} - ${device.status}`, {
-                  direction: 'top',
-                  offset: L.point(0, -30)
-                });
-          
-          markers.push(marker);
-        }
-      });
       
       // Add markers to map
       if (markers.length > 0) {
         const featureGroup = L.featureGroup(markers).addTo(mapRef.current);
         markerClusterGroupRef.current = featureGroup;
         
-        mapRef.current.fitBounds(featureGroup.getBounds(), {
+        // Fit the map bounds to show all markers
+        // Use a type assertion to fix the TypeScript error
+        const bounds = (featureGroup as L.FeatureGroup).getBounds();
+        mapRef.current.fitBounds(bounds, {
           padding: [50, 50],
           maxZoom: 14
         });
+      } else {
+        console.warn("No markers to add to the map");
       }
+    } catch (error) {
+      console.error("Error adding markers to map:", error);
     }
   }, [devices, statusFilter, typeFilter, clusterMode]);
 
@@ -322,7 +313,9 @@ const MapComponent = () => {
   // Handle refreshing the map view
   const handleRefreshMap = () => {
     if (mapRef.current && markerClusterGroupRef.current) {
-      mapRef.current.fitBounds(markerClusterGroupRef.current.getBounds(), {
+      // Use a type assertion to fix the TypeScript error
+      const bounds = (markerClusterGroupRef.current as L.FeatureGroup).getBounds();
+      mapRef.current.fitBounds(bounds, {
         padding: [50, 50],
         maxZoom: 14
       });
