@@ -27,7 +27,8 @@ import {
   Clock, 
   Globe, 
   Mail, 
-  Map 
+  Map,
+  X
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -259,11 +260,9 @@ export function OrganizationForm() {
                       alt="Organization Logo" 
                       className="w-full h-full object-contain" 
                     />
-                    <Button
+                    <button
                       type="button"
-                      variant="destructive"
-                      size="sm"
-                      className="absolute bottom-1 right-1 h-6 w-6 rounded-full p-0"
+                      className="absolute bottom-1 right-1 h-6 w-6 rounded-full p-0 bg-red-500 text-white hover:bg-red-600"
                       onClick={() => {
                         setOrgSettings((prev: Record<string, any>) => ({ ...prev, logo: null }));
                         toast({
@@ -272,8 +271,8 @@ export function OrganizationForm() {
                         });
                       }}
                     >
-                      <X className="h-3 w-3" />
-                    </Button>
+                      ✕
+                    </button>
                   </>
                 ) : (
                   <Building className="h-16 w-16 text-gray-400" />
