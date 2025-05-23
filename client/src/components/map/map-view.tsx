@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { queryClient } from '@/lib/queryClient';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Device } from '@shared/schema';
@@ -269,17 +270,26 @@ const MapComponent = () => {
       return statusMatch && typeMatch && device.latitude && device.longitude;
     });
     
-    // Clear existing markers
+    // Clear existing markers - remove all existing markers from the map
+    mapRef.current.eachLayer((layer) => {
+      if (layer instanceof L.Marker) {
+        mapRef.current?.removeLayer(layer);
+      }
+    });
+    
     if (markerClusterGroupRef.current) {
       markerClusterGroupRef.current.clearLayers();
       mapRef.current.removeLayer(markerClusterGroupRef.current);
     }
     
+    // Create a new marker group
+    markerClusterGroupRef.current = L.featureGroup().addTo(mapRef.current);
+    
     // Create markers
     const markers: L.Marker[] = [];
     
     try {
-      // Always add individual markers regardless of clustering mode
+      // Add all individual markers
       filteredDevices.forEach(device => {
         if (device.latitude && device.longitude) {
           const latitude = parseFloat(device.latitude);
@@ -293,6 +303,9 @@ const MapComponent = () => {
             icon: createMarkerIcon(device) 
           });
           
+          // Add to map directly
+          marker.addTo(mapRef.current);
+          
           marker.bindPopup(createDevicePopup(device))
                 .on('click', () => {
                   setSelectedDevice(device);
@@ -303,6 +316,9 @@ const MapComponent = () => {
                 });
           
           markers.push(marker);
+          
+          // Also add to the feature group for bounds calculation
+          markerClusterGroupRef.current.addLayer(marker);
         }
       });
       
@@ -472,13 +488,36 @@ const MapComponent = () => {
 
   // Handle refreshing the map view
   const handleRefreshMap = () => {
-    if (mapRef.current && markerClusterGroupRef.current) {
-      // Use a type assertion to fix the TypeScript error
-      const bounds = (markerClusterGroupRef.current as L.FeatureGroup).getBounds();
-      mapRef.current.fitBounds(bounds, {
-        padding: [50, 50],
-        maxZoom: 14
-      });
+    if (mapRef.current) {
+      // Get all markers (regardless of clustering)
+      const deviceMarkers = devices
+        .filter(device => device.latitude && device.longitude)
+        .map(device => {
+          if (device.latitude && device.longitude) {
+            const latitude = parseFloat(device.latitude);
+            const longitude = parseFloat(device.longitude);
+            if (!isNaN(latitude) && !isNaN(longitude)) {
+              return L.latLng(latitude, longitude);
+            }
+          }
+          return null;
+        })
+        .filter((latlng): latlng is L.LatLng => latlng !== null);
+      
+      if (deviceMarkers.length > 0) {
+        // Create bounds from all device markers
+        const bounds = L.latLngBounds(deviceMarkers);
+        mapRef.current.fitBounds(bounds, {
+          padding: [50, 50],
+          maxZoom: 13
+        });
+      } else {
+        // If no markers, set default view (world view)
+        mapRef.current.setView([20, 0], 2);
+      }
+      
+      // Force reload data and redraw markers
+      queryClient.invalidateQueries({ queryKey: ['/api/devices'] });
     }
   };
 
