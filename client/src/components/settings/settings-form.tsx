@@ -45,22 +45,104 @@ const permissions = [
 
 // Organization Form
 export function OrganizationForm() {
-  const [orgSettings, setOrgSettings] = useState({
-    name: "Acme Corporation",
-    logo: null as string | null,
-    address: "123 Tech Blvd, San Francisco, CA 94107",
-    phone: "+1 (555) 123-4567",
-    website: "https://acme.example.com"
-  });
+  const { toast } = useToast();
+  
+  // Try to load saved org settings from localStorage if available
+  const loadSavedSettings = () => {
+    try {
+      const savedSettings = localStorage.getItem('orgSettings');
+      if (savedSettings) {
+        return JSON.parse(savedSettings);
+      }
+    } catch (error) {
+      console.error("Error loading saved organization settings:", error);
+    }
+    
+    // Default values if no saved settings exist
+    return {
+      name: "Acme Corporation",
+      logo: null as string | null,
+      address: "123 Tech Blvd, San Francisco, CA 94107",
+      phone: "+1 (555) 123-4567",
+      website: "https://acme.example.com"
+    };
+  };
+  
+  const [orgSettings, setOrgSettings] = useState(loadSavedSettings());
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Announce changes to parent component and save to localStorage
+  useEffect(() => {
+    // Dispatch event for the settings page to know changes were made
+    const changeEvent = new CustomEvent('settings-changed');
+    window.dispatchEvent(changeEvent);
+    
+    // Save the current settings to localStorage
+    try {
+      localStorage.setItem('orgSettings', JSON.stringify(orgSettings));
+    } catch (error) {
+      console.error("Error saving organization settings:", error);
+    }
+  }, [orgSettings]);
+  
+  // Listen for reset events from parent
+  useEffect(() => {
+    const handleReset = () => {
+      setOrgSettings({
+        name: "Acme Corporation",
+        logo: null,
+        address: "123 Tech Blvd, San Francisco, CA 94107",
+        phone: "+1 (555) 123-4567",
+        website: "https://acme.example.com"
+      });
+      
+      toast({
+        title: "Organization Settings Reset",
+        description: "Organization information has been reset to default values."
+      });
+    };
+    
+    window.addEventListener('settings-reset', handleReset);
+    return () => {
+      window.removeEventListener('settings-reset', handleReset);
+    };
+  }, [toast]);
 
   const handleOrgSettingChange = (field: string, value: string) => {
     setOrgSettings(prev => ({ ...prev, [field]: value }));
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const logoUrl = URL.createObjectURL(e.target.files[0]);
-      setOrgSettings(prev => ({ ...prev, logo: logoUrl }));
+    try {
+      if (e.target.files && e.target.files[0]) {
+        const file = e.target.files[0];
+        
+        // Check file size (limit to 2MB)
+        if (file.size > 2 * 1024 * 1024) {
+          toast({
+            title: "File Too Large",
+            description: "Logo image must be less than 2MB in size.",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        // Create preview URL
+        const logoUrl = URL.createObjectURL(file);
+        setOrgSettings(prev => ({ ...prev, logo: logoUrl }));
+        
+        toast({
+          title: "Logo Uploaded",
+          description: "Your organization logo has been updated."
+        });
+      }
+    } catch (error) {
+      console.error("Error uploading logo:", error);
+      toast({
+        title: "Upload Failed",
+        description: "There was a problem uploading your logo. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
