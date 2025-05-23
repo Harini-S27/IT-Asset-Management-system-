@@ -343,10 +343,20 @@ const MapComponent = () => {
               clusterStatus = 'Active';
             }
             
+            // Create a representative device object for the cluster icon
+            let representativeDevice = devices[0];
+            if (clusterStatus !== representativeDevice.status) {
+              // If the cluster status isn't the same as first device, create a custom object
+              representativeDevice = {
+                ...representativeDevice,
+                status: clusterStatus
+              };
+            }
+            
             const clusterMarker = L.marker(position, { 
               icon: devices.length > 1 ? 
                 createClusterIcon(devices.length) : 
-                createStatusMarkerIcon(clusterStatus)
+                createMarkerIcon(representativeDevice)
             });
             
             clusterMarker.bindPopup(createPopupContent(devices))
