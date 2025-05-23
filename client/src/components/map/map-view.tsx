@@ -25,6 +25,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 // Get device-specific icon based on type
 const getDeviceTypeIcon = (type: string): string => {
@@ -190,11 +191,10 @@ L.Icon.Default.mergeOptions({
 
 const MapComponent = () => {
   const mapRef = useRef<L.Map | null>(null);
-  const markerClusterGroupRef = useRef<any>(null);
+  const markersRef = useRef<L.Marker[]>([]);
+  const markerGroupRef = useRef<L.LayerGroup | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
-  // Always show individual markers without clustering
-  const clusterMode = false;
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [mapMode, setMapMode] = useState<string>('streets');
   
@@ -202,7 +202,7 @@ const MapComponent = () => {
     queryKey: ['/api/devices'],
   });
 
-  // Get map preferences from localStorage
+  // Simple function to get map preferences
   const getMapPreferences = () => {
     try {
       const preferences = localStorage.getItem('mapPreferences');
@@ -216,7 +216,6 @@ const MapComponent = () => {
     // Default preferences if none found
     return {
       defaultZoom: 2, // World view
-      clusteringEnabled: false,
       showInactiveDevices: true,
       enableSatelliteView: false,
       autoFocusOnSelection: true
@@ -227,45 +226,44 @@ const MapComponent = () => {
   
   // Initialize map
   useEffect(() => {
-    // Small delay to ensure the DOM is fully rendered
-    const timer = setTimeout(() => {
-      const container = document.getElementById('mapContainer');
+    // Create map only if it doesn't exist yet
+    if (!mapRef.current) {
+      console.log("Creating new map");
       
-      if (container && !mapRef.current) {
-        console.log("Initializing map with container:", container);
-        
-        // Get initial zoom from preferences or default to 2 (world view)
-        const initialZoom = mapPreferences.defaultZoom || 2;
-        
-        // Set initial view to center of the world
-        mapRef.current = L.map('mapContainer', {
-          center: [20, 0],
-          zoom: initialZoom,
-          zoomControl: false,
-        });
-
-        // Add zoom control to the top right
-        L.control.zoom({ position: 'topright' }).addTo(mapRef.current);
-
-        // Determine map style based on preferences
-        const mapStyle = mapPreferences.enableSatelliteView ? 'satellite' : 'streets';
-        setMapMode(mapStyle);
-        
-        // Add the appropriate base map layer
-        if (mapStyle === 'satellite') {
-          L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-          }).addTo(mapRef.current);
-        } else {
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          }).addTo(mapRef.current);
-        }
-        
-        // Create marker cluster group now for later use
-        markerClusterGroupRef.current = L.featureGroup().addTo(mapRef.current);
+      // Get initial zoom from preferences or default to 2 (world view)
+      const initialZoom = parseInt(mapPreferences.defaultZoom) || 2;
+      
+      // Create the map
+      mapRef.current = L.map('mapContainer', {
+        center: [20, 0], // Center on world view
+        zoom: initialZoom,
+        zoomControl: false
+      });
+      
+      // Add zoom controls
+      L.control.zoom({ position: 'topright' }).addTo(mapRef.current);
+      
+      // Determine map style
+      const usesSatellite = mapPreferences.enableSatelliteView || mapPreferences.satelliteView;
+      setMapMode(usesSatellite ? 'satellite' : 'streets');
+      
+      // Add appropriate base layer
+      if (usesSatellite) {
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+          attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+        }).addTo(mapRef.current);
+      } else {
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(mapRef.current);
       }
-    }, 500);
+      
+      // Create a layer group to manage the markers
+      markerGroupRef.current = L.layerGroup().addTo(mapRef.current);
+      
+      console.log("Map created successfully");
+    }
+  }, []);
 
     return () => {
       clearTimeout(timer);
