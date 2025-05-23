@@ -68,7 +68,7 @@ const MapComponent = () => {
   const markerClusterGroupRef = useRef<any>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [clusterMode, setClusterMode] = useState<boolean>(true);
+  const [clusterMode, setClusterMode] = useState<boolean>(false);
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [mapMode, setMapMode] = useState<string>('streets');
   
@@ -420,13 +420,18 @@ const MapComponent = () => {
               
               <div className="flex items-center space-x-2">
                 <Label htmlFor="cluster-mode" className="text-sm cursor-pointer">
-                  Cluster
+                  Cluster Markers
                 </Label>
-                <Switch 
-                  id="cluster-mode" 
-                  checked={clusterMode} 
-                  onCheckedChange={setClusterMode} 
-                />
+                <div className="flex flex-col">
+                  <Switch 
+                    id="cluster-mode" 
+                    checked={clusterMode} 
+                    onCheckedChange={setClusterMode} 
+                  />
+                  <span className="text-xs text-gray-500 mt-0.5">
+                    {clusterMode ? 'Group nearby devices' : 'Show all devices'}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
