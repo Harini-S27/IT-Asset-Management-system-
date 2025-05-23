@@ -254,30 +254,37 @@ export function SystemPreferencesForm() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-sm">Enable Dark Mode</Label>
+                  <Label htmlFor="toggle-dark-mode" className="text-sm">Enable Dark Mode</Label>
                   <p className="text-xs text-gray-500">Allow users to toggle between light and dark themes</p>
                 </div>
                 <Switch 
+                  id="toggle-dark-mode"
                   checked={preferences.darkMode} 
-                  onCheckedChange={(checked) => handleChange('darkMode', checked)} 
+                  onCheckedChange={(checked) => {
+                    handleChange('darkMode', checked);
+                    // Apply dark mode effect immediately for demonstration
+                    document.documentElement.classList.toggle('dark', checked);
+                  }} 
                 />
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-sm">Auto-refresh Dashboard</Label>
+                  <Label htmlFor="toggle-auto-refresh" className="text-sm">Auto-refresh Dashboard</Label>
                   <p className="text-xs text-gray-500">Automatically refresh dashboard data every 5 minutes</p>
                 </div>
                 <Switch 
+                  id="toggle-auto-refresh"
                   checked={preferences.autoRefresh} 
                   onCheckedChange={(checked) => handleChange('autoRefresh', checked)} 
                 />
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-sm">Session Timeout</Label>
+                  <Label htmlFor="session-timeout-select" className="text-sm">Session Timeout</Label>
                   <p className="text-xs text-gray-500">Automatically log out users after inactivity</p>
                 </div>
                 <Select 
+                  id="session-timeout-select"
                   value={preferences.sessionTimeout}
                   onValueChange={(value) => handleChange('sessionTimeout', value)}
                 >
