@@ -202,6 +202,29 @@ const MapComponent = () => {
     queryKey: ['/api/devices'],
   });
 
+  // Get map preferences from localStorage
+  const getMapPreferences = () => {
+    try {
+      const preferences = localStorage.getItem('mapPreferences');
+      if (preferences) {
+        return JSON.parse(preferences);
+      }
+    } catch (e) {
+      console.error("Error loading map preferences:", e);
+    }
+    
+    // Default preferences if none found
+    return {
+      defaultZoom: 2, // World view
+      clusteringEnabled: false,
+      showInactiveDevices: true,
+      enableSatelliteView: false,
+      autoFocusOnSelection: true
+    };
+  };
+  
+  const mapPreferences = getMapPreferences();
+  
   // Initialize map
   useEffect(() => {
     // Small delay to ensure the DOM is fully rendered
@@ -210,20 +233,37 @@ const MapComponent = () => {
       
       if (container && !mapRef.current) {
         console.log("Initializing map with container:", container);
-        // Set initial view to San Francisco
+        
+        // Get initial zoom from preferences or default to 2 (world view)
+        const initialZoom = mapPreferences.defaultZoom || 2;
+        
+        // Set initial view to center of the world
         mapRef.current = L.map('mapContainer', {
-          center: [37.7749, -122.4194],
-          zoom: 10,
+          center: [20, 0],
+          zoom: initialZoom,
           zoomControl: false,
         });
 
         // Add zoom control to the top right
         L.control.zoom({ position: 'topright' }).addTo(mapRef.current);
 
-        // Add the base map layer (streets)
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(mapRef.current);
+        // Determine map style based on preferences
+        const mapStyle = mapPreferences.enableSatelliteView ? 'satellite' : 'streets';
+        setMapMode(mapStyle);
+        
+        // Add the appropriate base map layer
+        if (mapStyle === 'satellite') {
+          L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+          }).addTo(mapRef.current);
+        } else {
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          }).addTo(mapRef.current);
+        }
+        
+        // Create marker cluster group now for later use
+        markerClusterGroupRef.current = L.featureGroup().addTo(mapRef.current);
       }
     }, 500);
 
@@ -262,24 +302,34 @@ const MapComponent = () => {
   // Filter and add markers to map
   useEffect(() => {
     if (!mapRef.current || !devices.length) return;
-
-    // Filter devices based on selected filters
+    
+    // Get map preferences again to make sure we have latest
+    const preferences = getMapPreferences();
+    
+    // Apply show inactive devices preference
+    const showInactive = preferences.showInactiveDevices !== false;
+    
+    // Filter devices based on selected filters and preferences
     const filteredDevices = devices.filter(device => {
       const statusMatch = statusFilter === 'all' || device.status === statusFilter;
       const typeMatch = typeFilter === 'all' || device.type === typeFilter;
-      return statusMatch && typeMatch && device.latitude && device.longitude;
+      const inactiveCheck = showInactive || device.status !== 'Inactive';
+      return statusMatch && typeMatch && inactiveCheck && device.latitude && device.longitude;
     });
     
-    // Clear existing markers - remove all existing markers from the map
+    // Clear all existing markers from the map
     mapRef.current.eachLayer((layer) => {
       if (layer instanceof L.Marker) {
         mapRef.current?.removeLayer(layer);
       }
     });
     
+    // Reset the marker cluster group
     if (markerClusterGroupRef.current) {
       markerClusterGroupRef.current.clearLayers();
-      mapRef.current.removeLayer(markerClusterGroupRef.current);
+      if (mapRef.current.hasLayer(markerClusterGroupRef.current)) {
+        mapRef.current.removeLayer(markerClusterGroupRef.current);
+      }
     }
     
     // Create a new marker group
@@ -288,37 +338,50 @@ const MapComponent = () => {
     // Create markers
     const markers: L.Marker[] = [];
     
+    console.log("Adding markers for devices:", filteredDevices.length);
+    
     try {
-      // Add all individual markers
+      // Process each device to create markers
       filteredDevices.forEach(device => {
         if (device.latitude && device.longitude) {
           const latitude = parseFloat(device.latitude);
           const longitude = parseFloat(device.longitude);
           
           // Skip invalid coordinates
-          if (isNaN(latitude) || isNaN(longitude)) return;
+          if (isNaN(latitude) || isNaN(longitude)) {
+            console.log("Invalid coordinates for device:", device.name);
+            return;
+          }
           
           const position = L.latLng(latitude, longitude);
           const marker = L.marker(position, { 
             icon: createMarkerIcon(device) 
           });
           
-          // Add to map directly
-          marker.addTo(mapRef.current);
-          
+          // Add popup and tooltip
           marker.bindPopup(createDevicePopup(device))
                 .on('click', () => {
                   setSelectedDevice(device);
+                  
+                  // If auto-focus on selection is enabled, zoom to the marker
+                  if (preferences.autoFocusOnSelection) {
+                    mapRef.current?.setView(position, 14);
+                  }
                 })
                 .bindTooltip(`${device.name} - ${device.status}`, {
                   direction: 'top',
                   offset: L.point(0, -30)
                 });
           
+          // Add marker directly to the map
+          marker.addTo(mapRef.current!);
+          
           markers.push(marker);
           
-          // Also add to the feature group for bounds calculation
+          // Also add to feature group for bounds calculation
           markerClusterGroupRef.current.addLayer(marker);
+          
+          console.log("Added marker for device:", device.name, "at", latitude, longitude);
         }
       });
       

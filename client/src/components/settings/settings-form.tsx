@@ -599,17 +599,70 @@ export function NotificationForm() {
 
 // Map Preferences Form
 export function MapPreferencesForm() {
-  const [mapSettings, setMapSettings] = useState({
-    defaultZoom: "10",
-    enableClustering: true,
-    satelliteView: false,
-    showInactiveDevices: true,
-    autoFocus: true,
-    refreshInterval: "60"
-  });
+  const { toast } = useToast();
+  
+  // Load existing map preferences from localStorage or use defaults
+  const getInitialSettings = () => {
+    try {
+      const savedPrefs = localStorage.getItem('mapPreferences');
+      if (savedPrefs) {
+        return JSON.parse(savedPrefs);
+      }
+    } catch (e) {
+      console.error("Error loading map preferences:", e);
+    }
+    
+    // Default settings
+    return {
+      defaultZoom: "2", // World view by default
+      enableClustering: false,
+      satelliteView: false,
+      showInactiveDevices: true,
+      autoFocus: true,
+      refreshInterval: "60"
+    };
+  };
+
+  const [mapSettings, setMapSettings] = useState(getInitialSettings());
+  const [saveStatus, setSaveStatus] = useState<{[key: string]: boolean}>({});
 
   const handleChange = (field: string, value: string | boolean) => {
+    // Update local state
     setMapSettings(prev => ({ ...prev, [field]: value }));
+    
+    // Show saving indicator
+    setSaveStatus(prev => ({ ...prev, [field]: true }));
+    
+    // Save to localStorage
+    setTimeout(() => {
+      try {
+        const updatedSettings = { ...mapSettings, [field]: value };
+        localStorage.setItem('mapPreferences', JSON.stringify(updatedSettings));
+        
+        // Notify success
+        toast({
+          title: "Setting updated",
+          description: "Map preference has been saved",
+          duration: 2000
+        });
+        
+        // Clear saving indicator after a moment
+        setTimeout(() => {
+          setSaveStatus(prev => ({ ...prev, [field]: false }));
+        }, 1000);
+        
+        // Dispatch custom event to notify map component
+        window.dispatchEvent(new CustomEvent('mapPreferencesChanged'));
+      } catch (error) {
+        console.error("Error saving map preferences:", error);
+        toast({
+          title: "Error saving setting",
+          description: "Please try again",
+          variant: "destructive"
+        });
+        setSaveStatus(prev => ({ ...prev, [field]: false }));
+      }
+    }, 300);
   };
 
   return (
