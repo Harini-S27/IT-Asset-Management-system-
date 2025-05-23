@@ -8,7 +8,16 @@ import {
   Filter, 
   Layers, 
   RefreshCw,
-  List
+  List,
+  Server,
+  Laptop,
+  Printer,
+  Smartphone,
+  Wifi,
+  Router,
+  HardDrive,
+  Monitor,
+  Camera
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -16,8 +25,89 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
-// Define marker icons
-const createMarkerIcon = (status: string) => {
+// Get device-specific icon based on type
+const getDeviceTypeIcon = (type: string): string => {
+  switch (type.toLowerCase()) {
+    case 'server':
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>`;
+    case 'laptop':
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16"></path></svg>`;
+    case 'printer':
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>`;
+    case 'network device':
+    case 'router':
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"></rect><path d="M17 12v10"></path><path d="M7 12v10"></path><path d="M17 12h-4v2a2 2 0 1 1-4 0v-2H7"></path></svg>`;
+    case 'phone':
+    case 'mobile':
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>`;
+    case 'storage':
+    case 'disk':
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="12" x2="2" y2="12"></line><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path><line x1="6" y1="16" x2="6.01" y2="16"></line><line x1="10" y1="16" x2="10.01" y2="16"></line></svg>`;
+    case 'monitor':
+    case 'display':
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>`;
+    case 'camera':
+    case 'security camera':
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m23 19-4-4-4-4-9-9"></path><path d="M20.5 13.5 13 6"></path><path d="M18 2 2 18"></path><path d="m2 2 20 20"></path></svg>`;
+    case 'access point':
+    case 'wireless':
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>`;
+    default:
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2" ry="2"></rect><line x1="2" y1="12" x2="22" y2="12"></line></svg>`;
+  }
+};
+
+// Define enhanced marker icons with device type, name and status
+const createMarkerIcon = (device: Device | { status: string; type: string; name: string }) => {
+  const status = device.status;
+  const type = device.type;
+  const name = device.name;
+  
+  // Status colors
+  let color = '#48BB78'; // Default green for active (success)
+  let borderColor = '#38A169'; // Darker green border
+  let textColor = 'text-green-800';
+  let bgColor = 'bg-green-100';
+  
+  if (status === 'Inactive') {
+    color = '#F56565'; // Red for inactive/offline
+    borderColor = '#E53E3E'; // Darker red border
+    textColor = 'text-red-800';
+    bgColor = 'bg-red-100';
+  } else if (status === 'Maintenance') {
+    color = '#ECC94B'; // Yellow for maintenance
+    borderColor = '#D69E2E'; // Darker yellow border
+    textColor = 'text-yellow-800';
+    bgColor = 'bg-yellow-100';
+  }
+  
+  // Get device-specific icon
+  const deviceIcon = getDeviceTypeIcon(type);
+  
+  return L.divIcon({
+    className: 'custom-device-marker',
+    html: `<div style="position: relative; width: 150px; height: 70px;">
+             <div style="position: absolute; top: 0; left: 60px; background-color: ${color}; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid ${borderColor}; box-shadow: 0 0 8px rgba(0,0,0,0.5); z-index: 1000;">
+               ${deviceIcon}
+             </div>
+             <div style="position: absolute; bottom: 0; left: 73px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 10px solid ${borderColor}; z-index: 1000;"></div>
+             <div style="position: absolute; width: 150px; top: 40px; left: 0; text-align: center;">
+               <div style="display: inline-block; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: 11px; padding: 2px 6px; background-color: white; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
+                 ${name}
+               </div>
+               <div style="display: inline-block; margin-top: 2px; font-size: 9px; padding: 1px 4px; ${bgColor}; ${textColor}; border-radius: 3px; font-weight: 500;">
+                 ${status}
+               </div>
+             </div>
+           </div>`,
+    iconSize: [150, 70],
+    iconAnchor: [75, 70],
+    popupAnchor: [0, -70]
+  });
+};
+
+// Create a separate marker icon function for status only (for backward compatibility)
+const createStatusMarkerIcon = (status: string) => {
   let color = '#48BB78'; // Default green for active (success)
   let borderColor = '#38A169'; // Darker green border
   
@@ -179,7 +269,7 @@ const MapComponent = () => {
           
           const position = L.latLng(latitude, longitude);
           const marker = L.marker(position, { 
-            icon: createMarkerIcon(device.status) 
+            icon: createMarkerIcon(device) 
           });
           
           marker.bindPopup(createDevicePopup(device))
@@ -218,7 +308,7 @@ const MapComponent = () => {
             
             const position = L.latLng(latitude, longitude);
             const marker = L.marker(position, { 
-              icon: createMarkerIcon(device.status) 
+              icon: createMarkerIcon(device) 
             });
             
             marker.bindPopup(createDevicePopup(device))
@@ -256,7 +346,7 @@ const MapComponent = () => {
             const clusterMarker = L.marker(position, { 
               icon: devices.length > 1 ? 
                 createClusterIcon(devices.length) : 
-                createMarkerIcon(clusterStatus)
+                createStatusMarkerIcon(clusterStatus)
             });
             
             clusterMarker.bindPopup(createPopupContent(devices))
