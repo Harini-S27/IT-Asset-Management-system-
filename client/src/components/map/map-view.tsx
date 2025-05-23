@@ -8,7 +8,8 @@ import {
   Filter, 
   Layers, 
   RefreshCw,
-  List
+  List,
+  Settings as SettingsIcon
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -59,7 +60,7 @@ L.Icon.Default.mergeOptions({
 
 const MapComponent = () => {
   const mapRef = useRef<L.Map | null>(null);
-  const markerClusterGroupRef = useRef<any>(null);
+  const markerLayerRef = useRef<L.LayerGroup | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [clusterMode, setClusterMode] = useState<boolean>(true);
@@ -93,11 +94,8 @@ const MapComponent = () => {
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(mapRef.current);
         
-        // Add a test marker to verify the map is working
-        const testMarker = L.marker([37.7749, -122.4194], {
-          icon: createMarkerIcon('Active')
-        }).addTo(mapRef.current);
-        testMarker.bindPopup('San Francisco - Test Marker');
+        // Create a layer group for markers
+        markerLayerRef.current = L.layerGroup().addTo(mapRef.current);
       }
     }, 500);
 
@@ -133,149 +131,121 @@ const MapComponent = () => {
     }
   }, [mapMode]);
 
-  // Filter and add markers to map
+  // Add device markers to map whenever devices, filters, or cluster mode changes
   useEffect(() => {
-    if (!mapRef.current || !devices.length) {
-      console.log("Map or devices not ready", {mapReady: !!mapRef.current, deviceCount: devices.length});
+    if (!mapRef.current || !markerLayerRef.current || !devices.length) {
       return;
     }
 
-    console.log("Processing devices for map:", devices);
+    // Clear existing markers
+    markerLayerRef.current.clearLayers();
 
     // Filter devices based on selected filters
     const filteredDevices = devices.filter(device => {
       const statusMatch = statusFilter === 'all' || device.status === statusFilter;
       const typeMatch = typeFilter === 'all' || device.type === typeFilter;
-      const hasCoords = !!device.latitude && !!device.longitude;
-      if (!hasCoords) {
-        console.log("Device missing coordinates:", device.name);
-      }
-      return statusMatch && typeMatch && hasCoords;
+      return statusMatch && typeMatch;
     });
-    
-    console.log("Filtered devices for map:", filteredDevices.length);
-    
-    // Clear existing markers
-    if (markerClusterGroupRef.current) {
-      console.log("Clearing existing markers");
-      markerClusterGroupRef.current.clearLayers();
-      mapRef.current.removeLayer(markerClusterGroupRef.current);
-    }
-    
-    // If clustering is enabled
+
     if (clusterMode) {
-      try {
-        // Group devices by location (for clustering)
-        const locationGroups: Record<string, Device[]> = {};
-        filteredDevices.forEach(device => {
-          if (device.latitude && device.longitude) {
-            // Create a string key to group devices at the same coordinates
-            const key = `${device.latitude}-${device.longitude}`;
-            if (!locationGroups[key]) {
-              locationGroups[key] = [];
-            }
-            locationGroups[key].push(device);
-          }
-        });
-        
-        // Create markers
-        const markers: L.Marker[] = [];
-        Object.entries(locationGroups).forEach(([key, devicesAtLocation]) => {
-          const [lat, lng] = key.split('-');
-          // Parse the coordinates safely
-          const latitude = parseFloat(lat);
-          const longitude = parseFloat(lng);
-          
-          // Skip invalid coordinates
-          if (isNaN(latitude) || isNaN(longitude)) return;
-          
-          // Determine status for marker icon
-          // If any device in the group is active, use active status
-          let markerStatus = 'Inactive';
-          if (devicesAtLocation.some(d => d.status === 'Active')) {
-            markerStatus = 'Active';
-          } else if (devicesAtLocation.some(d => d.status === 'Maintenance')) {
-            markerStatus = 'Maintenance';
-          }
-          
-          // Create marker with custom icon
-          console.log(`Creating marker at position: ${latitude}, ${longitude} for ${devicesAtLocation.length} devices`);
-          const position = L.latLng(latitude, longitude);
-          const marker = L.marker(position, { 
-            icon: devicesAtLocation.length > 1 ? 
-              createClusterIcon(devicesAtLocation.length) : 
-              createMarkerIcon(markerStatus)
-          });
-          
-          // Add popup with device details
-          marker.bindPopup(createPopupContent(devicesAtLocation))
-                .on('click', () => {
-                  // Set the first device in the location as the selected device
-                  setSelectedDevice(devicesAtLocation[0]);
-                });
-          
-          markers.push(marker);
-        });
-        
-        // Add markers to map
-        if (markers.length > 0) {
-          // Create a feature group for all markers
-          const featureGroup = L.featureGroup(markers).addTo(mapRef.current);
-          markerClusterGroupRef.current = featureGroup;
-          
-          // Fit the map bounds to show all markers
-          mapRef.current.fitBounds(featureGroup.getBounds(), {
-            padding: [50, 50],
-            maxZoom: 14
-          });
-        }
-      } catch (error) {
-        console.error("Error adding markers to map:", error);
-      }
-    } else {
-      // Add individual markers without clustering
-      const markers: L.Marker[] = [];
+      // Group devices by location for clustering
+      const locationGroups: Record<string, Device[]> = {};
       
       filteredDevices.forEach(device => {
         if (device.latitude && device.longitude) {
-          const latitude = parseFloat(device.latitude);
-          const longitude = parseFloat(device.longitude);
-          
-          // Skip invalid coordinates
-          if (isNaN(latitude) || isNaN(longitude)) return;
-          
-          const position = L.latLng(latitude, longitude);
-          const marker = L.marker(position, { 
-            icon: createMarkerIcon(device.status) 
-          });
-          
-          marker.bindPopup(createDevicePopup(device))
-                .on('click', () => {
-                  setSelectedDevice(device);
-                })
-                .bindTooltip(`${device.name} - ${device.status}`, {
-                  direction: 'top',
-                  offset: L.point(0, -30)
-                });
-          
-          markers.push(marker);
+          const key = `${device.latitude}-${device.longitude}`;
+          if (!locationGroups[key]) {
+            locationGroups[key] = [];
+          }
+          locationGroups[key].push(device);
         }
       });
       
-      // Add markers to map
-      if (markers.length > 0) {
-        const featureGroup = L.featureGroup(markers).addTo(mapRef.current);
-        markerClusterGroupRef.current = featureGroup;
+      // Create markers for each location group
+      const markers: L.Marker[] = [];
+      
+      Object.entries(locationGroups).forEach(([key, devicesAtLocation]) => {
+        const [lat, lng] = key.split('-').map(coord => parseFloat(coord));
         
-        mapRef.current.fitBounds(featureGroup.getBounds(), {
-          padding: [50, 50],
-          maxZoom: 14
+        // Skip invalid coordinates
+        if (isNaN(lat) || isNaN(lng)) return;
+        
+        // Determine status for marker icon - prioritize active devices
+        let markerStatus = 'Inactive';
+        if (devicesAtLocation.some(d => d.status === 'Active')) {
+          markerStatus = 'Active';
+        } else if (devicesAtLocation.some(d => d.status === 'Maintenance')) {
+          markerStatus = 'Maintenance';
+        }
+        
+        // Create marker
+        const marker = L.marker([lat, lng], {
+          icon: devicesAtLocation.length > 1 
+            ? createClusterIcon(devicesAtLocation.length) 
+            : createMarkerIcon(markerStatus)
         });
+        
+        // Add popup with device details
+        marker.bindPopup(createGroupPopup(devicesAtLocation))
+              .on('click', () => {
+                if (devicesAtLocation.length === 1) {
+                  setSelectedDevice(devicesAtLocation[0]);
+                }
+              });
+        
+        markers.push(marker);
+      });
+      
+      // Add markers to map
+      markers.forEach(marker => markerLayerRef.current?.addLayer(marker));
+      
+      // Fit map to show all markers
+      if (markers.length > 0 && mapRef.current) {
+        const group = L.featureGroup(markers);
+        mapRef.current.fitBounds(group.getBounds(), {
+          padding: [50, 50],
+          maxZoom: 13
+        });
+      }
+    } else {
+      // Individual markers mode
+      filteredDevices.forEach(device => {
+        if (device.latitude && device.longitude) {
+          const lat = parseFloat(device.latitude);
+          const lng = parseFloat(device.longitude);
+          
+          // Skip invalid coordinates
+          if (isNaN(lat) || isNaN(lng)) return;
+          
+          // Create marker
+          const marker = L.marker([lat, lng], {
+            icon: createMarkerIcon(device.status)
+          });
+          
+          // Add popup with device details
+          marker.bindPopup(createDevicePopup(device))
+                .on('click', () => {
+                  setSelectedDevice(device);
+                });
+          
+          markerLayerRef.current?.addLayer(marker);
+        }
+      });
+      
+      // Fit map to show all markers
+      if (filteredDevices.length > 0 && mapRef.current && markerLayerRef.current) {
+        const bounds = markerLayerRef.current.getBounds();
+        if (bounds.isValid()) {
+          mapRef.current.fitBounds(bounds, {
+            padding: [50, 50],
+            maxZoom: 13
+          });
+        }
       }
     }
   }, [devices, statusFilter, typeFilter, clusterMode]);
 
-  // Create HTML content for popup for a single device
+  // Create HTML content for a single device popup
   const createDevicePopup = (device: Device) => {
     const statusClass = 
       device.status === 'Active' ? 'bg-green-100 text-green-800' : 
@@ -297,11 +267,11 @@ const MapComponent = () => {
     `;
   };
 
-  // Create HTML content for popup for a group of devices
-  const createPopupContent = (devices: Device[]) => {
+  // Create HTML content for a group of devices popup
+  const createGroupPopup = (devices: Device[]) => {
     const locationName = devices[0]?.location || 'Unknown';
     
-    const html = `
+    return `
       <div class="map-popup">
         <h3 class="text-base font-semibold mb-2">${locationName}</h3>
         <p class="text-sm mb-2">${devices.length} device${devices.length !== 1 ? 's' : ''}</p>
@@ -324,21 +294,22 @@ const MapComponent = () => {
           }).join('')}
         </ul>
         <div class="mt-2 text-xs text-center">
-          <span class="text-blue-500 cursor-pointer">Click a device for details</span>
+          <span class="text-blue-500 cursor-pointer">Click for details</span>
         </div>
       </div>
     `;
-    
-    return html;
   };
 
   // Handle refreshing the map view
   const handleRefreshMap = () => {
-    if (mapRef.current && markerClusterGroupRef.current) {
-      mapRef.current.fitBounds(markerClusterGroupRef.current.getBounds(), {
-        padding: [50, 50],
-        maxZoom: 14
-      });
+    if (mapRef.current && markerLayerRef.current) {
+      const bounds = markerLayerRef.current.getBounds();
+      if (bounds.isValid()) {
+        mapRef.current.fitBounds(bounds, {
+          padding: [50, 50],
+          maxZoom: 13
+        });
+      }
     }
   };
 
@@ -385,7 +356,7 @@ const MapComponent = () => {
               <Filter className="h-4 w-4 text-gray-500" />
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-32 h-8 text-sm">
-                  <SelectValue placeholder="Status" />
+                  <SelectValue placeholder="All Statuses" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Statuses</SelectItem>
@@ -397,7 +368,7 @@ const MapComponent = () => {
               
               <Select value={typeFilter} onValueChange={setTypeFilter}>
                 <SelectTrigger className="w-36 h-8 text-sm">
-                  <SelectValue placeholder="Device Type" />
+                  <SelectValue placeholder="All Types" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
@@ -423,7 +394,7 @@ const MapComponent = () => {
               <Select value={mapMode} onValueChange={setMapMode}>
                 <SelectTrigger className="w-32 h-8 text-sm">
                   <Layers className="h-3.5 w-3.5 mr-1" />
-                  <SelectValue />
+                  <SelectValue placeholder="Streets" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="streets">Streets</SelectItem>
@@ -431,14 +402,18 @@ const MapComponent = () => {
                 </SelectContent>
               </Select>
               
-              <div className="flex items-center space-x-2">
-                <Label htmlFor="cluster-mode" className="text-sm cursor-pointer">
+              <div className="flex items-center h-8 border rounded-md px-3 space-x-2 bg-white shadow-sm">
+                <Label 
+                  htmlFor="cluster-toggle" 
+                  className="text-xs font-medium cursor-pointer"
+                >
                   Cluster
                 </Label>
                 <Switch 
-                  id="cluster-mode" 
+                  id="cluster-toggle" 
                   checked={clusterMode} 
-                  onCheckedChange={setClusterMode} 
+                  onCheckedChange={setClusterMode}
+                  className="data-[state=checked]:bg-[#4299E1]"
                 />
               </div>
             </div>
@@ -446,95 +421,52 @@ const MapComponent = () => {
         </div>
       </div>
       
-      <div className="grid grid-cols-4 gap-4">
-        {/* Main Map View */}
-        <div className="col-span-3">
-          <div className="bg-white rounded-md shadow-sm overflow-hidden">
-            <div id="mapContainer" className="w-full" style={{ height: '680px' }}></div>
-          </div>
+      <div className="flex gap-4">
+        {/* Left side - Map */}
+        <div className="flex-1 bg-white rounded-md shadow-sm overflow-hidden">
+          <div id="mapContainer" className="w-full h-[550px]"></div>
         </div>
         
-        {/* Side Stats Panel */}
-        <div className="col-span-1 space-y-4">
-          {/* Selected Device Details */}
-          {selectedDevice && (
-            <div className="bg-white rounded-md shadow-sm p-4 border-l-4 border-[#4299E1]">
-              <h3 className="text-base font-semibold mb-2 text-[#2D3748]">Selected Device</h3>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-500">Name:</span>
-                  <span className="text-sm font-medium">{selectedDevice.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-500">Model:</span>
-                  <span className="text-sm">{selectedDevice.model}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-500">Type:</span>
-                  <span className="text-sm">{selectedDevice.type}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-500">Status:</span>
-                  <span className={cn(
-                    "text-sm px-2 py-0.5 rounded-full",
-                    selectedDevice.status === "Active" ? "bg-green-100 text-green-800" :
-                    selectedDevice.status === "Inactive" ? "bg-red-100 text-red-800" :
-                    "bg-yellow-100 text-yellow-800"
-                  )}>
-                    {selectedDevice.status}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-500">Location:</span>
-                  <span className="text-sm">{selectedDevice.location}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-500">IP Address:</span>
-                  <span className="text-sm">{selectedDevice.ipAddress || 'N/A'}</span>
-                </div>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full mt-3"
-                onClick={() => setSelectedDevice(null)}
-              >
-                Clear Selection
-              </Button>
-            </div>
-          )}
-        
-          {/* Status Summary */}
+        {/* Right side - Summary & Filters */}
+        <div className="w-80 space-y-4">
+          {/* Status Summary Card */}
           <div className="bg-white rounded-md shadow-sm p-4">
-            <h3 className="text-base font-semibold mb-3 flex items-center text-[#2D3748]">
+            <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
               <List className="h-4 w-4 mr-2 text-[#4299E1]" />
               Status Summary
             </h3>
-            <div className="space-y-3">
-              {Object.entries(statusStats).map(([status, count]) => (
-                <div key={status} className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <span className={cn(
-                      "h-3 w-3 rounded-full mr-2",
-                      status === "Active" ? "bg-green-500" :
-                      status === "Inactive" ? "bg-red-500" :
-                      "bg-yellow-500"
-                    )}></span>
-                    <span className="text-sm">{status}</span>
-                  </div>
-                  <span className="text-sm font-medium">{count} devices</span>
-                </div>
-              ))}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center text-sm">
+                  <span className="h-3 w-3 rounded-full bg-green-500 mr-2"></span>
+                  Active
+                </span>
+                <span className="text-sm font-medium">{statusStats['Active'] || 0} devices</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="flex items-center text-sm">
+                  <span className="h-3 w-3 rounded-full bg-yellow-500 mr-2"></span>
+                  Maintenance
+                </span>
+                <span className="text-sm font-medium">{statusStats['Maintenance'] || 0} devices</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="flex items-center text-sm">
+                  <span className="h-3 w-3 rounded-full bg-red-500 mr-2"></span>
+                  Inactive
+                </span>
+                <span className="text-sm font-medium">{statusStats['Inactive'] || 0} devices</span>
+              </div>
             </div>
           </div>
           
-          {/* Location Summary */}
+          {/* Locations Card */}
           <div className="bg-white rounded-md shadow-sm p-4">
-            <h3 className="text-base font-semibold mb-3 flex items-center text-[#2D3748]">
+            <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
               <MapPin className="h-4 w-4 mr-2 text-[#4299E1]" />
               Locations
             </h3>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {Object.entries(locationStats).map(([location, count]) => (
                 <div key={location} className="flex items-center justify-between">
                   <span className="text-sm">{location}</span>
@@ -544,13 +476,13 @@ const MapComponent = () => {
             </div>
           </div>
           
-          {/* Device Type Summary */}
+          {/* Device Types Card */}
           <div className="bg-white rounded-md shadow-sm p-4">
-            <h3 className="text-base font-semibold mb-3 flex items-center text-[#2D3748]">
-              <List className="h-4 w-4 mr-2 text-[#4299E1]" />
+            <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+              <SettingsIcon className="h-4 w-4 mr-2 text-[#4299E1]" />
               Device Types
             </h3>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {Object.entries(typeStats).map(([type, count]) => (
                 <div key={type} className="flex items-center justify-between">
                   <span className="text-sm">{type}</span>
@@ -561,6 +493,58 @@ const MapComponent = () => {
           </div>
         </div>
       </div>
+      
+      {/* Selected Device Details */}
+      {selectedDevice && (
+        <div className="mt-4 bg-white rounded-md shadow-sm p-4">
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h3 className="text-lg font-medium">{selectedDevice.name}</h3>
+              <p className="text-sm text-gray-500">{selectedDevice.model}</p>
+            </div>
+            <span 
+              className={cn(
+                "text-xs px-2 py-0.5 rounded-full font-medium",
+                selectedDevice.status === 'Active' ? 'bg-green-100 text-green-800' : 
+                selectedDevice.status === 'Inactive' ? 'bg-red-100 text-red-800' : 
+                'bg-yellow-100 text-yellow-800'
+              )}
+            >
+              {selectedDevice.status}
+            </span>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm text-gray-500 mb-1">Type</p>
+              <p className="text-sm">{selectedDevice.type}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500 mb-1">Location</p>
+              <p className="text-sm">{selectedDevice.location}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500 mb-1">IP Address</p>
+              <p className="text-sm">{selectedDevice.ipAddress || 'N/A'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500 mb-1">Last Updated</p>
+              <p className="text-sm">
+                {selectedDevice.lastUpdated ? new Date(selectedDevice.lastUpdated).toLocaleString() : 'N/A'}
+              </p>
+            </div>
+          </div>
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="mt-4" 
+            onClick={() => setSelectedDevice(null)}
+          >
+            Close Details
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
