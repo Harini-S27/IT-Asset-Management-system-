@@ -19,21 +19,27 @@ import { cn } from '@/lib/utils';
 // Define marker icons
 const createMarkerIcon = (status: string) => {
   let color = '#48BB78'; // Default green for active (success)
+  let borderColor = '#38A169'; // Darker green border
   
   if (status === 'Inactive') {
     color = '#F56565'; // Red for inactive/offline
+    borderColor = '#E53E3E'; // Darker red border
   } else if (status === 'Maintenance') {
     color = '#ECC94B'; // Yellow for maintenance
+    borderColor = '#D69E2E'; // Darker yellow border
   }
   
   return L.divIcon({
     className: 'custom-marker-icon',
-    html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px white, 0 0 0 4px rgba(0,0,0,0.15);">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+    html: `<div style="position: relative; width: 36px; height: 36px;">
+             <div style="position: absolute; top: 0; left: 3px; background-color: ${color}; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid ${borderColor}; box-shadow: 0 0 8px rgba(0,0,0,0.5);">
+               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="1"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+             </div>
+             <div style="position: absolute; bottom: 0; left: 12px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 10px solid ${borderColor};"></div>
            </div>`,
-    iconSize: [24, 24],
-    iconAnchor: [12, 24],
-    popupAnchor: [0, -24]
+    iconSize: [36, 36],
+    iconAnchor: [18, 36],
+    popupAnchor: [0, -36]
   });
 };
 
@@ -41,11 +47,11 @@ const createMarkerIcon = (status: string) => {
 const createClusterIcon = (count: number) => {
   return L.divIcon({
     className: 'custom-cluster-icon',
-    html: `<div style="background-color: #4299E1; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 0 0 2px white, 0 0 0 4px rgba(0,0,0,0.15);">
+    html: `<div style="background-color: #4299E1; color: white; width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 3px solid #3182CE; box-shadow: 0 0 8px rgba(0,0,0,0.5);">
             ${count > 99 ? '99+' : count}
            </div>`,
-    iconSize: [36, 36],
-    iconAnchor: [18, 18]
+    iconSize: [42, 42],
+    iconAnchor: [21, 21]
   });
 };
 
