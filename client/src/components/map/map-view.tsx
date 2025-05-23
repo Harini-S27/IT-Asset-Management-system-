@@ -61,48 +61,54 @@ const getDeviceTypeIcon = (type: string): string => {
 const createMarkerIcon = (device: Device | { status: string; type: string; name: string }) => {
   const status = device.status;
   const type = device.type;
-  const name = device.name;
   
-  // Status colors
-  let color = '#48BB78'; // Default green for active (success)
-  let borderColor = '#38A169'; // Darker green border
-  let textColor = 'text-green-800';
-  let bgColor = 'bg-green-100';
+  // Status colors - using mostly red for servers/hardware as in the image
+  let color = '#E53E3E'; // Red for hardware (servers, routers, etc.)
+  let borderColor = '#C53030'; // Darker red border
+  let iconColor = 'white'; // White icon inside red circle
   
-  if (status === 'Inactive') {
-    color = '#F56565'; // Red for inactive/offline
-    borderColor = '#E53E3E'; // Darker red border
-    textColor = 'text-red-800';
-    bgColor = 'bg-red-100';
-  } else if (status === 'Maintenance') {
-    color = '#ECC94B'; // Yellow for maintenance
-    borderColor = '#D69E2E'; // Darker yellow border
-    textColor = 'text-yellow-800';
-    bgColor = 'bg-yellow-100';
+  // If the device is not hardware/server type, or has a different status, use green
+  if (
+    (type.toLowerCase() !== 'server' && 
+     type.toLowerCase() !== 'router' && 
+     type.toLowerCase() !== 'network device') || 
+    status === 'Maintenance'
+  ) {
+    color = '#48BB78'; // Green for other devices
+    borderColor = '#38A169'; // Darker green border
   }
   
   // Get device-specific icon
   const deviceIcon = getDeviceTypeIcon(type);
   
+  // Creating a marker similar to the image you shared
   return L.divIcon({
     className: 'custom-device-marker',
-    html: `<div style="position: relative; width: 150px; height: 70px;">
-             <div style="position: absolute; top: 0; left: 60px; background-color: ${color}; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid ${borderColor}; box-shadow: 0 0 8px rgba(0,0,0,0.5); z-index: 1000;">
+    html: `<div style="position: relative; width: 40px; height: 60px;">
+             <div style="position: absolute; top: 0; left: 0; 
+                  background-color: ${color}; 
+                  width: 40px; height: 40px; 
+                  border-radius: 50%; 
+                  display: flex; 
+                  align-items: center; 
+                  justify-content: center; 
+                  border: 2px solid ${borderColor}; 
+                  box-shadow: 0 0 8px rgba(0,0,0,0.3);">
                ${deviceIcon}
              </div>
-             <div style="position: absolute; bottom: 0; left: 73px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 10px solid ${borderColor}; z-index: 1000;"></div>
-             <div style="position: absolute; width: 150px; top: 40px; left: 0; text-align: center;">
-               <div style="display: inline-block; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: 11px; padding: 2px 6px; background-color: white; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
-                 ${name}
-               </div>
-               <div style="display: inline-block; margin-top: 2px; font-size: 9px; padding: 1px 4px; ${bgColor}; ${textColor}; border-radius: 3px; font-weight: 500;">
-                 ${status}
-               </div>
+             <div style="position: absolute; 
+                  bottom: 0; 
+                  left: 13px; 
+                  width: 0; 
+                  height: 0; 
+                  border-left: 7px solid transparent; 
+                  border-right: 7px solid transparent; 
+                  border-top: 14px solid ${borderColor};">
              </div>
            </div>`,
-    iconSize: [150, 70],
-    iconAnchor: [75, 70],
-    popupAnchor: [0, -70]
+    iconSize: [40, 60],
+    iconAnchor: [20, 60],
+    popupAnchor: [0, -60]
   });
 };
 
@@ -135,27 +141,41 @@ const createStatusMarkerIcon = (status: string) => {
 
 // Create cluster marker icon
 const createClusterIcon = (count: number) => {
-  // Use different colors based on the number of devices in the cluster
-  let bgColor = '#4299E1';  // Default blue
-  let borderColor = '#3182CE'; 
-  
-  // Change colors for larger clusters to make them stand out
-  if (count > 5) {
-    bgColor = '#9F7AEA';  // Purple for larger clusters
-    borderColor = '#805AD5';
-  }
+  // Use green for numbered clusters as in the image you shared
+  let bgColor = '#48BB78';  // Green for numbered clusters
+  let borderColor = '#38A169'; // Darker green border
   
   return L.divIcon({
     className: 'custom-cluster-icon',
-    html: `<div style="position: relative; width: 42px; height: 52px;">
-             <div style="position: absolute; top: 0; left: 0; background-color: ${bgColor}; color: white; width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 3px solid ${borderColor}; box-shadow: 0 0 8px rgba(0,0,0,0.5);">
+    html: `<div style="position: relative; width: 44px; height: 64px;">
+             <div style="position: absolute; top: 0; left: 0; 
+                  background-color: ${bgColor}; 
+                  color: white; 
+                  width: 44px; 
+                  height: 44px; 
+                  border-radius: 50%; 
+                  display: flex; 
+                  align-items: center; 
+                  justify-content: center; 
+                  font-weight: bold;
+                  font-size: 16px;
+                  border: 2px solid ${borderColor}; 
+                  box-shadow: 0 0 8px rgba(0,0,0,0.3);">
                ${count > 99 ? '99+' : count}
              </div>
-             <div style="position: absolute; bottom: 0; left: 15px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 10px solid ${borderColor};"></div>
+             <div style="position: absolute; 
+                  bottom: 0; 
+                  left: 15px; 
+                  width: 0; 
+                  height: 0; 
+                  border-left: 7px solid transparent; 
+                  border-right: 7px solid transparent; 
+                  border-top: 14px solid ${borderColor};">
+             </div>
            </div>`,
-    iconSize: [42, 52],
-    iconAnchor: [21, 52],
-    popupAnchor: [0, -52]
+    iconSize: [44, 64],
+    iconAnchor: [22, 64],
+    popupAnchor: [0, -64]
   });
 };
 
