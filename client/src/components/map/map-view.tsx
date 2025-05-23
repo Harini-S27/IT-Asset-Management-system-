@@ -45,13 +45,27 @@ const createMarkerIcon = (status: string) => {
 
 // Create cluster marker icon
 const createClusterIcon = (count: number) => {
+  // Use different colors based on the number of devices in the cluster
+  let bgColor = '#4299E1';  // Default blue
+  let borderColor = '#3182CE'; 
+  
+  // Change colors for larger clusters to make them stand out
+  if (count > 5) {
+    bgColor = '#9F7AEA';  // Purple for larger clusters
+    borderColor = '#805AD5';
+  }
+  
   return L.divIcon({
     className: 'custom-cluster-icon',
-    html: `<div style="background-color: #4299E1; color: white; width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 3px solid #3182CE; box-shadow: 0 0 8px rgba(0,0,0,0.5);">
-            ${count > 99 ? '99+' : count}
+    html: `<div style="position: relative; width: 42px; height: 52px;">
+             <div style="position: absolute; top: 0; left: 0; background-color: ${bgColor}; color: white; width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 3px solid ${borderColor}; box-shadow: 0 0 8px rgba(0,0,0,0.5);">
+               ${count > 99 ? '99+' : count}
+             </div>
+             <div style="position: absolute; bottom: 0; left: 15px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 10px solid ${borderColor};"></div>
            </div>`,
-    iconSize: [42, 42],
-    iconAnchor: [21, 21]
+    iconSize: [42, 52],
+    iconAnchor: [21, 52],
+    popupAnchor: [0, -52]
   });
 };
 
@@ -230,8 +244,19 @@ const MapComponent = () => {
               d.latitude === lat && d.longitude === lng
             );
             
+            // Determine the most important status for the cluster (Active > Maintenance > Inactive)
+            let clusterStatus = 'Inactive';
+            if (devices.some(d => d.status === 'Maintenance')) {
+              clusterStatus = 'Maintenance';
+            }
+            if (devices.some(d => d.status === 'Active')) {
+              clusterStatus = 'Active';
+            }
+            
             const clusterMarker = L.marker(position, { 
-              icon: createClusterIcon(markersAtLocation.length) 
+              icon: devices.length > 1 ? 
+                createClusterIcon(devices.length) : 
+                createMarkerIcon(clusterStatus)
             });
             
             clusterMarker.bindPopup(createPopupContent(devices))
