@@ -89,12 +89,13 @@ export class DatabaseStorage implements IStorage {
     if (count.length === 0) {
       console.log("Initializing database with sample devices");
       const sampleDevices: InsertDevice[] = [
+        // North America
         {
           name: "WS-001-DEV",
           model: "Dell XPS 8940",
           type: "Workstation",
           status: "Active",
-          location: "Headquarters",
+          location: "San Francisco HQ",
           ipAddress: "192.168.1.101",
           latitude: "37.7749",
           longitude: "-122.4194"
@@ -104,90 +105,151 @@ export class DatabaseStorage implements IStorage {
           model: "Dell PowerEdge R740",
           type: "Server",
           status: "Active",
-          location: "Data Center",
+          location: "San Francisco Data Center",
           ipAddress: "10.0.0.15",
           latitude: "37.7790",
           longitude: "-122.4200"
-        },
-        {
-          name: "NTW-SW-003",
-          model: "Cisco Catalyst 9300",
-          type: "Network",
-          status: "Maintenance",
-          location: "Branch Office",
-          ipAddress: "192.168.2.1",
-          latitude: "37.3352",
-          longitude: "-121.8811"
-        },
-        {
-          name: "LT-MKT-007",
-          model: "MacBook Pro 13\"",
-          type: "Laptop",
-          status: "Active",
-          location: "Headquarters",
-          ipAddress: "192.168.1.120",
-          latitude: "37.7749",
-          longitude: "-122.4194"
-        },
-        {
-          name: "RTR-MAIN-001",
-          model: "Cisco ASR 1000",
-          type: "Router",
-          status: "Inactive",
-          location: "Data Center",
-          ipAddress: "10.0.0.1",
-          latitude: "37.7790",
-          longitude: "-122.4200"
-        },
-        {
-          name: "WS-HR-002",
-          model: "HP EliteDesk 800",
-          type: "Workstation",
-          status: "Active",
-          location: "Headquarters",
-          ipAddress: "192.168.1.102",
-          latitude: "37.7749",
-          longitude: "-122.4194"
         },
         {
           name: "SRV-APP-002",
           model: "Dell PowerEdge R640",
           type: "Server",
           status: "Active",
-          location: "Data Center",
+          location: "San Francisco Data Center",
           ipAddress: "10.0.0.16",
           latitude: "37.7790",
           longitude: "-122.4200"
         },
         {
-          name: "MB-CEO-001",
-          model: "iPhone 13 Pro",
-          type: "Mobile",
-          status: "Active",
-          location: "Remote",
-          ipAddress: "192.168.1.150",
-          latitude: "37.7833",
-          longitude: "-122.4167"
-        },
-        {
-          name: "LT-DEV-005",
-          model: "Dell XPS 15",
-          type: "Laptop",
-          status: "Maintenance",
-          location: "Branch Office",
-          ipAddress: "192.168.2.101",
-          latitude: "37.3352",
-          longitude: "-121.8811"
-        },
-        {
-          name: "NTW-FW-001",
-          model: "Cisco Firepower 2110",
-          type: "Network",
-          status: "Active",
-          location: "Data Center",
-          ipAddress: "10.0.0.2",
+          name: "RTR-MAIN-001",
+          model: "Cisco ASR 1000",
+          type: "Router",
+          status: "Inactive",
+          location: "San Francisco Data Center",
+          ipAddress: "10.0.0.1",
           latitude: "37.7790",
           longitude: "-122.4200"
+        },
+        // Seattle, USA
+        {
+          name: "SRV-WEST-001",
+          model: "HPE ProLiant DL380",
+          type: "Server",
+          status: "Active",
+          location: "Seattle Data Center",
+          ipAddress: "10.1.0.10",
+          latitude: "47.6062",
+          longitude: "-122.3321"
+        },
+        // New York, USA
+        {
+          name: "RTR-EAST-001",
+          model: "Cisco 8000 Series",
+          type: "Router",
+          status: "Active",
+          location: "New York Office",
+          ipAddress: "10.2.0.1",
+          latitude: "40.7128",
+          longitude: "-74.0060"
+        },
+        // Europe - London, UK
+        {
+          name: "SRV-EU-001",
+          model: "Dell PowerEdge R750",
+          type: "Server",
+          status: "Active",
+          location: "London Data Center",
+          ipAddress: "172.16.0.10",
+          latitude: "51.5074",
+          longitude: "-0.1278"
+        },
+        // Europe - Paris, France
+        {
+          name: "RTR-EU-002",
+          model: "Juniper MX Series",
+          type: "Router",
+          status: "Active",
+          location: "Paris Office",
+          ipAddress: "172.16.1.1",
+          latitude: "48.8566",
+          longitude: "2.3522"
+        },
+        // Asia - Tokyo, Japan
+        {
+          name: "SRV-ASIA-001",
+          model: "HPE Synergy 480",
+          type: "Server",
+          status: "Active",
+          location: "Tokyo Data Center",
+          ipAddress: "192.168.10.10",
+          latitude: "35.6762",
+          longitude: "139.6503"
+        },
+        // Asia - Singapore
+        {
+          name: "RTR-ASIA-002",
+          model: "Cisco Catalyst 8300",
+          type: "Router",
+          status: "Maintenance",
+          location: "Singapore Office",
+          ipAddress: "192.168.11.1",
+          latitude: "1.3521",
+          longitude: "103.8198"
+        },
+        // Australia - Sydney
+        {
+          name: "SRV-AUS-001",
+          model: "Dell PowerEdge R650",
+          type: "Server",
+          status: "Active",
+          location: "Sydney Data Center",
+          ipAddress: "192.168.12.10",
+          latitude: "-33.8688",
+          longitude: "151.2093"
+        },
+        // South America - Sao Paulo, Brazil
+        {
+          name: "RTR-BRAZ-001",
+          model: "Cisco 4000 Series",
+          type: "Router",
+          status: "Active", 
+          location: "Sao Paulo Office",
+          ipAddress: "192.168.13.1",
+          latitude: "-23.5505",
+          longitude: "-46.6333"
+        },
+        // Africa - Johannesburg, South Africa
+        {
+          name: "SRV-AFR-001",
+          model: "HPE ProLiant DL360",
+          type: "Server",
+          status: "Inactive",
+          location: "Johannesburg Office",
+          ipAddress: "192.168.14.10",
+          latitude: "-26.2041",
+          longitude: "28.0473"
+        },
+        // Middle East - Dubai, UAE
+        {
+          name: "RTR-UAE-001",
+          model: "Juniper SRX Series",
+          type: "Router",
+          status: "Active",
+          location: "Dubai Office",
+          ipAddress: "192.168.15.1",
+          latitude: "25.2048",
+          longitude: "55.2708"
+        },
+        // India - Mumbai
+        {
+          name: "SRV-IND-001",
+          model: "Dell PowerEdge R740",
+          type: "Server",
+          status: "Active",
+          location: "Mumbai Data Center",
+          ipAddress: "192.168.16.10",
+          latitude: "19.0760",
+          longitude: "72.8777"
         }
       ];
       
