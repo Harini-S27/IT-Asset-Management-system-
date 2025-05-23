@@ -280,11 +280,10 @@ export function SystemPreferencesForm() {
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <Label htmlFor="session-timeout-select" className="text-sm">Session Timeout</Label>
+                  <Label className="text-sm">Session Timeout</Label>
                   <p className="text-xs text-gray-500">Automatically log out users after inactivity</p>
                 </div>
                 <Select 
-                  id="session-timeout-select"
                   value={preferences.sessionTimeout}
                   onValueChange={(value) => handleChange('sessionTimeout', value)}
                 >

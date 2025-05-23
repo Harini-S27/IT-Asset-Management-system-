@@ -36,28 +36,63 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("user-management");
   const [hasChanges, setHasChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   
   // This is a simpler, more reliable approach to resetting the form
   const [resetCounter, setResetCounter] = useState(0);
   
+  // Create a global context for tracking changes across all settings forms
+  const [formStates, setFormStates] = useState({
+    organization: {},
+    system: {},
+    notifications: {},
+    map: {},
+    access: {}
+  });
+  
+  // Track if any changes were made
   useEffect(() => {
-    // Always assume there are changes when the tab changes
-    setHasChanges(true);
-  }, [activeTab]);
+    // Listen for form changes from child components
+    const handleSettingsChanged = (e: CustomEvent) => {
+      setHasChanges(true);
+    };
+    
+    window.addEventListener('settings-changed' as any, handleSettingsChanged);
+    
+    return () => {
+      window.removeEventListener('settings-changed' as any, handleSettingsChanged);
+    };
+  }, []);
   
   const handleTabChange = (value: string) => {
     setActiveTab(value);
   };
   
   const handleSaveSettings = () => {
-    setHasChanges(false);
-    toast({
-      title: "Settings Saved",
-      description: "Your changes have been successfully saved.",
-    });
+    // Show saving state
+    setIsSaving(true);
+    
+    // Simulate API call to save settings
+    setTimeout(() => {
+      setIsSaving(false);
+      setHasChanges(false);
+      
+      // Dispatch event for child components to update their "original" state
+      const saveEvent = new CustomEvent('settings-saved');
+      window.dispatchEvent(saveEvent);
+      
+      toast({
+        title: "Settings Saved",
+        description: "Your changes have been successfully saved.",
+      });
+    }, 800); // Simulate a network delay
   };
   
   const handleResetSettings = () => {
+    // Show resetting state
+    setIsResetting(true);
+    
     // Show toast to indicate reset is happening
     toast({
       title: "Settings Reset",
@@ -67,16 +102,23 @@ export default function SettingsPage() {
     // Increment the reset counter to force reload of all form components
     setResetCounter(prev => prev + 1);
     
-    // Keep save button enabled after reset
-    setHasChanges(true);
-    
-    // Show confirmation after a brief delay
+    // Simulate API call to reset settings
     setTimeout(() => {
+      setIsResetting(false);
+      
+      // Dispatch event for child components to reset their state
+      const resetEvent = new CustomEvent('settings-reset');
+      window.dispatchEvent(resetEvent);
+      
+      // Keep save button enabled after reset
+      setHasChanges(true);
+      
+      // Show confirmation
       toast({
         title: "Reset Complete",
         description: "Settings have been restored to default values. You can now save these changes.",
       });
-    }, 500);
+    }, 800); // Simulate a network delay
   };
 
   return (
@@ -90,18 +132,36 @@ export default function SettingsPage() {
           <Button 
             variant="outline" 
             onClick={handleResetSettings}
-            disabled={!hasChanges}
+            disabled={!hasChanges || isSaving || isResetting}
           >
-            <RotateCcw className="h-4 w-4 mr-2" />
-            Reset
+            {isResetting ? (
+              <>
+                <RotateCcw className="h-4 w-4 mr-2 animate-spin" />
+                Resetting...
+              </>
+            ) : (
+              <>
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Reset
+              </>
+            )}
           </Button>
           <Button 
             onClick={handleSaveSettings}
             className="bg-[#48BB78] hover:bg-[#48BB78]/90"
-            disabled={!hasChanges}
+            disabled={!hasChanges || isSaving || isResetting}
           >
-            <Save className="h-4 w-4 mr-2" />
-            Save Changes
+            {isSaving ? (
+              <>
+                <Save className="h-4 w-4 mr-2 animate-pulse" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-2" />
+                Save Changes
+              </>
+            )}
           </Button>
         </div>
       </div>
