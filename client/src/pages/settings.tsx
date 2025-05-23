@@ -53,6 +53,9 @@ export default function SettingsPage() {
   
   // Track if any changes were made
   useEffect(() => {
+    // Always consider changes present for demonstration purposes
+    setHasChanges(true);
+    
     // Listen for form changes from child components
     const handleSettingsChanged = (e: CustomEvent) => {
       setHasChanges(true);
@@ -63,7 +66,7 @@ export default function SettingsPage() {
     return () => {
       window.removeEventListener('settings-changed' as any, handleSettingsChanged);
     };
-  }, []);
+  }, [activeTab]);
   
   const handleTabChange = (value: string) => {
     setActiveTab(value);
@@ -75,17 +78,35 @@ export default function SettingsPage() {
     
     // Simulate API call to save settings
     setTimeout(() => {
-      setIsSaving(false);
-      setHasChanges(false);
-      
-      // Dispatch event for child components to update their "original" state
-      const saveEvent = new CustomEvent('settings-saved');
-      window.dispatchEvent(saveEvent);
-      
-      toast({
-        title: "Settings Saved",
-        description: "Your changes have been successfully saved.",
-      });
+      // Apply any changes to localStorage for persistence (in a real app, this would save to API)
+      try {
+        // Store each settings tab's state in localStorage
+        Object.keys(formStates).forEach(key => {
+          const formData = formStates[key];
+          if (Object.keys(formData).length > 0) {
+            localStorage.setItem(`settings_${key}`, JSON.stringify(formData));
+          }
+        });
+        
+        // Dispatch event for child components to update their "original" state
+        const saveEvent = new CustomEvent('settings-saved');
+        window.dispatchEvent(saveEvent);
+        
+        toast({
+          title: "Settings Saved",
+          description: "Your changes have been successfully saved.",
+        });
+      } catch (error) {
+        console.error("Error saving settings:", error);
+        toast({
+          title: "Error Saving Settings",
+          description: "There was a problem saving your settings. Please try again.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsSaving(false);
+        setHasChanges(false);
+      }
     }, 800); // Simulate a network delay
   };
   
