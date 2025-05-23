@@ -229,11 +229,170 @@ const ReportsPage = () => {
   };
 
   // Function to handle report download/export
-  const handleExport = (format: "pdf" | "excel" | "csv") => {
-    toast({
-      title: "Report Downloaded",
-      description: `Your report has been downloaded as ${format.toUpperCase()}.`,
+  const handleExport = (format: "pdf" | "excel" | "csv" | "json") => {
+    try {
+      if (format === 'csv') {
+        exportToCSV(deviceData);
+      } else if (format === 'excel') {
+        exportToExcel(deviceData);
+      } else if (format === 'pdf') {
+        exportToPDF(deviceData);
+      } else if (format === 'json') {
+        exportToJSON(deviceData);
+      }
+      
+      toast({
+        title: "Export successful",
+        description: `Report has been exported as ${format.toUpperCase()}.`,
+      });
+    } catch (error) {
+      console.error("Export error:", error);
+      toast({
+        title: "Export failed",
+        description: "There was an error exporting the report.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // CSV Export
+  const exportToCSV = (dataToExport: any[]) => {
+    // Define the headers based on columns
+    const headers = columns.map(col => col.header);
+    
+    // Map the data to CSV rows
+    const rows = dataToExport.map(item => (
+      columns.map(col => {
+        const key = col.accessorKey as string;
+        return item[key] !== undefined ? item[key].toString() : '';
+      })
+    ));
+    
+    // Combine headers and rows
+    const csvData = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+    
+    // Create blob and download link
+    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `asset-report-${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+  
+  // Excel Export
+  const exportToExcel = (dataToExport: any[]) => {
+    // For now, we'll use the CSV approach but change the extension
+    // In a real-world scenario, you would use a library like xlsx for proper Excel files
+    const headers = columns.map(col => col.header);
+    
+    const rows = dataToExport.map(item => (
+      columns.map(col => {
+        const key = col.accessorKey as string;
+        return item[key] !== undefined ? item[key].toString() : '';
+      })
+    ));
+    
+    const csvData = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvData], { type: 'application/vnd.ms-excel' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `asset-report-${new Date().toISOString().split('T')[0]}.xls`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+  
+  // PDF Export
+  const exportToPDF = (dataToExport: any[]) => {
+    // Create a printable HTML version of the data
+    let printContent = `
+      <html>
+        <head>
+          <title>Asset Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; }
+            table { border-collapse: collapse; width: 100%; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+            h1 { color: #333; }
+            .header { display: flex; justify-content: space-between; align-items: center; }
+            .date { margin-top: 8px; color: #666; }
+            .status-Active { background-color: #C6F6D5; color: #276749; padding: 2px 8px; border-radius: 9999px; font-size: 12px; }
+            .status-Offline { background-color: #FED7D7; color: #9B2C2C; padding: 2px 8px; border-radius: 9999px; font-size: 12px; }
+            .status-Maintenance { background-color: #FEFCBF; color: #975A16; padding: 2px 8px; border-radius: 9999px; font-size: 12px; }
+            .status-Inactive { background-color: #E2E8F0; color: #4A5568; padding: 2px 8px; border-radius: 9999px; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Asset Report</h1>
+            <div class="date">Generated on ${new Date().toLocaleDateString()}</div>
+          </div>
+          <p>Date Range: ${format(dateRange.from, "PP")} to ${format(dateRange.to, "PP")}</p>
+          <table>
+            <thead>
+              <tr>
+                ${columns.map(col => `<th>${col.header}</th>`).join('')}
+              </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    dataToExport.forEach(item => {
+      printContent += `<tr>`;
+      columns.forEach(col => {
+        const key = col.accessorKey as string;
+        if (key === 'status') {
+          printContent += `<td><span class="status-${item[key]}">${item[key]}</span></td>`;
+        } else {
+          printContent += `<td>${item[key] !== undefined ? item[key] : 'N/A'}</td>`;
+        }
+      });
+      printContent += `</tr>`;
     });
+    
+    printContent += `
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
+    
+    // Open a new window for printing
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.onload = function() {
+        printWindow.print();
+      };
+    } else {
+      alert('Please allow pop-ups to export as PDF');
+    }
+  };
+  
+  // JSON Export
+  const exportToJSON = (dataToExport: any[]) => {
+    const jsonString = JSON.stringify(dataToExport, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `asset-report-${new Date().toISOString().split('T')[0]}.json`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   // Filter change handler
