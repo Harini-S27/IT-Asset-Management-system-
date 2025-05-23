@@ -154,64 +154,52 @@ const MapComponent = () => {
     const markers: L.Marker[] = [];
     
     try {
-      if (clusterMode) {
-        // Group devices by location (for clustering)
-        const locationGroups: Record<string, Device[]> = {};
-        filteredDevices.forEach(device => {
-          if (device.latitude && device.longitude) {
-            // Create a string key to group devices at the same coordinates
-            const key = `${device.latitude}-${device.longitude}`;
-            if (!locationGroups[key]) {
-              locationGroups[key] = [];
-            }
-            locationGroups[key].push(device);
-          }
-        });
-        
-        // Create clustered markers
-        Object.entries(locationGroups).forEach(([key, devicesAtLocation]) => {
-          const [lat, lng] = key.split('-');
-          // Parse the coordinates safely
-          const latitude = parseFloat(lat);
-          const longitude = parseFloat(lng);
+      // Always add individual markers regardless of clustering mode
+      filteredDevices.forEach(device => {
+        if (device.latitude && device.longitude) {
+          const latitude = parseFloat(device.latitude);
+          const longitude = parseFloat(device.longitude);
           
           // Skip invalid coordinates
           if (isNaN(latitude) || isNaN(longitude)) return;
           
-          // Determine status for marker icon
-          // If any device in the group is active, use active status
-          let markerStatus = 'Inactive';
-          if (devicesAtLocation.some(d => d.status === 'Active')) {
-            markerStatus = 'Active';
-          } else if (devicesAtLocation.some(d => d.status === 'Maintenance')) {
-            markerStatus = 'Maintenance';
-          }
-          
-          // Create marker with custom icon
           const position = L.latLng(latitude, longitude);
           const marker = L.marker(position, { 
-            icon: devicesAtLocation.length > 1 ? 
-              createClusterIcon(devicesAtLocation.length) : 
-              createMarkerIcon(markerStatus)
+            icon: createMarkerIcon(device.status) 
           });
           
-          // Add popup with device details
-          marker.bindPopup(createPopupContent(devicesAtLocation))
+          marker.bindPopup(createDevicePopup(device))
                 .on('click', () => {
-                  // Set the first device in the location as the selected device
-                  setSelectedDevice(devicesAtLocation[0]);
+                  setSelectedDevice(device);
+                })
+                .bindTooltip(`${device.name} - ${device.status}`, {
+                  direction: 'top',
+                  offset: L.point(0, -30)
                 });
           
           markers.push(marker);
-        });
-      } else {
-        // Add individual markers without clustering
+        }
+      });
+      
+      // Visual representation changes based on clustering mode
+      if (clusterMode) {
+        // Find devices at the same location and replace their markers with cluster markers
+        const locationMap: Record<string, L.Marker[]> = {};
+        
+        // First, remove all existing markers (we'll re-add them as clusters)
+        markers.length = 0;
+        
+        // Group devices by location coordinates
         filteredDevices.forEach(device => {
           if (device.latitude && device.longitude) {
+            const key = `${device.latitude}-${device.longitude}`;
+            if (!locationMap[key]) {
+              locationMap[key] = [];
+            }
+            
+            // Create marker for this device
             const latitude = parseFloat(device.latitude);
             const longitude = parseFloat(device.longitude);
-            
-            // Skip invalid coordinates
             if (isNaN(latitude) || isNaN(longitude)) return;
             
             const position = L.latLng(latitude, longitude);
@@ -222,13 +210,39 @@ const MapComponent = () => {
             marker.bindPopup(createDevicePopup(device))
                   .on('click', () => {
                     setSelectedDevice(device);
-                  })
-                  .bindTooltip(`${device.name} - ${device.status}`, {
-                    direction: 'top',
-                    offset: L.point(0, -30)
                   });
+                  
+            locationMap[key].push(marker);
+          }
+        });
+        
+        // Now create cluster markers for locations with multiple devices
+        Object.entries(locationMap).forEach(([key, markersAtLocation]) => {
+          if (markersAtLocation.length > 1) {
+            // Create a cluster marker for this location
+            const [lat, lng] = key.split('-');
+            const latitude = parseFloat(lat);
+            const longitude = parseFloat(lng);
+            if (isNaN(latitude) || isNaN(longitude)) return;
             
-            markers.push(marker);
+            const position = L.latLng(latitude, longitude);
+            const devices = filteredDevices.filter(d => 
+              d.latitude === lat && d.longitude === lng
+            );
+            
+            const clusterMarker = L.marker(position, { 
+              icon: createClusterIcon(markersAtLocation.length) 
+            });
+            
+            clusterMarker.bindPopup(createPopupContent(devices))
+                         .on('click', () => {
+                           setSelectedDevice(devices[0]);
+                         });
+            
+            markers.push(clusterMarker);
+          } else if (markersAtLocation.length === 1) {
+            // Just add the single marker
+            markers.push(markersAtLocation[0]);
           }
         });
       }
