@@ -187,6 +187,15 @@ const ReportsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [reportGenerated, setReportGenerated] = useState(false);
+  const [showScheduleDialog, setShowScheduleDialog] = useState(false);
+  const [scheduleConfig, setScheduleConfig] = useState({
+    frequency: "weekly",
+    dayOfWeek: "monday",
+    timeOfDay: "09:00",
+    recipients: "",
+    format: "pdf",
+    enabled: false
+  });
 
   // Report columns
   const columns = [
@@ -228,6 +237,23 @@ const ReportsPage = () => {
     }, 1500);
   };
 
+  // Function to handle schedule configuration
+  const handleScheduleChange = (field: string, value: any) => {
+    setScheduleConfig(prev => ({ ...prev, [field]: value }));
+  };
+  
+  // Function to save schedule
+  const handleSaveSchedule = () => {
+    // Here you would normally save the schedule to the server
+    setScheduleConfig(prev => ({ ...prev, enabled: true }));
+    setShowScheduleDialog(false);
+    
+    toast({
+      title: "Schedule Saved",
+      description: "Your report schedule has been configured successfully.",
+    });
+  };
+  
   // Function to handle report download/export
   const handleExport = (format: "pdf" | "excel" | "csv" | "json") => {
     try {
@@ -706,13 +732,125 @@ const ReportsPage = () => {
                   <div className="flex items-center space-x-2">
                     <Clock className="h-4 w-4 text-gray-500" />
                     <span className="font-medium text-sm">Schedule Report</span>
+                    {scheduleConfig.enabled && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                        Enabled
+                      </span>
+                    )}
                   </div>
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowScheduleDialog(true)}
+                  >
                     Configure Schedule
                   </Button>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">Set up automated report generation and distribution on a recurring schedule</p>
               </div>
+              
+              {/* Schedule Configuration Dialog */}
+              <Dialog open={showScheduleDialog} onOpenChange={setShowScheduleDialog}>
+                <DialogContent className="sm:max-w-[500px]">
+                  <DialogHeader>
+                    <DialogTitle>Configure Report Schedule</DialogTitle>
+                    <DialogDescription>
+                      Set up automatic generation and delivery of this report on a schedule.
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="frequency">Frequency</Label>
+                      <Select 
+                        value={scheduleConfig.frequency} 
+                        onValueChange={(value) => handleScheduleChange("frequency", value)}
+                      >
+                        <SelectTrigger id="frequency">
+                          <SelectValue placeholder="Select frequency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="daily">Daily</SelectItem>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {scheduleConfig.frequency === "weekly" && (
+                      <div className="grid gap-2">
+                        <Label htmlFor="dayOfWeek">Day of Week</Label>
+                        <Select 
+                          value={scheduleConfig.dayOfWeek} 
+                          onValueChange={(value) => handleScheduleChange("dayOfWeek", value)}
+                        >
+                          <SelectTrigger id="dayOfWeek">
+                            <SelectValue placeholder="Select day" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="monday">Monday</SelectItem>
+                            <SelectItem value="tuesday">Tuesday</SelectItem>
+                            <SelectItem value="wednesday">Wednesday</SelectItem>
+                            <SelectItem value="thursday">Thursday</SelectItem>
+                            <SelectItem value="friday">Friday</SelectItem>
+                            <SelectItem value="saturday">Saturday</SelectItem>
+                            <SelectItem value="sunday">Sunday</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    
+                    <div className="grid gap-2">
+                      <Label htmlFor="timeOfDay">Time of Day</Label>
+                      <Input 
+                        id="timeOfDay"
+                        type="time"
+                        value={scheduleConfig.timeOfDay}
+                        onChange={(e) => handleScheduleChange("timeOfDay", e.target.value)}
+                      />
+                    </div>
+                    
+                    <div className="grid gap-2">
+                      <Label htmlFor="recipients">Email Recipients</Label>
+                      <Input 
+                        id="recipients"
+                        placeholder="Enter email addresses (comma separated)"
+                        value={scheduleConfig.recipients}
+                        onChange={(e) => handleScheduleChange("recipients", e.target.value)}
+                      />
+                      <p className="text-xs text-gray-500">
+                        Enter the email addresses that should receive this report
+                      </p>
+                    </div>
+                    
+                    <div className="grid gap-2">
+                      <Label htmlFor="format">Report Format</Label>
+                      <Select 
+                        value={scheduleConfig.format} 
+                        onValueChange={(value) => handleScheduleChange("format", value)}
+                      >
+                        <SelectTrigger id="format">
+                          <SelectValue placeholder="Select format" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pdf">PDF</SelectItem>
+                          <SelectItem value="excel">Excel</SelectItem>
+                          <SelectItem value="csv">CSV</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowScheduleDialog(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleSaveSchedule}>
+                      Save Schedule
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           </CardContent>
         </Card>
