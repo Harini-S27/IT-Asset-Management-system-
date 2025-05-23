@@ -43,7 +43,7 @@ export default function SettingsPage() {
   const [resetCounter, setResetCounter] = useState(0);
   
   // Create a global context for tracking changes across all settings forms
-  const [formStates, setFormStates] = useState({
+  const [formStates, setFormStates] = useState<Record<string, Record<string, any>>>({
     organization: {},
     system: {},
     notifications: {},
@@ -82,7 +82,7 @@ export default function SettingsPage() {
       try {
         // Store each settings tab's state in localStorage
         Object.keys(formStates).forEach(key => {
-          const formData = formStates[key];
+          const formData = formStates[key as keyof typeof formStates];
           if (Object.keys(formData).length > 0) {
             localStorage.setItem(`settings_${key}`, JSON.stringify(formData));
           }
@@ -120,16 +120,39 @@ export default function SettingsPage() {
       description: "All settings have been reset to their default values.",
     });
     
-    // Increment the reset counter to force reload of all form components
-    setResetCounter(prev => prev + 1);
-    
-    // Simulate API call to reset settings
-    setTimeout(() => {
-      setIsResetting(false);
+    // Actually clear localStorage settings values (for demonstration)
+    try {
+      Object.keys(formStates).forEach(key => {
+        localStorage.removeItem(`settings_${key}`);
+      });
+      
+      // Reset form states to empty objects
+      setFormStates({
+        organization: {},
+        system: {},
+        notifications: {},
+        map: {},
+        access: {}
+      });
+      
+      // Increment the reset counter to force reload of all form components
+      setResetCounter(prev => prev + 1);
       
       // Dispatch event for child components to reset their state
       const resetEvent = new CustomEvent('settings-reset');
       window.dispatchEvent(resetEvent);
+    } catch (error) {
+      console.error("Error resetting settings:", error);
+      toast({
+        title: "Error Resetting Settings",
+        description: "There was a problem resetting your settings. Please try again.",
+        variant: "destructive"
+      });
+    }
+    
+    // Simulate API call completion
+    setTimeout(() => {
+      setIsResetting(false);
       
       // Keep save button enabled after reset
       setHasChanges(true);
