@@ -142,7 +142,59 @@ export default function SettingsPage() {
 
         {/* User Management Tab */}
         <TabsContent value="user-management">
-          <AccessControlForm key={`access-control-${resetCounter}`} />
+          <div className="rounded-md border">
+            <div className="p-4 bg-white rounded-md shadow-sm">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium">Users</h3>
+                <Button className="bg-[#48BB78] hover:bg-[#48BB78]/90">Add User</Button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 border-b">
+                      <th className="px-4 py-2 text-left font-medium">Name</th>
+                      <th className="px-4 py-2 text-left font-medium">Email</th>
+                      <th className="px-4 py-2 text-left font-medium">Role</th>
+                      <th className="px-4 py-2 text-left font-medium">Status</th>
+                      <th className="px-4 py-2 text-left font-medium">Last Login</th>
+                      <th className="px-4 py-2 text-left font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mockUsers.map(user => (
+                      <tr key={user.id} className="border-b hover:bg-gray-50">
+                        <td className="px-4 py-3">{user.name}</td>
+                        <td className="px-4 py-3">{user.email}</td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            user.role === 'Admin' ? 'bg-rose-100 text-rose-800' :
+                            user.role === 'Manager' ? 'bg-amber-100 text-amber-800' :
+                            'bg-emerald-100 text-emerald-800'
+                          }`}>
+                            {user.role}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            user.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {user.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">{user.lastLogin}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex space-x-2">
+                            <Button variant="outline" size="sm">Edit</Button>
+                            <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">Deactivate</Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </TabsContent>
 
         {/* Role & Access Control Tab */}
