@@ -95,7 +95,7 @@ export class DatabaseStorage implements IStorage {
           model: "Dell XPS 8940",
           type: "Workstation",
           status: "Active",
-          location: "San Francisco HQ",
+          location: "Headquarters",
           ipAddress: "192.168.1.101",
           latitude: "37.7749",
           longitude: "-122.4194"
@@ -105,7 +105,7 @@ export class DatabaseStorage implements IStorage {
           model: "Dell PowerEdge R740",
           type: "Server",
           status: "Active",
-          location: "San Francisco Data Center",
+          location: "Data Center",
           ipAddress: "10.0.0.15",
           latitude: "37.7790",
           longitude: "-122.4200"
@@ -115,7 +115,7 @@ export class DatabaseStorage implements IStorage {
           model: "Dell PowerEdge R640",
           type: "Server",
           status: "Active",
-          location: "San Francisco Data Center",
+          location: "Data Center",
           ipAddress: "10.0.0.16",
           latitude: "37.7790",
           longitude: "-122.4200"
@@ -125,7 +125,7 @@ export class DatabaseStorage implements IStorage {
           model: "Cisco ASR 1000",
           type: "Router",
           status: "Inactive",
-          location: "San Francisco Data Center",
+          location: "Data Center",
           ipAddress: "10.0.0.1",
           latitude: "37.7790",
           longitude: "-122.4200"
@@ -136,7 +136,7 @@ export class DatabaseStorage implements IStorage {
           model: "HPE ProLiant DL380",
           type: "Server",
           status: "Active",
-          location: "Seattle Data Center",
+          location: "Data Center",
           ipAddress: "10.1.0.10",
           latitude: "47.6062",
           longitude: "-122.3321"
@@ -147,7 +147,7 @@ export class DatabaseStorage implements IStorage {
           model: "Cisco 8000 Series",
           type: "Router",
           status: "Active",
-          location: "New York Office",
+          location: "Branch Office",
           ipAddress: "10.2.0.1",
           latitude: "40.7128",
           longitude: "-74.0060"
@@ -158,7 +158,7 @@ export class DatabaseStorage implements IStorage {
           model: "Dell PowerEdge R750",
           type: "Server",
           status: "Active",
-          location: "London Data Center",
+          location: "Data Center",
           ipAddress: "172.16.0.10",
           latitude: "51.5074",
           longitude: "-0.1278"
@@ -169,7 +169,7 @@ export class DatabaseStorage implements IStorage {
           model: "Juniper MX Series",
           type: "Router",
           status: "Active",
-          location: "Paris Office",
+          location: "Branch Office",
           ipAddress: "172.16.1.1",
           latitude: "48.8566",
           longitude: "2.3522"
@@ -180,7 +180,7 @@ export class DatabaseStorage implements IStorage {
           model: "HPE Synergy 480",
           type: "Server",
           status: "Active",
-          location: "Tokyo Data Center",
+          location: "Data Center",
           ipAddress: "192.168.10.10",
           latitude: "35.6762",
           longitude: "139.6503"
@@ -191,7 +191,7 @@ export class DatabaseStorage implements IStorage {
           model: "Cisco Catalyst 8300",
           type: "Router",
           status: "Maintenance",
-          location: "Singapore Office",
+          location: "Branch Office",
           ipAddress: "192.168.11.1",
           latitude: "1.3521",
           longitude: "103.8198"
@@ -202,7 +202,7 @@ export class DatabaseStorage implements IStorage {
           model: "Dell PowerEdge R650",
           type: "Server",
           status: "Active",
-          location: "Sydney Data Center",
+          location: "Data Center",
           ipAddress: "192.168.12.10",
           latitude: "-33.8688",
           longitude: "151.2093"
@@ -213,7 +213,7 @@ export class DatabaseStorage implements IStorage {
           model: "Cisco 4000 Series",
           type: "Router",
           status: "Active", 
-          location: "Sao Paulo Office",
+          location: "Branch Office",
           ipAddress: "192.168.13.1",
           latitude: "-23.5505",
           longitude: "-46.6333"
@@ -224,7 +224,7 @@ export class DatabaseStorage implements IStorage {
           model: "HPE ProLiant DL360",
           type: "Server",
           status: "Inactive",
-          location: "Johannesburg Office",
+          location: "Branch Office",
           ipAddress: "192.168.14.10",
           latitude: "-26.2041",
           longitude: "28.0473"
@@ -235,7 +235,7 @@ export class DatabaseStorage implements IStorage {
           model: "Juniper SRX Series",
           type: "Router",
           status: "Active",
-          location: "Dubai Office",
+          location: "Branch Office",
           ipAddress: "192.168.15.1",
           latitude: "25.2048",
           longitude: "55.2708"
@@ -246,7 +246,7 @@ export class DatabaseStorage implements IStorage {
           model: "Dell PowerEdge R740",
           type: "Server",
           status: "Active",
-          location: "Mumbai Data Center",
+          location: "Data Center",
           ipAddress: "192.168.16.10",
           latitude: "19.0760",
           longitude: "72.8777"

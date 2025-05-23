@@ -114,24 +114,65 @@ const DeviceTable = ({
       header: "Actions",
       accessorKey: "actions",
       cell: (device: Device) => (
-        <div className="text-right">
+        <div className="flex items-center justify-center space-x-2">
+          <button 
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent row click from triggering
+              onEditDevice(device);
+            }}
+            className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-md text-gray-700 text-xs font-medium transition-colors"
+          >
+            Edit
+          </button>
+          <button 
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent row click from triggering
+              
+              // Handle deactivation by changing status to "Inactive" if currently Active
+              if (device.status === "Active") {
+                // Clone the device and update its status
+                const updatedDevice = {...device, status: "Inactive"};
+                onEditDevice(updatedDevice);
+              } else if (device.status === "Inactive") {
+                // Reactivate if currently inactive
+                const updatedDevice = {...device, status: "Active"};
+                onEditDevice(updatedDevice);
+              }
+            }}
+            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+              device.status === "Active" 
+                ? "bg-red-100 hover:bg-red-200 text-red-700" 
+                : "bg-green-100 hover:bg-green-200 text-green-700"
+            }`}
+          >
+            {device.status === "Active" ? "Deactivate" : "Activate"}
+          </button>
+          
+          {/* Keep the dropdown for additional actions */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="p-1 rounded-full hover:bg-gray-100 dropdown-trigger">
+              <button 
+                className="p-1 rounded-full hover:bg-gray-100 dropdown-trigger"
+                onClick={(e) => e.stopPropagation()} // Prevent row click
+              >
                 <MoreVertical className="h-4 w-4 text-gray-500" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onViewDeviceDetails(device)}>
+              <DropdownMenuItem 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onViewDeviceDetails(device);
+                }}
+              >
                 <Eye className="mr-2 h-4 w-4" />
                 <span>Details</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onEditDevice(device)}>
-                <Edit className="mr-2 h-4 w-4" />
-                <span>Edit</span>
-              </DropdownMenuItem>
               <DropdownMenuItem 
-                onClick={() => onDeleteDevice(device.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteDevice(device.id);
+                }}
                 className="text-red-600"
               >
                 <Trash2 className="mr-2 h-4 w-4" />
