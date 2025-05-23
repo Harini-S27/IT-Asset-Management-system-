@@ -92,6 +92,12 @@ const MapComponent = () => {
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(mapRef.current);
+        
+        // Add a test marker to verify the map is working
+        const testMarker = L.marker([37.7749, -122.4194], {
+          icon: createMarkerIcon('Active')
+        }).addTo(mapRef.current);
+        testMarker.bindPopup('San Francisco - Test Marker');
       }
     }, 500);
 
@@ -129,17 +135,29 @@ const MapComponent = () => {
 
   // Filter and add markers to map
   useEffect(() => {
-    if (!mapRef.current || !devices.length) return;
+    if (!mapRef.current || !devices.length) {
+      console.log("Map or devices not ready", {mapReady: !!mapRef.current, deviceCount: devices.length});
+      return;
+    }
+
+    console.log("Processing devices for map:", devices);
 
     // Filter devices based on selected filters
     const filteredDevices = devices.filter(device => {
       const statusMatch = statusFilter === 'all' || device.status === statusFilter;
       const typeMatch = typeFilter === 'all' || device.type === typeFilter;
-      return statusMatch && typeMatch && device.latitude && device.longitude;
+      const hasCoords = !!device.latitude && !!device.longitude;
+      if (!hasCoords) {
+        console.log("Device missing coordinates:", device.name);
+      }
+      return statusMatch && typeMatch && hasCoords;
     });
+    
+    console.log("Filtered devices for map:", filteredDevices.length);
     
     // Clear existing markers
     if (markerClusterGroupRef.current) {
+      console.log("Clearing existing markers");
       markerClusterGroupRef.current.clearLayers();
       mapRef.current.removeLayer(markerClusterGroupRef.current);
     }
@@ -181,6 +199,7 @@ const MapComponent = () => {
           }
           
           // Create marker with custom icon
+          console.log(`Creating marker at position: ${latitude}, ${longitude} for ${devicesAtLocation.length} devices`);
           const position = L.latLng(latitude, longitude);
           const marker = L.marker(position, { 
             icon: devicesAtLocation.length > 1 ? 
