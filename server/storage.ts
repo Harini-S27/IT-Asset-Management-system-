@@ -4,10 +4,19 @@ import {
   type InsertUser, 
   devices, 
   type Device, 
-  type InsertDevice 
+  type InsertDevice,
+  prohibitedSoftware,
+  type ProhibitedSoftware,
+  type InsertProhibitedSoftware,
+  softwareDetectionLog,
+  type SoftwareDetectionLog,
+  type InsertSoftwareDetectionLog,
+  softwareScanResults,
+  type SoftwareScanResults,
+  type InsertSoftwareScanResults
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -21,6 +30,33 @@ export interface IStorage {
   createDevice(device: InsertDevice): Promise<Device>;
   updateDevice(id: number, device: Partial<InsertDevice>): Promise<Device | undefined>;
   deleteDevice(id: number): Promise<boolean>;
+  
+  // Prohibited Software operations
+  getProhibitedSoftware(): Promise<ProhibitedSoftware[]>;
+  getProhibitedSoftwareById(id: number): Promise<ProhibitedSoftware | undefined>;
+  createProhibitedSoftware(software: InsertProhibitedSoftware): Promise<ProhibitedSoftware>;
+  updateProhibitedSoftware(id: number, software: Partial<InsertProhibitedSoftware>): Promise<ProhibitedSoftware | undefined>;
+  deleteProhibitedSoftware(id: number): Promise<boolean>;
+  
+  // Software Detection Log operations
+  getSoftwareDetectionLogs(): Promise<SoftwareDetectionLog[]>;
+  getSoftwareDetectionLogsByDevice(deviceId: number): Promise<SoftwareDetectionLog[]>;
+  createSoftwareDetectionLog(log: InsertSoftwareDetectionLog): Promise<SoftwareDetectionLog>;
+  updateSoftwareDetectionLogStatus(id: number, status: string): Promise<SoftwareDetectionLog | undefined>;
+  
+  // Software Scan Results operations
+  getSoftwareScanResults(): Promise<SoftwareScanResults[]>;
+  getSoftwareScanResultsByDevice(deviceId: number): Promise<SoftwareScanResults[]>;
+  createSoftwareScanResult(result: InsertSoftwareScanResults): Promise<SoftwareScanResults>;
+  getLatestScanByDevice(deviceId: number): Promise<SoftwareScanResults | undefined>;
+  
+  // Dashboard summary operations
+  getProhibitedSoftwareSummary(): Promise<{
+    totalProhibitedSoftware: number;
+    totalDetections: number;
+    activeThreats: number;
+    devicesAffected: number;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -255,6 +291,184 @@ export class DatabaseStorage implements IStorage {
       
       for (const device of sampleDevices) {
         await this.createDevice(device);
+      }
+    }
+  }
+
+  // Prohibited Software operations
+  async getProhibitedSoftware(): Promise<ProhibitedSoftware[]> {
+    return await db.select().from(prohibitedSoftware).orderBy(desc(prohibitedSoftware.createdAt));
+  }
+
+  async getProhibitedSoftwareById(id: number): Promise<ProhibitedSoftware | undefined> {
+    const [software] = await db.select().from(prohibitedSoftware).where(eq(prohibitedSoftware.id, id));
+    return software;
+  }
+
+  async createProhibitedSoftware(insertProhibitedSoftware: InsertProhibitedSoftware): Promise<ProhibitedSoftware> {
+    const [software] = await db
+      .insert(prohibitedSoftware)
+      .values(insertProhibitedSoftware)
+      .returning();
+    return software;
+  }
+
+  async updateProhibitedSoftware(id: number, updateData: Partial<InsertProhibitedSoftware>): Promise<ProhibitedSoftware | undefined> {
+    const [software] = await db
+      .update(prohibitedSoftware)
+      .set({ ...updateData, updatedAt: new Date() })
+      .where(eq(prohibitedSoftware.id, id))
+      .returning();
+    return software;
+  }
+
+  async deleteProhibitedSoftware(id: number): Promise<boolean> {
+    const result = await db.delete(prohibitedSoftware).where(eq(prohibitedSoftware.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Software Detection Log operations
+  async getSoftwareDetectionLogs(): Promise<SoftwareDetectionLog[]> {
+    return await db.select().from(softwareDetectionLog).orderBy(desc(softwareDetectionLog.detectionDate));
+  }
+
+  async getSoftwareDetectionLogsByDevice(deviceId: number): Promise<SoftwareDetectionLog[]> {
+    return await db.select().from(softwareDetectionLog)
+      .where(eq(softwareDetectionLog.deviceId, deviceId))
+      .orderBy(desc(softwareDetectionLog.detectionDate));
+  }
+
+  async createSoftwareDetectionLog(insertLog: InsertSoftwareDetectionLog): Promise<SoftwareDetectionLog> {
+    const [log] = await db
+      .insert(softwareDetectionLog)
+      .values(insertLog)
+      .returning();
+    return log;
+  }
+
+  async updateSoftwareDetectionLogStatus(id: number, status: string): Promise<SoftwareDetectionLog | undefined> {
+    const [log] = await db
+      .update(softwareDetectionLog)
+      .set({ status })
+      .where(eq(softwareDetectionLog.id, id))
+      .returning();
+    return log;
+  }
+
+  // Software Scan Results operations
+  async getSoftwareScanResults(): Promise<SoftwareScanResults[]> {
+    return await db.select().from(softwareScanResults).orderBy(desc(softwareScanResults.scanDate));
+  }
+
+  async getSoftwareScanResultsByDevice(deviceId: number): Promise<SoftwareScanResults[]> {
+    return await db.select().from(softwareScanResults)
+      .where(eq(softwareScanResults.deviceId, deviceId))
+      .orderBy(desc(softwareScanResults.scanDate));
+  }
+
+  async createSoftwareScanResult(insertResult: InsertSoftwareScanResults): Promise<SoftwareScanResults> {
+    const [result] = await db
+      .insert(softwareScanResults)
+      .values(insertResult)
+      .returning();
+    return result;
+  }
+
+  async getLatestScanByDevice(deviceId: number): Promise<SoftwareScanResults | undefined> {
+    const [result] = await db.select().from(softwareScanResults)
+      .where(eq(softwareScanResults.deviceId, deviceId))
+      .orderBy(desc(softwareScanResults.scanDate))
+      .limit(1);
+    return result;
+  }
+
+  // Dashboard summary operations
+  async getProhibitedSoftwareSummary(): Promise<{
+    totalProhibitedSoftware: number;
+    totalDetections: number;
+    activeThreats: number;
+    devicesAffected: number;
+  }> {
+    const [totalProhibitedResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(prohibitedSoftware);
+
+    const [totalDetectionsResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(softwareDetectionLog);
+
+    const [activeThreatsResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(softwareDetectionLog)
+      .where(eq(softwareDetectionLog.status, 'Active'));
+
+    const [devicesAffectedResult] = await db
+      .select({ count: sql<number>`count(distinct ${softwareDetectionLog.deviceId})` })
+      .from(softwareDetectionLog)
+      .where(eq(softwareDetectionLog.status, 'Active'));
+
+    return {
+      totalProhibitedSoftware: totalProhibitedResult?.count || 0,
+      totalDetections: totalDetectionsResult?.count || 0,
+      activeThreats: activeThreatsResult?.count || 0,
+      devicesAffected: devicesAffectedResult?.count || 0,
+    };
+  }
+
+  // Initialize sample prohibited software data
+  async initSampleProhibitedSoftware(): Promise<void> {
+    const existingSoftware = await this.getProhibitedSoftware();
+    if (existingSoftware.length === 0) {
+      const sampleProhibitedSoftware = [
+        {
+          name: "BitTorrent Client",
+          description: "Peer-to-peer file sharing software that can be used for illegal downloads",
+          executableName: "bittorrent.exe",
+          category: "File Sharing",
+          riskLevel: "High" as const,
+          blockExecution: true,
+          autoUninstall: false,
+        },
+        {
+          name: "TeamViewer Personal",
+          description: "Remote access software - unauthorized versions pose security risks",
+          executableName: "teamviewer.exe",
+          category: "Remote Access",
+          riskLevel: "Medium" as const,
+          blockExecution: true,
+          autoUninstall: false,
+        },
+        {
+          name: "Cryptocurrency Miner",
+          description: "Bitcoin mining software that can degrade system performance",
+          executableName: "cgminer.exe",
+          category: "Mining Software",
+          riskLevel: "Critical" as const,
+          blockExecution: true,
+          autoUninstall: true,
+        },
+        {
+          name: "Keylogger Pro",
+          description: "Potential malware - captures keyboard input",
+          executableName: "keylogger.exe",
+          category: "Security Risk",
+          riskLevel: "Critical" as const,
+          blockExecution: true,
+          autoUninstall: true,
+        },
+        {
+          name: "Unauthorized VPN",
+          description: "VPN software not approved by IT department",
+          executableName: "vpnclient.exe",
+          category: "Network Tools",
+          riskLevel: "Medium" as const,
+          blockExecution: false,
+          autoUninstall: false,
+        }
+      ];
+
+      for (const software of sampleProhibitedSoftware) {
+        await this.createProhibitedSoftware(software);
       }
     }
   }
