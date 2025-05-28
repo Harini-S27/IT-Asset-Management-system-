@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import Devices from "@/pages/devices";
 import MapView from "@/pages/map";
+import ProhibitedSoftware from "@/pages/prohibited-software";
 import Settings from "@/pages/settings";
 import Reports from "@/pages/reports";
 import Sidebar from "@/components/layout/sidebar";
@@ -39,6 +40,7 @@ function Router() {
                 <Route path="/" component={Dashboard} />
                 <Route path="/devices" component={Devices} />
                 <Route path="/map" component={MapView} />
+                <Route path="/prohibited-software" component={ProhibitedSoftware} />
                 <Route path="/settings" component={Settings} />
                 <Route path="/reports" component={Reports} />
                 <Route path="/login">

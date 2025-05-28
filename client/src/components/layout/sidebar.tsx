@@ -7,7 +7,8 @@ import {
   Map, 
   Settings, 
   FileBarChart, 
-  LogOut
+  LogOut,
+  Shield
 } from "lucide-react";
 import { UserMenu } from "./user-menu";
 import { useAuth } from "@/contexts/auth-context";
@@ -33,6 +34,11 @@ const Sidebar = () => {
       name: "Map View",
       href: "/map",
       icon: Map,
+    },
+    {
+      name: "Prohibited Software",
+      href: "/prohibited-software",
+      icon: Shield,
     },
     {
       name: "Settings",
