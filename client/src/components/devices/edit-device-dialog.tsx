@@ -76,62 +76,19 @@ const EditDeviceDialog = ({ device, open, onOpenChange }: EditDeviceDialogProps)
     }
   }, [device, form]);
 
-  // Automatic scan function
-  const triggerAutoScan = async (deviceId: number, deviceName: string) => {
-    // Show scanning notification
-    toast({
-      title: "Device status changed to Active",
-      description: "Scanning for prohibited software...",
-    });
-
-    try {
-      // Wait for a brief moment to simulate network detection
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      const response = await fetch(`/api/scan-device/${deviceId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        
-        // Update queries to refresh dashboard data
-        queryClient.invalidateQueries({ queryKey: ['/api/detection-logs'] });
-        queryClient.invalidateQueries({ queryKey: ['/api/prohibited-software-summary'] });
-        queryClient.invalidateQueries({ queryKey: ['/api/scan-results'] });
-        
-        // Show scan results
-        toast({
-          title: "Automatic scan completed",
-          description: `Found ${result.detectedCount} prohibited software instances on ${deviceName}`,
-        });
-      }
-    } catch (error) {
-      console.error('Auto-scan failed:', error);
-    }
-  };
-
   const { mutate, isPending } = useMutation({
     mutationFn: async (data: any) => {
       if (!device) throw new Error("No device selected");
       const response = await apiRequest("PATCH", `/api/devices/${device.id}`, data);
       return response.json();
     },
-    onSuccess: (updatedDevice, variables) => {
+    onSuccess: () => {
       toast({
         title: "Device updated",
         description: "The device has been updated successfully.",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/devices'] });
       onOpenChange(false);
-      
-      // Trigger automatic scan if status changed to Active
-      if (device && variables.status === 'Active' && device.status !== 'Active') {
-        triggerAutoScan(device.id, device.name);
-      }
     },
     onError: (error) => {
       toast({
