@@ -145,3 +145,55 @@ export type SoftwareDetectionLog = typeof softwareDetectionLog.$inferSelect;
 
 export type InsertSoftwareScanResults = z.infer<typeof insertSoftwareScanResultsSchema>;
 export type SoftwareScanResults = typeof softwareScanResults.$inferSelect;
+
+// Network Discovery Tables
+export const networkDevices = pgTable("network_devices", {
+  id: serial("id").primaryKey(),
+  macAddress: text("mac_address").unique().notNull(),
+  deviceName: text("device_name"),
+  currentIp: text("current_ip"),
+  vendor: text("vendor"),
+  deviceType: text("device_type"),
+  behaviorTag: text("behavior_tag"),
+  firstSeen: timestamp("first_seen").defaultNow().notNull(),
+  lastSeen: timestamp("last_seen").defaultNow().notNull(),
+  status: text("status").default("Active").notNull(),
+});
+
+export const ipHistory = pgTable("ip_history", {
+  id: serial("id").primaryKey(),
+  networkDeviceId: integer("network_device_id").references(() => networkDevices.id).notNull(),
+  ipAddress: text("ip_address").notNull(),
+  assignedAt: timestamp("assigned_at").defaultNow().notNull(),
+  releasedAt: timestamp("released_at"),
+  leaseType: text("lease_type").default("DHCP").notNull(),
+});
+
+export const trafficLogs = pgTable("traffic_logs", {
+  id: serial("id").primaryKey(),
+  networkDeviceId: integer("network_device_id").references(() => networkDevices.id).notNull(),
+  protocol: text("protocol").notNull(),
+  sourcePort: integer("source_port"),
+  destinationPort: integer("destination_port"),
+  dataSize: integer("data_size"),
+  direction: text("direction").notNull(), // "inbound" or "outbound"
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
+export const insertNetworkDeviceSchema = createInsertSchema(networkDevices)
+  .omit({ id: true, firstSeen: true, lastSeen: true });
+
+export const insertIpHistorySchema = createInsertSchema(ipHistory)
+  .omit({ id: true, assignedAt: true });
+
+export const insertTrafficLogSchema = createInsertSchema(trafficLogs)
+  .omit({ id: true, timestamp: true });
+
+export type InsertNetworkDevice = z.infer<typeof insertNetworkDeviceSchema>;
+export type NetworkDevice = typeof networkDevices.$inferSelect;
+
+export type InsertIpHistory = z.infer<typeof insertIpHistorySchema>;
+export type IpHistory = typeof ipHistory.$inferSelect;
+
+export type InsertTrafficLog = z.infer<typeof insertTrafficLogSchema>;
+export type TrafficLog = typeof trafficLogs.$inferSelect;

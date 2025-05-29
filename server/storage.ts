@@ -13,7 +13,16 @@ import {
   type InsertSoftwareDetectionLog,
   softwareScanResults,
   type SoftwareScanResults,
-  type InsertSoftwareScanResults
+  type InsertSoftwareScanResults,
+  networkDevices,
+  type NetworkDevice,
+  type InsertNetworkDevice,
+  ipHistory,
+  type IpHistory,
+  type InsertIpHistory,
+  trafficLogs,
+  type TrafficLog,
+  type InsertTrafficLog
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -57,6 +66,23 @@ export interface IStorage {
     activeThreats: number;
     devicesAffected: number;
   }>;
+
+  // Network Discovery operations
+  getNetworkDevices(): Promise<NetworkDevice[]>;
+  getNetworkDeviceByMac(macAddress: string): Promise<NetworkDevice | undefined>;
+  createNetworkDevice(device: InsertNetworkDevice): Promise<NetworkDevice>;
+  updateNetworkDevice(id: number, device: Partial<InsertNetworkDevice>): Promise<NetworkDevice | undefined>;
+  updateNetworkDeviceByMac(macAddress: string, updates: Partial<InsertNetworkDevice>): Promise<NetworkDevice | undefined>;
+  
+  // IP History operations
+  getIpHistoryByDevice(networkDeviceId: number): Promise<IpHistory[]>;
+  createIpHistory(entry: InsertIpHistory): Promise<IpHistory>;
+  releaseIpAddress(networkDeviceId: number, ipAddress: string): Promise<void>;
+  
+  // Traffic Logs operations
+  getTrafficLogsByDevice(networkDeviceId: number): Promise<TrafficLog[]>;
+  createTrafficLog(log: InsertTrafficLog): Promise<TrafficLog>;
+  analyzeTrafficBehavior(networkDeviceId: number): Promise<string>;
 }
 
 export class DatabaseStorage implements IStorage {
