@@ -308,11 +308,11 @@ const NetworkDiscoveryTable = () => {
             <div className="grid grid-cols-2 gap-4 pt-4 border-t">
               <div>
                 <label className="text-sm font-medium">First Seen</label>
-                <p className="text-sm">{formatTimeSince(selectedDevice?.firstSeen || "")}</p>
+                <p className="text-sm">{selectedDevice?.firstSeen ? formatTimeSince(selectedDevice.firstSeen) : "Unknown"}</p>
               </div>
               <div>
                 <label className="text-sm font-medium">Last Seen</label>
-                <p className="text-sm">{formatTimeSince(selectedDevice?.lastSeen || "")}</p>
+                <p className="text-sm">{selectedDevice?.lastSeen ? formatTimeSince(selectedDevice.lastSeen) : "Unknown"}</p>
               </div>
             </div>
           </div>

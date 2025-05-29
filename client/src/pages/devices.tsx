@@ -27,6 +27,7 @@ import { Device } from "@shared/schema";
 import DeviceTable from "@/components/devices/device-table";
 import AddDeviceDialog from "@/components/devices/add-device-dialog";
 import EditDeviceDialog from "@/components/devices/edit-device-dialog";
+import NetworkDiscoveryTable from "@/components/network/network-discovery-table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, getQueryFn } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
@@ -471,6 +472,10 @@ const Devices = () => {
               categoryFilter={activeCategory}
             />
           </div>
+        </TabsContent>
+
+        <TabsContent value="discovery" className="space-y-6 mt-6">
+          <NetworkDiscoveryTable />
         </TabsContent>
 
         <TabsContent value="live" className="space-y-6 mt-6">
