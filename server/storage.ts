@@ -441,6 +441,193 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
+  // Network Discovery operations
+  async getNetworkDevices(): Promise<NetworkDevice[]> {
+    return await db.select().from(networkDevices).orderBy(desc(networkDevices.lastSeen));
+  }
+
+  async getNetworkDeviceByMac(macAddress: string): Promise<NetworkDevice | undefined> {
+    const [device] = await db.select().from(networkDevices).where(eq(networkDevices.macAddress, macAddress));
+    return device;
+  }
+
+  async createNetworkDevice(insertDevice: InsertNetworkDevice): Promise<NetworkDevice> {
+    const [device] = await db.insert(networkDevices).values(insertDevice).returning();
+    return device;
+  }
+
+  async updateNetworkDevice(id: number, updates: Partial<InsertNetworkDevice>): Promise<NetworkDevice | undefined> {
+    const [device] = await db.update(networkDevices)
+      .set({ ...updates, lastSeen: new Date() })
+      .where(eq(networkDevices.id, id))
+      .returning();
+    return device;
+  }
+
+  async updateNetworkDeviceByMac(macAddress: string, updates: Partial<InsertNetworkDevice>): Promise<NetworkDevice | undefined> {
+    const [device] = await db.update(networkDevices)
+      .set({ ...updates, lastSeen: new Date() })
+      .where(eq(networkDevices.macAddress, macAddress))
+      .returning();
+    return device;
+  }
+
+  // IP History operations
+  async getIpHistoryByDevice(networkDeviceId: number): Promise<IpHistory[]> {
+    return await db.select().from(ipHistory)
+      .where(eq(ipHistory.networkDeviceId, networkDeviceId))
+      .orderBy(desc(ipHistory.assignedAt));
+  }
+
+  async createIpHistory(entry: InsertIpHistory): Promise<IpHistory> {
+    const [historyEntry] = await db.insert(ipHistory).values(entry).returning();
+    return historyEntry;
+  }
+
+  async releaseIpAddress(networkDeviceId: number, ipAddress: string): Promise<void> {
+    await db.update(ipHistory)
+      .set({ releasedAt: new Date() })
+      .where(and(
+        eq(ipHistory.networkDeviceId, networkDeviceId),
+        eq(ipHistory.ipAddress, ipAddress)
+      ));
+  }
+
+  // Traffic Logs operations
+  async getTrafficLogsByDevice(networkDeviceId: number): Promise<TrafficLog[]> {
+    return await db.select().from(trafficLogs)
+      .where(eq(trafficLogs.networkDeviceId, networkDeviceId))
+      .orderBy(desc(trafficLogs.timestamp))
+      .limit(100);
+  }
+
+  async createTrafficLog(log: InsertTrafficLog): Promise<TrafficLog> {
+    const [trafficLog] = await db.insert(trafficLogs).values(log).returning();
+    return trafficLog;
+  }
+
+  async analyzeTrafficBehavior(networkDeviceId: number): Promise<string> {
+    const logs = await this.getTrafficLogsByDevice(networkDeviceId);
+    
+    // Analyze traffic patterns to determine behavior
+    const protocolCounts = logs.reduce((acc, log) => {
+      acc[log.protocol] = (acc[log.protocol] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const portCounts = logs.reduce((acc, log) => {
+      if (log.destinationPort) {
+        acc[log.destinationPort] = (acc[log.destinationPort] || 0) + 1;
+      }
+      return acc;
+    }, {} as Record<number, number>);
+
+    // Behavior analysis logic
+    if (portCounts[22] > 5) return "Linux Admin Device";
+    if (portCounts[3389] > 3) return "Windows Remote Access";
+    if (portCounts[1883] > 10 || portCounts[8883] > 5) return "IoT MQTT Device";
+    if (portCounts[80] > 20 || portCounts[443] > 20) return "Web Client";
+    if (portCounts[21] > 2 || portCounts[22] > 2) return "Server Device";
+    if (protocolCounts["UDP"] > protocolCounts["TCP"]) return "IoT Sensor";
+    if (logs.length > 50) return "High Activity Device";
+    
+    return "Standard Device";
+  }
+
+  // Initialize network discovery with sample devices
+  async initNetworkDiscovery(): Promise<void> {
+    const existingDevices = await this.getNetworkDevices();
+    if (existingDevices.length === 0) {
+      const sampleNetworkDevices = [
+        {
+          macAddress: "00:1B:44:11:3A:B7",
+          deviceName: "LAPTOP-ADMIN01",
+          currentIp: "192.168.1.45",
+          vendor: "Dell Inc.",
+          deviceType: "Laptop",
+          behaviorTag: "Linux Admin Device",
+          status: "Active"
+        },
+        {
+          macAddress: "A4:C3:F0:85:AC:2D",
+          deviceName: "IOT-SENSOR-01",
+          currentIp: "192.168.1.156",
+          vendor: "Raspberry Pi Foundation",
+          deviceType: "IoT Device",
+          behaviorTag: "IoT MQTT Device",
+          status: "Active"
+        },
+        {
+          macAddress: "B8:27:EB:A6:12:34",
+          deviceName: "OFFICE-PRINTER",
+          currentIp: "192.168.1.78",
+          vendor: "HP Inc.",
+          deviceType: "Printer",
+          behaviorTag: "Network Printer",
+          status: "Active"
+        },
+        {
+          macAddress: "DC:A6:32:1F:B9:45",
+          deviceName: "SECURITY-CAM-01",
+          currentIp: "192.168.1.201",
+          vendor: "Hikvision",
+          deviceType: "Security Camera",
+          behaviorTag: "IoT Sensor",
+          status: "Active"
+        }
+      ];
+
+      for (const device of sampleNetworkDevices) {
+        const networkDevice = await this.createNetworkDevice(device);
+        
+        // Create initial IP history
+        await this.createIpHistory({
+          networkDeviceId: networkDevice.id,
+          ipAddress: device.currentIp,
+          leaseType: "DHCP"
+        });
+
+        // Create sample traffic logs
+        await this.generateSampleTrafficLogs(networkDevice.id, device.behaviorTag);
+      }
+    }
+  }
+
+  private async generateSampleTrafficLogs(networkDeviceId: number, behaviorTag: string): Promise<void> {
+    const protocols = ["TCP", "UDP", "ICMP"];
+    const logs: InsertTrafficLog[] = [];
+
+    // Generate traffic based on behavior tag
+    for (let i = 0; i < 20; i++) {
+      const protocol = protocols[Math.floor(Math.random() * protocols.length)];
+      let destinationPort: number | undefined;
+      
+      // Generate realistic ports based on behavior
+      if (behaviorTag === "Linux Admin Device") {
+        destinationPort = [22, 80, 443, 3000][Math.floor(Math.random() * 4)];
+      } else if (behaviorTag === "IoT MQTT Device") {
+        destinationPort = [1883, 8883, 80, 443][Math.floor(Math.random() * 4)];
+      } else if (behaviorTag === "Windows Remote Access") {
+        destinationPort = [3389, 80, 443, 445][Math.floor(Math.random() * 4)];
+      } else {
+        destinationPort = [80, 443, 53, 123][Math.floor(Math.random() * 4)];
+      }
+
+      logs.push({
+        networkDeviceId,
+        protocol,
+        sourcePort: 1024 + Math.floor(Math.random() * 60000),
+        destinationPort,
+        dataSize: Math.floor(Math.random() * 1500) + 64,
+        direction: Math.random() > 0.5 ? "outbound" : "inbound"
+      });
+    }
+
+    for (const log of logs) {
+      await this.createTrafficLog(log);
+    }
+  }
+
   // Initialize sample prohibited software data
   async initSampleProhibitedSoftware(): Promise<void> {
     const existingSoftware = await this.getProhibitedSoftware();

@@ -434,8 +434,9 @@ const Devices = () => {
 
       {/* Tabbed Interface */}
       <Tabs defaultValue="inventory" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="inventory">Device Inventory</TabsTrigger>
+          <TabsTrigger value="discovery">Network Discovery</TabsTrigger>
           <TabsTrigger value="live">Live Devices</TabsTrigger>
           <TabsTrigger value="audit">Audit & Compliance</TabsTrigger>
         </TabsList>

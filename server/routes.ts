@@ -538,6 +538,179 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Network Discovery API endpoints
+  app.get("/api/network-devices", async (req: Request, res: Response) => {
+    try {
+      const devices = await storage.getNetworkDevices();
+      res.json(devices);
+    } catch (error) {
+      console.error('Network devices fetch error:', error);
+      res.status(500).json({ message: "Failed to fetch network devices" });
+    }
+  });
+
+  app.get("/api/network-devices/:id/history", async (req: Request, res: Response) => {
+    try {
+      const deviceId = parseInt(req.params.id);
+      if (isNaN(deviceId)) {
+        return res.status(400).json({ message: "Invalid device ID" });
+      }
+
+      const history = await storage.getIpHistoryByDevice(deviceId);
+      res.json(history);
+    } catch (error) {
+      console.error('IP history fetch error:', error);
+      res.status(500).json({ message: "Failed to fetch IP history" });
+    }
+  });
+
+  app.get("/api/network-devices/:id/traffic", async (req: Request, res: Response) => {
+    try {
+      const deviceId = parseInt(req.params.id);
+      if (isNaN(deviceId)) {
+        return res.status(400).json({ message: "Invalid device ID" });
+      }
+
+      const traffic = await storage.getTrafficLogsByDevice(deviceId);
+      res.json(traffic);
+    } catch (error) {
+      console.error('Traffic logs fetch error:', error);
+      res.status(500).json({ message: "Failed to fetch traffic logs" });
+    }
+  });
+
+  // DHCP Simulation endpoint - simulates dynamic IP assignment
+  app.post("/api/dhcp-update", async (req: Request, res: Response) => {
+    try {
+      const { macAddress, newIp, deviceName, vendor } = req.body;
+      
+      if (!macAddress || !newIp) {
+        return res.status(400).json({ message: "MAC address and new IP are required" });
+      }
+
+      // Check if device exists by MAC
+      let networkDevice = await storage.getNetworkDeviceByMac(macAddress);
+      
+      if (networkDevice) {
+        // Release old IP if different
+        if (networkDevice.currentIp && networkDevice.currentIp !== newIp) {
+          await storage.releaseIpAddress(networkDevice.id, networkDevice.currentIp);
+        }
+        
+        // Update device with new IP
+        networkDevice = await storage.updateNetworkDeviceByMac(macAddress, {
+          currentIp: newIp,
+          deviceName: deviceName || networkDevice.deviceName,
+          vendor: vendor || networkDevice.vendor
+        });
+      } else {
+        // Create new network device
+        networkDevice = await storage.createNetworkDevice({
+          macAddress,
+          deviceName: deviceName || `Unknown-${macAddress.slice(-5)}`,
+          currentIp: newIp,
+          vendor: vendor || "Unknown",
+          deviceType: "Discovered",
+          behaviorTag: "Pending Analysis",
+          status: "Active"
+        });
+      }
+
+      if (networkDevice) {
+        // Add IP to history
+        await storage.createIpHistory({
+          networkDeviceId: networkDevice.id,
+          ipAddress: newIp,
+          leaseType: "DHCP"
+        });
+
+        // Generate some sample traffic for behavior analysis
+        await generateSampleTraffic(networkDevice.id);
+        
+        // Analyze behavior based on traffic
+        const behaviorTag = await storage.analyzeTrafficBehavior(networkDevice.id);
+        if (behaviorTag !== networkDevice.behaviorTag) {
+          await storage.updateNetworkDevice(networkDevice.id, { behaviorTag });
+        }
+      }
+
+      res.json({ 
+        message: "DHCP update processed", 
+        device: networkDevice,
+        ipChanged: true
+      });
+    } catch (error) {
+      console.error('DHCP update error:', error);
+      res.status(500).json({ message: "Failed to process DHCP update" });
+    }
+  });
+
+  // Helper function to generate sample traffic for new devices
+  async function generateSampleTraffic(networkDeviceId: number): Promise<void> {
+    const protocols = ["TCP", "UDP", "ICMP"];
+    const commonPorts = [80, 443, 22, 53, 123, 1883, 3389];
+    
+    for (let i = 0; i < 5; i++) {
+      await storage.createTrafficLog({
+        networkDeviceId,
+        protocol: protocols[Math.floor(Math.random() * protocols.length)],
+        sourcePort: 1024 + Math.floor(Math.random() * 60000),
+        destinationPort: commonPorts[Math.floor(Math.random() * commonPorts.length)],
+        dataSize: Math.floor(Math.random() * 1500) + 64,
+        direction: Math.random() > 0.5 ? "outbound" : "inbound"
+      });
+    }
+  }
+
+  // Start DHCP simulation background process
+  startDhcpSimulation();
+
+  function startDhcpSimulation(): void {
+    // Simulate DHCP updates every 10 seconds
+    setInterval(async () => {
+      try {
+        const devices = await storage.getNetworkDevices();
+        
+        // Randomly select 1-2 devices to update IPs
+        const devicesToUpdate = devices
+          .filter(d => d.status === "Active")
+          .sort(() => Math.random() - 0.5)
+          .slice(0, Math.random() > 0.7 ? 2 : 1);
+
+        for (const device of devicesToUpdate) {
+          // Generate new IP in same subnet
+          const baseIp = device.currentIp?.split('.').slice(0, 3).join('.') || "192.168.1";
+          const newIp = `${baseIp}.${Math.floor(Math.random() * 200) + 20}`;
+          
+          // Only update if IP actually changed
+          if (newIp !== device.currentIp) {
+            // Release old IP
+            if (device.currentIp) {
+              await storage.releaseIpAddress(device.id, device.currentIp);
+            }
+            
+            // Update device with new IP
+            await storage.updateNetworkDevice(device.id, { currentIp: newIp });
+            
+            // Add to IP history
+            await storage.createIpHistory({
+              networkDeviceId: device.id,
+              ipAddress: newIp,
+              leaseType: "DHCP"
+            });
+
+            // Generate some traffic for the updated device
+            await generateSampleTraffic(device.id);
+            
+            console.log(`DHCP: Updated ${device.deviceName} (${device.macAddress}) from ${device.currentIp} to ${newIp}`);
+          }
+        }
+      } catch (error) {
+        console.error('DHCP simulation error:', error);
+      }
+    }, 10000); // Every 10 seconds
+  }
+
   const httpServer = createServer(app);
 
   return httpServer;

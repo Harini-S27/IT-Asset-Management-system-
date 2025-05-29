@@ -43,6 +43,7 @@ app.use((req, res, next) => {
     // Initialize sample data in the database
     await storage.initSampleDevices();
     await storage.initSampleProhibitedSoftware();
+    await storage.initNetworkDiscovery();
     console.log("Database initialized with sample data");
   } catch (err) {
     console.error("Error initializing database:", err);
