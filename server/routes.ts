@@ -341,39 +341,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Device not found" });
       }
 
-      // Simulate finding some prohibited software randomly
-      const detectedSoftware = prohibitedSoftwareList.filter(() => Math.random() > 0.7);
-      
-      // Create scan result
-      const scanResult = await storage.createSoftwareScanResult({
-        deviceId,
-        totalSoftwareFound: Math.floor(Math.random() * 50) + 20,
-        prohibitedSoftwareCount: detectedSoftware.length,
-        scanStatus: "Completed",
-        scanDuration: Math.floor(Math.random() * 60) + 30
-      });
-
-      // Create detection logs for found software
-      for (const software of detectedSoftware) {
-        await storage.createSoftwareDetectionLog({
+      // Initialize prohibited software if empty
+      if (prohibitedSoftwareList.length === 0) {
+        await storage.initSampleProhibitedSoftware();
+        const refreshedList = await storage.getProhibitedSoftware();
+        
+        // Simulate realistic detection based on device type and location
+        const detectionProbability = getDetectionProbability(device);
+        const detectedSoftware = refreshedList.filter(() => Math.random() < detectionProbability);
+        
+        // Create scan result
+        const scanResult = await storage.createSoftwareScanResult({
           deviceId,
-          prohibitedSoftwareId: software.id,
-          detectedVersion: "1.0.0",
-          actionTaken: software.blockExecution ? "Blocked" : "Flagged",
-          status: "Active",
-          notes: `Detected during automated scan on ${device.name}`
+          totalSoftwareFound: Math.floor(Math.random() * 50) + 20,
+          prohibitedSoftwareCount: detectedSoftware.length,
+          scanStatus: "Completed",
+          scanDuration: Math.floor(Math.random() * 60) + 30
+        });
+
+        // Create detection logs for found software
+        for (const software of detectedSoftware) {
+          await storage.createSoftwareDetectionLog({
+            deviceId,
+            prohibitedSoftwareId: software.id,
+            detectedVersion: getRandomVersion(),
+            actionTaken: software.blockExecution ? "Blocked" : "Flagged",
+            status: "Active",
+            notes: `Detected during automated scan on ${device.name} - ${software.category} software found`
+          });
+        }
+
+        res.json({ 
+          message: "Scan completed successfully", 
+          scanResult,
+          detectedCount: detectedSoftware.length 
+        });
+      } else {
+        // Use existing prohibited software list
+        const detectionProbability = getDetectionProbability(device);
+        const detectedSoftware = prohibitedSoftwareList.filter(() => Math.random() < detectionProbability);
+        
+        // Create scan result
+        const scanResult = await storage.createSoftwareScanResult({
+          deviceId,
+          totalSoftwareFound: Math.floor(Math.random() * 50) + 20,
+          prohibitedSoftwareCount: detectedSoftware.length,
+          scanStatus: "Completed",
+          scanDuration: Math.floor(Math.random() * 60) + 30
+        });
+
+        // Create detection logs for found software
+        for (const software of detectedSoftware) {
+          await storage.createSoftwareDetectionLog({
+            deviceId,
+            prohibitedSoftwareId: software.id,
+            detectedVersion: getRandomVersion(),
+            actionTaken: software.blockExecution ? "Blocked" : "Flagged",
+            status: "Active",
+            notes: `Detected during automated scan on ${device.name} - ${software.category} software found`
+          });
+        }
+
+        res.json({ 
+          message: "Scan completed successfully", 
+          scanResult,
+          detectedCount: detectedSoftware.length 
         });
       }
-
-      res.json({ 
-        message: "Scan completed successfully", 
-        scanResult,
-        detectedCount: detectedSoftware.length 
-      });
     } catch (error) {
+      console.error('Scan device error:', error);
       res.status(500).json({ message: "Failed to scan device" });
     }
   });
+
+  // Helper function to determine detection probability based on device characteristics
+  function getDetectionProbability(device: any): number {
+    let baseProbability = 0.3; // 30% base chance
+    
+    // Workstations more likely to have prohibited software
+    if (device.type === 'Workstation') {
+      baseProbability += 0.2;
+    }
+    
+    // Certain locations might have higher risk
+    if (device.location?.includes('Office') || device.location?.includes('Remote')) {
+      baseProbability += 0.15;
+    }
+    
+    return Math.min(baseProbability, 0.7); // Cap at 70%
+  }
+
+  // Helper function to generate random software versions
+  function getRandomVersion(): string {
+    const major = Math.floor(Math.random() * 5) + 1;
+    const minor = Math.floor(Math.random() * 10);
+    const patch = Math.floor(Math.random() * 10);
+    return `${major}.${minor}.${patch}`;
+  }
 
   const httpServer = createServer(app);
 

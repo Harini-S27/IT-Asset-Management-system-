@@ -82,13 +82,52 @@ const EditDeviceDialog = ({ device, open, onOpenChange }: EditDeviceDialogProps)
       const response = await apiRequest("PATCH", `/api/devices/${device.id}`, data);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: async (updatedDevice, variables) => {
       toast({
         title: "Device updated",
         description: "The device has been updated successfully.",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/devices'] });
       onOpenChange(false);
+
+      // Check if device status changed to Active and trigger automatic scan
+      const wasInactive = device?.status !== 'Active';
+      const isNowActive = variables.status === 'Active';
+      
+      if (wasInactive && isNowActive) {
+        toast({
+          title: "Device activated",
+          description: "Scanning for prohibited software...",
+        });
+
+        // Trigger automatic scan for newly activated device
+        try {
+          await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate detection delay
+          const scanResponse = await fetch(`/api/scan-device/${device?.id}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (scanResponse.ok) {
+            const scanResult = await scanResponse.json();
+            
+            // Invalidate queries to update dashboard
+            queryClient.invalidateQueries({ queryKey: ['/api/detection-logs'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/prohibited-software-summary'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/scan-results'] });
+
+            toast({
+              title: "Activation scan completed",
+              description: `Found ${scanResult.detectedCount} prohibited software instances`,
+              variant: scanResult.detectedCount > 0 ? "destructive" : "default",
+            });
+          }
+        } catch (error) {
+          console.error('Activation scan failed:', error);
+        }
+      }
     },
     onError: (error) => {
       toast({

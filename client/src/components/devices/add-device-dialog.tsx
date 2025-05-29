@@ -59,7 +59,7 @@ const AddDeviceDialog = ({ open, onOpenChange }: AddDeviceDialogProps) => {
       const response = await apiRequest("POST", "/api/devices", data);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: async (newDevice) => {
       toast({
         title: "Device added",
         description: "The device has been added successfully.",
@@ -67,6 +67,42 @@ const AddDeviceDialog = ({ open, onOpenChange }: AddDeviceDialogProps) => {
       queryClient.invalidateQueries({ queryKey: ['/api/devices'] });
       onOpenChange(false);
       form.reset();
+
+      // Trigger automatic scan if device is active
+      if (newDevice.status === 'Active') {
+        toast({
+          title: "Device recognized",
+          description: "Scanning for prohibited software...",
+        });
+
+        // Trigger automatic scan
+        try {
+          await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate detection delay
+          const scanResponse = await fetch(`/api/scan-device/${newDevice.id}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (scanResponse.ok) {
+            const scanResult = await scanResponse.json();
+            
+            // Invalidate queries to update dashboard
+            queryClient.invalidateQueries({ queryKey: ['/api/detection-logs'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/prohibited-software-summary'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/scan-results'] });
+
+            toast({
+              title: "Automatic scan completed",
+              description: `Found ${scanResult.detectedCount} prohibited software instances`,
+              variant: scanResult.detectedCount > 0 ? "destructive" : "default",
+            });
+          }
+        } catch (error) {
+          console.error('Automatic scan failed:', error);
+        }
+      }
     },
     onError: (error) => {
       toast({
