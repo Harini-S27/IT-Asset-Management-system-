@@ -41,6 +41,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Helper function to perform automatic scan
+  const performAutomaticScan = async (device: any) => {
+    try {
+      // Get prohibited software list
+      const prohibitedSoftwareList = await storage.getProhibitedSoftware();
+      
+      // Simulate finding some prohibited software randomly
+      const detectedSoftware = prohibitedSoftwareList.filter(() => Math.random() > 0.6);
+      
+      // Create scan result
+      await storage.createSoftwareScanResult({
+        deviceId: device.id,
+        totalSoftwareFound: Math.floor(Math.random() * 50) + 20,
+        prohibitedSoftwareCount: detectedSoftware.length,
+        scanStatus: "Completed",
+        scanDuration: Math.floor(Math.random() * 60) + 30
+      });
+
+      // Create detection logs for found software
+      for (const software of detectedSoftware) {
+        await storage.createSoftwareDetectionLog({
+          deviceId: device.id,
+          prohibitedSoftwareId: software.id,
+          detectedVersion: "1.0.0",
+          actionTaken: software.blockExecution ? "Blocked" : "Flagged",
+          status: "Active",
+          notes: `Auto-detected during device registration: ${device.name}`
+        });
+      }
+
+      return detectedSoftware.length;
+    } catch (error) {
+      console.error("Auto-scan failed:", error);
+      return 0;
+    }
+  };
+
   // Create a new device
   app.post("/api/devices", async (req: Request, res: Response) => {
     try {
@@ -54,7 +91,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const newDevice = await storage.createDevice(result.data);
-      res.status(201).json(newDevice);
+      
+      // Auto-scan for prohibited software when device is added
+      let autoScanResults = 0;
+      if (newDevice.status === 'Active') {
+        autoScanResults = await performAutomaticScan(newDevice);
+      }
+      
+      res.status(201).json({
+        ...newDevice,
+        autoScanTriggered: newDevice.status === 'Active',
+        threatsDetected: autoScanResults
+      });
     } catch (error) {
       res.status(500).json({ message: "Failed to create device" });
     }

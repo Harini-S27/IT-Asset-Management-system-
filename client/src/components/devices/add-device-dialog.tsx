@@ -54,12 +54,50 @@ const AddDeviceDialog = ({ open, onOpenChange }: AddDeviceDialogProps) => {
     },
   });
 
+  // Automatic scan function
+  const triggerAutoScan = async (deviceId: number, deviceName: string) => {
+    // Show scanning notification
+    toast({
+      title: "Device recognized",
+      description: "Scanning for prohibited software...",
+    });
+
+    try {
+      // Wait for a brief moment to simulate network detection
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const response = await fetch(`/api/scan-device/${deviceId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Update queries to refresh dashboard data
+        queryClient.invalidateQueries({ queryKey: ['/api/detection-logs'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/prohibited-software-summary'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/scan-results'] });
+        
+        // Show scan results
+        toast({
+          title: "Automatic scan completed",
+          description: `Found ${result.detectedCount} prohibited software instances on ${deviceName}`,
+        });
+      }
+    } catch (error) {
+      console.error('Auto-scan failed:', error);
+    }
+  };
+
   const { mutate, isPending } = useMutation({
     mutationFn: async (data: any) => {
       const response = await apiRequest("POST", "/api/devices", data);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (newDevice) => {
       toast({
         title: "Device added",
         description: "The device has been added successfully.",
@@ -67,6 +105,11 @@ const AddDeviceDialog = ({ open, onOpenChange }: AddDeviceDialogProps) => {
       queryClient.invalidateQueries({ queryKey: ['/api/devices'] });
       onOpenChange(false);
       form.reset();
+      
+      // Trigger automatic scan if device is Active
+      if (newDevice.status === 'Active') {
+        triggerAutoScan(newDevice.id, newDevice.name);
+      }
     },
     onError: (error) => {
       toast({
