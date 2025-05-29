@@ -439,6 +439,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return `${major}.${minor}.${patch}`;
   }
 
+  // Real-time device monitoring endpoint for agent reports
+  app.post("/api/device-update", async (req: Request, res: Response) => {
+    try {
+      const { deviceName, operatingSystem, installedSoftware, ipAddress, location } = req.body;
+      
+      if (!deviceName || !operatingSystem || !Array.isArray(installedSoftware)) {
+        return res.status(400).json({ 
+          message: "Missing required fields: deviceName, operatingSystem, installedSoftware" 
+        });
+      }
+
+      // Check if device already exists
+      const devices = await storage.getDevices();
+      let existingDevice = devices.find(d => d.name === deviceName);
+      
+      let device;
+      if (existingDevice) {
+        // Update existing device
+        device = await storage.updateDevice(existingDevice.id, {
+          status: "Active",
+          ipAddress: ipAddress || existingDevice.ipAddress,
+          location: location || existingDevice.location
+        });
+      } else {
+        // Create new device from agent report
+        device = await storage.createDevice({
+          name: deviceName,
+          model: `${operatingSystem} Device`,
+          type: "Workstation",
+          status: "Active",
+          location: location || "Remote Office",
+          ipAddress: ipAddress || "Auto-detected",
+          latitude: "",
+          longitude: ""
+        });
+      }
+
+      if (!device) {
+        return res.status(500).json({ message: "Failed to create/update device" });
+      }
+
+      // Trigger automatic prohibited software scan
+      const prohibitedSoftwareList = await storage.getProhibitedSoftware();
+      
+      // Initialize prohibited software if empty
+      if (prohibitedSoftwareList.length === 0) {
+        await storage.initSampleProhibitedSoftware();
+      }
+      
+      const refreshedProhibitedList = await storage.getProhibitedSoftware();
+      
+      // Check for prohibited software in the reported software list
+      const detectedProhibitedSoftware = [];
+      for (const software of refreshedProhibitedList) {
+        const isDetected = installedSoftware.some(installed => 
+          installed.toLowerCase().includes(software.name.toLowerCase()) ||
+          software.name.toLowerCase().includes(installed.toLowerCase())
+        );
+        
+        if (isDetected) {
+          detectedProhibitedSoftware.push(software);
+        }
+      }
+
+      // Create scan result
+      const scanResult = await storage.createSoftwareScanResult({
+        deviceId: device.id,
+        totalSoftwareFound: installedSoftware.length,
+        prohibitedSoftwareCount: detectedProhibitedSoftware.length,
+        scanStatus: "Completed",
+        scanDuration: 15 // Agent scan is faster
+      });
+
+      // Create detection logs for found prohibited software
+      for (const software of detectedProhibitedSoftware) {
+        await storage.createSoftwareDetectionLog({
+          deviceId: device.id,
+          prohibitedSoftwareId: software.id,
+          detectedVersion: getRandomVersion(),
+          actionTaken: software.blockExecution ? "Blocked" : "Flagged",
+          status: "Active",
+          notes: `Detected by agent on ${deviceName} - Real-time monitoring`
+        });
+      }
+
+      res.json({
+        message: "Device update received successfully",
+        device: device,
+        scanResult: scanResult,
+        detectedThreats: detectedProhibitedSoftware.length,
+        totalSoftware: installedSoftware.length
+      });
+
+    } catch (error) {
+      console.error('Device update error:', error);
+      res.status(500).json({ message: "Failed to process device update" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

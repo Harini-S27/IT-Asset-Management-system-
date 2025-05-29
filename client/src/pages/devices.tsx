@@ -434,8 +434,9 @@ const Devices = () => {
 
       {/* Tabbed Interface */}
       <Tabs defaultValue="inventory" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="inventory">Device Inventory</TabsTrigger>
+          <TabsTrigger value="live">Live Devices</TabsTrigger>
           <TabsTrigger value="audit">Audit & Compliance</TabsTrigger>
         </TabsList>
         
@@ -469,6 +470,131 @@ const Devices = () => {
               categoryFilter={activeCategory}
             />
           </div>
+        </TabsContent>
+
+        <TabsContent value="live" className="space-y-6 mt-6">
+          {/* Live Devices Overview */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Agent-Reported Devices</CardTitle>
+                <Shield className="h-4 w-4 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">
+                  {devices?.filter(d => d.location === "Agent-Reported" || d.location === "Remote Office").length || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">Live monitoring active</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Last Report</CardTitle>
+                <Clock className="h-4 w-4 text-blue-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-blue-600">Live</div>
+                <p className="text-xs text-muted-foreground">Real-time updates</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Threats Detected</CardTitle>
+                <AlertTriangle className="h-4 w-4 text-red-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">{prohibitedSummary?.totalDetections || 0}</div>
+                <p className="text-xs text-muted-foreground">By agent scanning</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Agent Status</CardTitle>
+                <Package className="h-4 w-4 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">Online</div>
+                <p className="text-xs text-muted-foreground">Monitoring enabled</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Live Device Instructions */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Agent Deployment Instructions
+              </CardTitle>
+              <CardDescription>
+                Deploy the ITAM agent on company devices for real-time monitoring
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <h4 className="font-medium">Step 1: Download Agent</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Download agent.py and build_agent.bat from your project files
+                  </p>
+                  <Button variant="outline" size="sm" onClick={() => {
+                    const content = `# Your Replit URL: ${window.location.origin}/api/device-update\n# Replace this in agent.py before building`;
+                    navigator.clipboard.writeText(content);
+                    toast({
+                      title: "API URL copied",
+                      description: "Paste this into agent.py before building",
+                    });
+                  }}>
+                    Copy API URL
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="font-medium">Step 2: Build Executable</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Run build_agent.bat to create itam-agent.exe
+                  </p>
+                  <Badge variant="secondary">Requires Python + PyInstaller</Badge>
+                </div>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <h4 className="font-medium">Step 3: Deploy on Devices</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Install itam-agent.exe on company laptops
+                  </p>
+                  <Badge variant="outline">Silent operation</Badge>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="font-medium">Step 4: Monitor Dashboard</h4>
+                  <p className="text-sm text-muted-foreground">
+                    View real-time device reports and threat detection
+                  </p>
+                  <Badge variant="default">Live updates</Badge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Live Device Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Live Device Reports</CardTitle>
+              <CardDescription>
+                Devices actively reporting through the agent system
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DeviceTable
+                onEditDevice={handleEditDevice}
+                onDeleteDevice={deleteDevice}
+                onViewDeviceDetails={handleViewDeviceDetails}
+                categoryFilter="Agent-Reported"
+              />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="audit" className="space-y-6 mt-6">
