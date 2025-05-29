@@ -1,6 +1,27 @@
 import React, { useState, useRef } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Plus, Download, FileSpreadsheet, FileText, FileDown, ChevronDown } from "lucide-react";
+import { 
+  Plus, 
+  Download, 
+  FileSpreadsheet, 
+  FileText, 
+  FileDown, 
+  ChevronDown,
+  Shield,
+  Package,
+  FileCheck,
+  Clock,
+  AlertTriangle
+} from "lucide-react";
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer
+} from "recharts";
 import { Button } from "@/components/ui/button";
 import { Device } from "@shared/schema";
 import DeviceTable from "@/components/devices/device-table";
@@ -10,6 +31,9 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, getQueryFn } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +50,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+interface ProhibitedSoftwareSummary {
+  totalProhibitedSoftware: number;
+  totalDetections: number;
+  activeThreats: number;
+  devicesAffected: number;
+}
+
 const Devices = () => {
   const { toast } = useToast();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -40,6 +71,11 @@ const Devices = () => {
   const { data: devices = [] } = useQuery({
     queryKey: ['/api/devices'],
     queryFn: getQueryFn<Device[]>({ on401: "throw" })
+  });
+
+  // Fetch prohibited software summary for audit dashboard
+  const { data: prohibitedSummary } = useQuery<ProhibitedSoftwareSummary>({
+    queryKey: ['/api/prohibited-software-summary'],
   });
 
   // Handle edit device
@@ -290,11 +326,59 @@ const Devices = () => {
     document.body.removeChild(link);
   };
 
+  // Audit and compliance data
+  const auditSummaryData = [
+    { status: 'Succeeded', count: 145 },
+    { status: 'Failed', count: 23 },
+    { status: 'Not Scanned', count: 67 },
+    { status: 'In Progress', count: 12 },
+  ];
+
+  const osSummaryData = [
+    { os: 'Windows 10', count: 89 },
+    { os: 'Windows 11', count: 67 },
+    { os: 'Windows Server', count: 34 },
+    { os: 'Ubuntu', count: 28 },
+    { os: 'macOS', count: 15 },
+    { os: 'Windows 7', count: 8 },
+    { os: 'Windows XP', count: 6 },
+  ];
+
+  const softwareSummary = {
+    totalSoftware: 1247,
+    commercialSoftware: 892,
+    nonCommercialSoftware: 355,
+    prohibitedSoftware: prohibitedSummary?.totalProhibitedSoftware || 8,
+  };
+
+  const complianceSummary = {
+    licenseInCompliance: 734,
+    overLicensed: 89,
+    underLicensed: 45,
+    expiredLicense: 24,
+  };
+
+  const warrantySummary = {
+    warrantyInCompliance: 186,
+    expiredWarranty: 43,
+    unidentified: 18,
+  };
+
+  const prohibitedSoftwareData = {
+    detected: prohibitedSummary?.totalDetections || 12,
+    blocked: 8,
+    recentActions: [
+      { software: 'BitTorrent Client', action: 'Blocked', device: 'WS-001-DEV', time: '2 hours ago' },
+      { software: 'Cryptocurrency Miner', action: 'Uninstalled', device: 'LT-045-MKT', time: '4 hours ago' },
+      { software: 'TeamViewer Personal', action: 'Flagged', device: 'WS-012-FIN', time: '6 hours ago' },
+    ]
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Device Inventory</h1>
+          <h1 className="text-2xl font-bold">Device Management</h1>
           <p className="text-gray-500">Manage and monitor your organization's IT assets</p>
         </div>
         <div className="flex items-center space-x-3">
@@ -348,42 +432,288 @@ const Devices = () => {
         </div>
       </div>
 
-      {/* View selector tabs */}
-      <div className="border-b border-gray-200 mb-6">
-        <nav className="-mb-px flex space-x-6">
-          {['All', 'Workstations', 'Servers', 'Network Devices', 'Mobile Devices'].map((category) => (
-            <button
-              key={category}
-              onClick={() => setActiveCategory(category)}
-              className={cn(
-                "border-b-2 py-3 px-1 font-medium text-sm transition-colors",
-                activeCategory === category 
-                  ? "border-[#4299E1] text-[#4299E1]" 
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              )}
-            >
-              {category}
-            </button>
-          ))}
-        </nav>
-      </div>
+      {/* Tabbed Interface */}
+      <Tabs defaultValue="inventory" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="inventory">Device Inventory</TabsTrigger>
+          <TabsTrigger value="audit">Audit & Compliance</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="inventory" className="space-y-6 mt-6">
+          {/* View selector tabs */}
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px flex space-x-6">
+              {['All', 'Workstations', 'Servers', 'Network Devices', 'Mobile Devices'].map((category) => (
+                <button
+                  key={category}
+                  onClick={() => setActiveCategory(category)}
+                  className={cn(
+                    "border-b-2 py-3 px-1 font-medium text-sm transition-colors",
+                    activeCategory === category 
+                      ? "border-[#4299E1] text-[#4299E1]" 
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  )}
+                >
+                  {category}
+                </button>
+              ))}
+            </nav>
+          </div>
 
-      {/* Search and filter bar */}
-      <div className="bg-white rounded-lg shadow-sm mb-6 p-4 flex items-center justify-between">
-        <div className="w-96">
-          {/* Search input is in the DeviceTable component */}
-        </div>
-      </div>
+          {/* Device table */}
+          <div className="bg-white rounded-lg shadow-sm">
+            <DeviceTable 
+              onEditDevice={handleEditDevice}
+              onDeleteDevice={handleDeleteIntent}
+              onViewDeviceDetails={handleViewDeviceDetails}
+              categoryFilter={activeCategory}
+            />
+          </div>
+        </TabsContent>
 
-      {/* Device table */}
-      <div className="bg-white rounded-lg shadow-sm mb-6">
-        <DeviceTable 
-          onEditDevice={handleEditDevice}
-          onDeleteDevice={handleDeleteIntent}
-          onViewDeviceDetails={handleViewDeviceDetails}
-          categoryFilter={activeCategory}
-        />
-      </div>
+        <TabsContent value="audit" className="space-y-6 mt-6">
+          {/* Overview Cards */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Computers</CardTitle>
+                <Shield className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">247</div>
+                <p className="text-xs text-muted-foreground">Managed devices</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Audit Success Rate</CardTitle>
+                <FileCheck className="h-4 w-4 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">89%</div>
+                <p className="text-xs text-muted-foreground">Successfully audited</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Security Threats</CardTitle>
+                <AlertTriangle className="h-4 w-4 text-red-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">{prohibitedSummary?.activeThreats || 3}</div>
+                <p className="text-xs text-muted-foreground">Active threats detected</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Compliance Score</CardTitle>
+                <Shield className="h-4 w-4 text-blue-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-blue-600">94%</div>
+                <p className="text-xs text-muted-foreground">Overall compliance</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Charts Section */}
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Computer Audit Summary</CardTitle>
+                <CardDescription>Scan status across all managed computers</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={auditSummaryData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="status" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="count" fill="#3b82f6" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Computers by Operating System</CardTitle>
+                <CardDescription>Operating system distribution across the network</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={osSummaryData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="os" angle={-45} textAnchor="end" height={80} />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="count" fill="#06b6d4" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Summary Tables Section */}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Package className="h-5 w-5 mr-2 text-blue-600" />
+                  Software Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Total Software</span>
+                  <Badge variant="outline">{softwareSummary.totalSoftware}</Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Commercial Software</span>
+                  <Badge className="bg-green-100 text-green-800">{softwareSummary.commercialSoftware}</Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Non-Commercial Software</span>
+                  <Badge className="bg-blue-100 text-blue-800">{softwareSummary.nonCommercialSoftware}</Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Prohibited Software</span>
+                  <Badge className="bg-red-100 text-red-800">{softwareSummary.prohibitedSoftware}</Badge>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <FileCheck className="h-5 w-5 mr-2 text-green-600" />
+                  License Compliance
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">In Compliance</span>
+                  <Badge className="bg-green-100 text-green-800">{complianceSummary.licenseInCompliance}</Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Over Licensed</span>
+                  <Badge className="bg-yellow-100 text-yellow-800">{complianceSummary.overLicensed}</Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Under Licensed</span>
+                  <Badge className="bg-orange-100 text-orange-800">{complianceSummary.underLicensed}</Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Expired License</span>
+                  <Badge className="bg-red-100 text-red-800">{complianceSummary.expiredLicense}</Badge>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Clock className="h-5 w-5 mr-2 text-purple-600" />
+                  Warranty Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">In Compliance</span>
+                  <Badge className="bg-green-100 text-green-800">{warrantySummary.warrantyInCompliance}</Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Expired Warranty</span>
+                  <Badge className="bg-red-100 text-red-800">{warrantySummary.expiredWarranty}</Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Unidentified</span>
+                  <Badge className="bg-gray-100 text-gray-800">{warrantySummary.unidentified}</Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Total Devices</span>
+                  <Badge variant="outline">{warrantySummary.warrantyInCompliance + warrantySummary.expiredWarranty + warrantySummary.unidentified}</Badge>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Shield className="h-5 w-5 mr-2 text-red-600" />
+                  Security Threats
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Threats Detected</span>
+                  <Badge className="bg-red-100 text-red-800">{prohibitedSoftwareData.detected}</Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Threats Blocked</span>
+                  <Badge className="bg-orange-100 text-orange-800">{prohibitedSoftwareData.blocked}</Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Devices Affected</span>
+                  <Badge className="bg-yellow-100 text-yellow-800">{prohibitedSummary?.devicesAffected || 4}</Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Active Threats</span>
+                  <Badge className="bg-red-100 text-red-800">{prohibitedSummary?.activeThreats || 3}</Badge>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Recent Security Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <AlertTriangle className="h-5 w-5 mr-2 text-orange-600" />
+                Recent Security Actions
+              </CardTitle>
+              <CardDescription>Latest prohibited software detections and actions taken</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {prohibitedSoftwareData.recentActions.map((action, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className="flex-shrink-0">
+                        <Shield className="h-4 w-4 text-red-600" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium">{action.software}</div>
+                        <div className="text-xs text-gray-500">Device: {action.device}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <Badge 
+                        className={
+                          action.action === 'Blocked' ? 'bg-red-100 text-red-800' :
+                          action.action === 'Uninstalled' ? 'bg-orange-100 text-orange-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }
+                      >
+                        {action.action}
+                      </Badge>
+                      <div className="text-xs text-gray-500 mt-1">{action.time}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Add device dialog */}
       <AddDeviceDialog 
