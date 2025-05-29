@@ -83,7 +83,7 @@ export function EditProhibitedSoftwareDialog({
   const updateMutation = useMutation({
     mutationFn: async (data: InsertProhibitedSoftware) => {
       if (!software) return;
-      const response = await apiRequest(`/api/prohibited-software/${software.id}`, {
+      const response = await fetch(`/api/prohibited-software/${software.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),

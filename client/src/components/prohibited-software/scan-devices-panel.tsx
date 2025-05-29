@@ -23,8 +23,11 @@ export function ScanDevicesPanel() {
   // Scan device mutation
   const scanMutation = useMutation({
     mutationFn: async (deviceId: number) => {
-      const response = await apiRequest(`/api/scan-device/${deviceId}`, {
+      const response = await fetch(`/api/scan-device/${deviceId}`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
       if (!response.ok) {
         throw new Error('Failed to scan device');

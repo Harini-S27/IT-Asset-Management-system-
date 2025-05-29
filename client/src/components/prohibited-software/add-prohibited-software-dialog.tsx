@@ -60,7 +60,7 @@ export function AddProhibitedSoftwareDialog({ open, onOpenChange }: AddProhibite
 
   const createMutation = useMutation({
     mutationFn: async (data: InsertProhibitedSoftware) => {
-      const response = await apiRequest("/api/prohibited-software", {
+      const response = await fetch("/api/prohibited-software", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),

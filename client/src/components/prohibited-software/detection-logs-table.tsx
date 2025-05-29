@@ -39,7 +39,7 @@ export function DetectionLogsTable() {
   // Update status mutation
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
-      const response = await apiRequest(`/api/detection-logs/${id}/status`, {
+      const response = await fetch(`/api/detection-logs/${id}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
