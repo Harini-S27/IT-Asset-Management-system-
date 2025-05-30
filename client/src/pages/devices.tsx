@@ -28,8 +28,6 @@ import DeviceTable from "@/components/devices/device-table";
 import AddDeviceDialog from "@/components/devices/add-device-dialog";
 import EditDeviceDialog from "@/components/devices/edit-device-dialog";
 import NetworkDiscoveryTable from "@/components/network/network-discovery-table";
-import BlockedWebsitesTable from "@/components/website-blocking/blocked-websites-table";
-import BlockWebsiteDialog from "@/components/website-blocking/block-website-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, getQueryFn } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
@@ -437,10 +435,9 @@ const Devices = () => {
 
       {/* Tabbed Interface */}
       <Tabs defaultValue="inventory" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="inventory">Device Inventory</TabsTrigger>
           <TabsTrigger value="discovery">Network Discovery</TabsTrigger>
-          <TabsTrigger value="blocking">Website Blocking</TabsTrigger>
           <TabsTrigger value="live">Live Devices</TabsTrigger>
           <TabsTrigger value="audit">Audit & Compliance</TabsTrigger>
         </TabsList>
@@ -479,18 +476,6 @@ const Devices = () => {
 
         <TabsContent value="discovery" className="space-y-6 mt-6">
           <NetworkDiscoveryTable />
-        </TabsContent>
-
-        <TabsContent value="blocking" className="space-y-6 mt-6">
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-semibold">Website Blocking</h2>
-                <p className="text-gray-600">Manage network-level website blocks for devices</p>
-              </div>
-            </div>
-            <BlockedWebsitesTable />
-          </div>
         </TabsContent>
 
         <TabsContent value="live" className="space-y-6 mt-6">
