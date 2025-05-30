@@ -22,7 +22,13 @@ import {
   type InsertIpHistory,
   trafficLogs,
   type TrafficLog,
-  type InsertTrafficLog
+  type InsertTrafficLog,
+  websiteBlocks,
+  type WebsiteBlock,
+  type InsertWebsiteBlock,
+  blockingHistory,
+  type BlockingHistory,
+  type InsertBlockingHistory
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -83,6 +89,18 @@ export interface IStorage {
   getTrafficLogsByDevice(networkDeviceId: number): Promise<TrafficLog[]>;
   createTrafficLog(log: InsertTrafficLog): Promise<TrafficLog>;
   analyzeTrafficBehavior(networkDeviceId: number): Promise<string>;
+
+  // Website Blocking operations
+  getWebsiteBlocks(): Promise<WebsiteBlock[]>;
+  getWebsiteBlocksByDevice(deviceId: number): Promise<WebsiteBlock[]>;
+  getWebsiteBlocksByNetworkDevice(networkDeviceId: number): Promise<WebsiteBlock[]>;
+  createWebsiteBlock(block: InsertWebsiteBlock): Promise<WebsiteBlock>;
+  updateWebsiteBlockStatus(id: number, status: string, errorMessage?: string, firewallRule?: string): Promise<WebsiteBlock | undefined>;
+  removeWebsiteBlock(id: number, performedBy: string): Promise<boolean>;
+  
+  // Blocking History operations
+  getBlockingHistory(websiteBlockId: number): Promise<BlockingHistory[]>;
+  createBlockingHistoryEntry(entry: InsertBlockingHistory): Promise<BlockingHistory>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -626,6 +644,100 @@ export class DatabaseStorage implements IStorage {
     for (const log of logs) {
       await this.createTrafficLog(log);
     }
+  }
+
+  // Website Blocking operations
+  async getWebsiteBlocks(): Promise<WebsiteBlock[]> {
+    return await db.select().from(websiteBlocks).orderBy(desc(websiteBlocks.createdAt));
+  }
+
+  async getWebsiteBlocksByDevice(deviceId: number): Promise<WebsiteBlock[]> {
+    return await db.select().from(websiteBlocks)
+      .where(eq(websiteBlocks.deviceId, deviceId))
+      .orderBy(desc(websiteBlocks.createdAt));
+  }
+
+  async getWebsiteBlocksByNetworkDevice(networkDeviceId: number): Promise<WebsiteBlock[]> {
+    return await db.select().from(websiteBlocks)
+      .where(eq(websiteBlocks.networkDeviceId, networkDeviceId))
+      .orderBy(desc(websiteBlocks.createdAt));
+  }
+
+  async createWebsiteBlock(insertBlock: InsertWebsiteBlock): Promise<WebsiteBlock> {
+    const [block] = await db.insert(websiteBlocks).values(insertBlock).returning();
+    
+    // Create history entry
+    await this.createBlockingHistoryEntry({
+      websiteBlockId: block.id,
+      action: "created",
+      details: `Block request created for ${block.targetDomain}`,
+      performedBy: block.createdBy
+    });
+
+    return block;
+  }
+
+  async updateWebsiteBlockStatus(id: number, status: string, errorMessage?: string, firewallRule?: string): Promise<WebsiteBlock | undefined> {
+    const updateData: any = { status };
+    
+    if (status === "active") {
+      updateData.activatedAt = new Date();
+    }
+    if (errorMessage) {
+      updateData.errorMessage = errorMessage;
+    }
+    if (firewallRule) {
+      updateData.firewallRule = firewallRule;
+    }
+
+    const [block] = await db.update(websiteBlocks)
+      .set(updateData)
+      .where(eq(websiteBlocks.id, id))
+      .returning();
+
+    if (block) {
+      // Create history entry
+      await this.createBlockingHistoryEntry({
+        websiteBlockId: id,
+        action: status,
+        details: errorMessage || `Status updated to ${status}`,
+        performedBy: "system"
+      });
+    }
+
+    return block;
+  }
+
+  async removeWebsiteBlock(id: number, performedBy: string): Promise<boolean> {
+    const [block] = await db.update(websiteBlocks)
+      .set({ status: "removed" })
+      .where(eq(websiteBlocks.id, id))
+      .returning();
+
+    if (block) {
+      // Create history entry
+      await this.createBlockingHistoryEntry({
+        websiteBlockId: id,
+        action: "removed",
+        details: `Block removed for ${block.targetDomain}`,
+        performedBy
+      });
+      return true;
+    }
+
+    return false;
+  }
+
+  // Blocking History operations
+  async getBlockingHistory(websiteBlockId: number): Promise<BlockingHistory[]> {
+    return await db.select().from(blockingHistory)
+      .where(eq(blockingHistory.websiteBlockId, websiteBlockId))
+      .orderBy(desc(blockingHistory.timestamp));
+  }
+
+  async createBlockingHistoryEntry(entry: InsertBlockingHistory): Promise<BlockingHistory> {
+    const [historyEntry] = await db.insert(blockingHistory).values(entry).returning();
+    return historyEntry;
   }
 
   // Initialize sample prohibited software data

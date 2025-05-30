@@ -197,3 +197,40 @@ export type IpHistory = typeof ipHistory.$inferSelect;
 
 export type InsertTrafficLog = z.infer<typeof insertTrafficLogSchema>;
 export type TrafficLog = typeof trafficLogs.$inferSelect;
+
+// Website Blocking Tables
+export const websiteBlocks = pgTable("website_blocks", {
+  id: serial("id").primaryKey(),
+  deviceId: integer("device_id").references(() => devices.id),
+  networkDeviceId: integer("network_device_id").references(() => networkDevices.id),
+  targetDomain: text("target_domain").notNull(),
+  blockType: text("block_type").default("domain").notNull(), // "domain", "url", "ip"
+  status: text("status").default("pending").notNull(), // "pending", "active", "failed", "removed"
+  createdBy: text("created_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  activatedAt: timestamp("activated_at"),
+  reason: text("reason"),
+  firewallRule: text("firewall_rule"), // Stores the actual firewall rule applied
+  errorMessage: text("error_message"),
+});
+
+export const blockingHistory = pgTable("blocking_history", {
+  id: serial("id").primaryKey(),
+  websiteBlockId: integer("website_block_id").references(() => websiteBlocks.id).notNull(),
+  action: text("action").notNull(), // "created", "activated", "failed", "removed"
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  details: text("details"),
+  performedBy: text("performed_by"),
+});
+
+export const insertWebsiteBlockSchema = createInsertSchema(websiteBlocks)
+  .omit({ id: true, createdAt: true, activatedAt: true });
+
+export const insertBlockingHistorySchema = createInsertSchema(blockingHistory)
+  .omit({ id: true, timestamp: true });
+
+export type InsertWebsiteBlock = z.infer<typeof insertWebsiteBlockSchema>;
+export type WebsiteBlock = typeof websiteBlocks.$inferSelect;
+
+export type InsertBlockingHistory = z.infer<typeof insertBlockingHistorySchema>;
+export type BlockingHistory = typeof blockingHistory.$inferSelect;

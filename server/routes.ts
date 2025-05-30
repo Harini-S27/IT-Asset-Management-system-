@@ -711,6 +711,168 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }, 10000); // Every 10 seconds
   }
 
+  // Website Blocking API endpoints
+  app.get("/api/website-blocks", async (req: Request, res: Response) => {
+    try {
+      const blocks = await storage.getWebsiteBlocks();
+      res.json(blocks);
+    } catch (error) {
+      console.error('Website blocks fetch error:', error);
+      res.status(500).json({ message: "Failed to fetch website blocks" });
+    }
+  });
+
+  app.get("/api/website-blocks/device/:deviceId", async (req: Request, res: Response) => {
+    try {
+      const deviceId = parseInt(req.params.deviceId);
+      if (isNaN(deviceId)) {
+        return res.status(400).json({ message: "Invalid device ID" });
+      }
+
+      const blocks = await storage.getWebsiteBlocksByDevice(deviceId);
+      res.json(blocks);
+    } catch (error) {
+      console.error('Device website blocks fetch error:', error);
+      res.status(500).json({ message: "Failed to fetch device website blocks" });
+    }
+  });
+
+  app.post("/api/website-blocks", async (req: Request, res: Response) => {
+    try {
+      const { deviceId, networkDeviceId, targetDomain, blockType, reason, createdBy } = req.body;
+
+      if (!targetDomain || !createdBy) {
+        return res.status(400).json({ message: "Target domain and creator are required" });
+      }
+
+      // Get device information for firewall integration
+      let deviceIp = "";
+      if (deviceId) {
+        const device = await storage.getDevice(deviceId);
+        deviceIp = device?.ipAddress || "";
+      } else if (networkDeviceId) {
+        const networkDevice = await storage.getNetworkDeviceByMac("");
+        // We'll need to get this differently - for now use a placeholder
+        deviceIp = "192.168.1.100"; // This should come from the network device
+      }
+
+      // Create website block record
+      const block = await storage.createWebsiteBlock({
+        deviceId: deviceId || null,
+        networkDeviceId: networkDeviceId || null,
+        targetDomain,
+        blockType: blockType || "domain",
+        status: "pending",
+        createdBy,
+        reason: reason || `Block request for ${targetDomain}`
+      });
+
+      // Initialize firewall manager (simulated mode for Replit)
+      const firewallConfig = {
+        type: "simulated" // Use simulated firewall for demo
+      };
+
+      // Import and use firewall integration
+      const { FirewallManager } = require("../network_firewall.py");
+      const firewall = new FirewallManager(firewallConfig);
+
+      // Attempt to apply firewall rule
+      const ruleName = `block_${block.id}_${targetDomain.replace(/\./g, '_')}`;
+      
+      // Simulate firewall integration
+      setTimeout(async () => {
+        try {
+          // Simulate successful blocking
+          const success = Math.random() > 0.1; // 90% success rate in simulation
+          
+          if (success) {
+            const firewallRule = `SIMULATED: Block ${deviceIp} -> ${targetDomain}`;
+            await storage.updateWebsiteBlockStatus(block.id, "active", undefined, firewallRule);
+          } else {
+            await storage.updateWebsiteBlockStatus(block.id, "failed", "Simulated network timeout");
+          }
+        } catch (error) {
+          console.error('Firewall rule application error:', error);
+          await storage.updateWebsiteBlockStatus(block.id, "failed", `Integration error: ${error.message}`);
+        }
+      }, 2000); // 2 second delay to simulate processing
+
+      res.json({
+        message: "Website block request created",
+        block: block,
+        status: "pending"
+      });
+
+    } catch (error) {
+      console.error('Website block creation error:', error);
+      res.status(500).json({ message: "Failed to create website block" });
+    }
+  });
+
+  app.delete("/api/website-blocks/:id", async (req: Request, res: Response) => {
+    try {
+      const blockId = parseInt(req.params.id);
+      const { performedBy } = req.body;
+
+      if (isNaN(blockId)) {
+        return res.status(400).json({ message: "Invalid block ID" });
+      }
+
+      if (!performedBy) {
+        return res.status(400).json({ message: "performedBy is required" });
+      }
+
+      const success = await storage.removeWebsiteBlock(blockId, performedBy);
+
+      if (success) {
+        // Simulate firewall rule removal
+        setTimeout(async () => {
+          console.log(`Simulated removal of firewall rule for block ID: ${blockId}`);
+        }, 1000);
+
+        res.json({ message: "Website block removed successfully" });
+      } else {
+        res.status(404).json({ message: "Website block not found" });
+      }
+
+    } catch (error) {
+      console.error('Website block removal error:', error);
+      res.status(500).json({ message: "Failed to remove website block" });
+    }
+  });
+
+  app.get("/api/website-blocks/:id/history", async (req: Request, res: Response) => {
+    try {
+      const blockId = parseInt(req.params.id);
+      if (isNaN(blockId)) {
+        return res.status(400).json({ message: "Invalid block ID" });
+      }
+
+      const history = await storage.getBlockingHistory(blockId);
+      res.json(history);
+    } catch (error) {
+      console.error('Blocking history fetch error:', error);
+      res.status(500).json({ message: "Failed to fetch blocking history" });
+    }
+  });
+
+  // Test firewall connectivity
+  app.get("/api/firewall/status", async (req: Request, res: Response) => {
+    try {
+      // Simulate firewall status check
+      res.json({
+        connected: true,
+        type: "simulated",
+        version: "Demo Mode v1.0",
+        rules_count: Math.floor(Math.random() * 50) + 10,
+        last_sync: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Firewall status error:', error);
+      res.status(500).json({ message: "Failed to check firewall status" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
