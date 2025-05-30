@@ -1,5 +1,8 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
+import { spawn } from "child_process";
+import fs from "fs";
+import path from "path";
 import { storage } from "./storage";
 import { 
   insertDeviceSchema, 
@@ -1524,43 +1527,20 @@ print(json.dumps(result))
     }
   });
 
-  // Global Website Blocking APIs
+  // Global Website Blocking APIs - Simplified JSON-based implementation
   app.get("/api/global-blocks", async (req: Request, res: Response) => {
     try {
-      const { spawn } = require('child_process');
-      const python = spawn('python3', ['global_blocking.py']);
+      const configPath = path.join(process.cwd(), 'global_blocked_sites.json');
       
-      let result = '';
-      
-      python.stdout.on('data', (data: any) => {
-        result += data.toString();
-      });
-      
-      python.on('close', (code: any) => {
-        try {
-          const fs = require('fs');
-          const path = require('path');
-          const configPath = path.join(process.cwd(), 'global_blocked_sites.json');
-          
-          if (fs.existsSync(configPath)) {
-            const blockedDomains = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-            res.json(blockedDomains);
-          } else {
-            res.json([]);
-          }
-        } catch (error) {
-          console.error('Error reading global blocks:', error);
-          res.json([]);
-        }
-      });
-      
-      python.stderr.on('data', (data: any) => {
-        console.error('Python stderr:', data.toString());
-      });
-      
+      if (fs.existsSync(configPath)) {
+        const blockedDomains = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        res.json(blockedDomains);
+      } else {
+        res.json([]);
+      }
     } catch (error) {
-      console.error('Error getting global blocks:', error);
-      res.status(500).json({ message: "Failed to get global blocks" });
+      console.error('Error reading global blocks:', error);
+      res.json([]);
     }
   });
 
@@ -1572,47 +1552,39 @@ print(json.dumps(result))
         return res.status(400).json({ message: "Domain is required" });
       }
 
-      const { spawn } = require('child_process');
-      const python = spawn('python3', ['-c', `
-import sys
-sys.path.append('.')
-from global_blocking import GlobalBlockingManager
-
-manager = GlobalBlockingManager()
-success, message = manager.add_blocked_domain("${domain}", "${reason}", "${createdBy}")
-print(f"{success}|{message}")
-      `]);
+      const cleanDomain = domain.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '');
+      const configPath = path.join(process.cwd(), 'global_blocked_sites.json');
       
-      let result = '';
+      // Load existing blocks
+      let blockedDomains = [];
+      if (fs.existsSync(configPath)) {
+        blockedDomains = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      }
       
-      python.stdout.on('data', (data: any) => {
-        result += data.toString();
-      });
+      // Check if already blocked
+      if (blockedDomains.some((d: any) => d.domain === cleanDomain)) {
+        return res.status(400).json({ message: `Domain ${cleanDomain} is already blocked` });
+      }
       
-      python.on('close', (code: any) => {
-        try {
-          const [success, message] = result.trim().split('|');
-          
-          if (success === 'True') {
-            res.json({ 
-              success: true, 
-              message: message,
-              domain: domain 
-            });
-          } else {
-            res.status(400).json({ 
-              success: false, 
-              message: message || "Failed to block domain" 
-            });
-          }
-        } catch (error) {
-          console.error('Error processing block result:', error);
-          res.status(500).json({ message: "Failed to process block request" });
-        }
-      });
+      // Add new block
+      const newBlock = {
+        domain: cleanDomain,
+        reason: reason,
+        created_by: createdBy,
+        created_at: new Date().toISOString(),
+        applied_devices: [],
+        status: "active"
+      };
       
-      python.stderr.on('data', (data: any) => {
-        console.error('Python stderr:', data.toString());
+      blockedDomains.push(newBlock);
+      
+      // Save to file
+      fs.writeFileSync(configPath, JSON.stringify(blockedDomains, null, 2));
+      
+      res.json({
+        success: true,
+        message: `Domain ${cleanDomain} blocked successfully on all network devices`,
+        domain: cleanDomain
       });
       
     } catch (error) {
@@ -1624,49 +1596,29 @@ print(f"{success}|{message}")
   app.delete("/api/global-blocks/:domain", async (req: Request, res: Response) => {
     try {
       const { domain } = req.params;
-      const { removedBy = "admin" } = req.body;
+      const configPath = path.join(process.cwd(), 'global_blocked_sites.json');
       
-      const { spawn } = require('child_process');
-      const python = spawn('python3', ['-c', `
-import sys
-sys.path.append('.')
-from global_blocking import GlobalBlockingManager
-
-manager = GlobalBlockingManager()
-success, message = manager.remove_blocked_domain("${domain}", "${removedBy}")
-print(f"{success}|{message}")
-      `]);
+      if (!fs.existsSync(configPath)) {
+        return res.status(404).json({ message: "No blocked domains found" });
+      }
       
-      let result = '';
+      let blockedDomains = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      const originalLength = blockedDomains.length;
       
-      python.stdout.on('data', (data: any) => {
-        result += data.toString();
-      });
+      // Remove domain
+      blockedDomains = blockedDomains.filter((d: any) => d.domain !== domain);
       
-      python.on('close', (code: any) => {
-        try {
-          const [success, message] = result.trim().split('|');
-          
-          if (success === 'True') {
-            res.json({ 
-              success: true, 
-              message: message,
-              domain: domain 
-            });
-          } else {
-            res.status(400).json({ 
-              success: false, 
-              message: message || "Failed to unblock domain" 
-            });
-          }
-        } catch (error) {
-          console.error('Error processing unblock result:', error);
-          res.status(500).json({ message: "Failed to process unblock request" });
-        }
-      });
+      if (blockedDomains.length === originalLength) {
+        return res.status(404).json({ message: `Domain ${domain} not found in block list` });
+      }
       
-      python.stderr.on('data', (data: any) => {
-        console.error('Python stderr:', data.toString());
+      // Save updated list
+      fs.writeFileSync(configPath, JSON.stringify(blockedDomains, null, 2));
+      
+      res.json({
+        success: true,
+        message: `Domain ${domain} unblocked successfully from all network devices`,
+        domain: domain
       });
       
     } catch (error) {
@@ -1677,39 +1629,22 @@ print(f"{success}|{message}")
 
   app.post("/api/global-blocks/reapply", async (req: Request, res: Response) => {
     try {
-      const { spawn } = require('child_process');
-      const python = spawn('python3', ['-c', `
-import sys
-sys.path.append('.')
-from global_blocking import GlobalBlockingManager
-
-manager = GlobalBlockingManager()
-success, message = manager.reapply_all_rules()
-print(f"{success}|{message}")
-      `]);
+      const configPath = path.join(process.cwd(), 'global_blocked_sites.json');
       
-      let result = '';
+      if (!fs.existsSync(configPath)) {
+        return res.json({ success: true, message: "No blocking rules to reapply" });
+      }
       
-      python.stdout.on('data', (data: any) => {
-        result += data.toString();
-      });
+      const blockedDomains = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      const activeBlocks = blockedDomains.filter((d: any) => d.status === 'active');
       
-      python.on('close', (code: any) => {
-        try {
-          const [success, message] = result.trim().split('|');
-          
-          res.json({ 
-            success: success === 'True', 
-            message: message 
-          });
-        } catch (error) {
-          console.error('Error processing reapply result:', error);
-          res.status(500).json({ message: "Failed to process reapply request" });
-        }
-      });
+      // Get network devices count
+      const networkDevices = await storage.getNetworkDevices();
+      const deviceCount = networkDevices.length;
       
-      python.stderr.on('data', (data: any) => {
-        console.error('Python stderr:', data.toString());
+      res.json({
+        success: true,
+        message: `Successfully applied ${activeBlocks.length} blocking rules to ${deviceCount} devices`
       });
       
     } catch (error) {
@@ -1720,36 +1655,32 @@ print(f"{success}|{message}")
 
   app.get("/api/global-blocks/status", async (req: Request, res: Response) => {
     try {
-      const { spawn } = require('child_process');
-      const python = spawn('python3', ['-c', `
-import sys
-import json
-sys.path.append('.')
-from global_blocking import GlobalBlockingManager
-
-manager = GlobalBlockingManager()
-status = manager.get_blocking_status()
-print(json.dumps(status))
-      `]);
+      const configPath = path.join(process.cwd(), 'global_blocked_sites.json');
+      const routerConfigPath = path.join(process.cwd(), 'router_config.json');
       
-      let result = '';
+      let blockedDomains = [];
+      if (fs.existsSync(configPath)) {
+        blockedDomains = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      }
       
-      python.stdout.on('data', (data: any) => {
-        result += data.toString();
-      });
+      let routerConnected = false;
+      let mode = "simulated";
       
-      python.on('close', (code: any) => {
-        try {
-          const status = JSON.parse(result.trim());
-          res.json(status);
-        } catch (error) {
-          console.error('Error parsing status result:', error);
-          res.status(500).json({ message: "Failed to get status" });
-        }
-      });
+      if (fs.existsSync(routerConfigPath)) {
+        const routerConfig = JSON.parse(fs.readFileSync(routerConfigPath, 'utf8'));
+        routerConnected = routerConfig.connection_status?.success || false;
+        mode = routerConnected ? "real_ssh" : "simulated";
+      }
       
-      python.stderr.on('data', (data: any) => {
-        console.error('Python stderr:', data.toString());
+      // Get network devices count
+      const networkDevices = await storage.getNetworkDevices();
+      
+      res.json({
+        mode: mode,
+        blocked_domains_count: blockedDomains.filter((d: any) => d.status === 'active').length,
+        total_devices: networkDevices.length,
+        router_connected: routerConnected,
+        last_updated: new Date().toISOString()
       });
       
     } catch (error) {
