@@ -1112,6 +1112,360 @@ print(json.dumps({"success": success}))
     }
   });
 
+  // Device Management API endpoints
+  app.post("/api/device-management/block", async (req: Request, res: Response) => {
+    try {
+      const { deviceId, deviceIp, macAddress, domain, reason, performedBy } = req.body;
+
+      if (!deviceId || !deviceIp || !domain) {
+        return res.status(400).json({ message: "Device ID, IP, and domain are required" });
+      }
+
+      const { spawn } = require('child_process');
+      const python = spawn('python3', ['-c', `
+import sys
+sys.path.append('.')
+from router_config_manager import router_config
+from network_firewall import FirewallManager
+import json
+
+try:
+    # Get firewall configuration
+    firewall_config = router_config.get_firewall_config()
+    firewall_manager = FirewallManager(firewall_config)
+    
+    # Create blocking rule
+    rule_name = f"block_{domain.replace('.', '_')}_device{deviceId}"
+    success, message, rule_id = firewall_manager.block_domain("${deviceIp}", "${domain}", rule_name)
+    
+    result = {
+        "success": success,
+        "message": message,
+        "rule_id": rule_id,
+        "device_ip": "${deviceIp}",
+        "domain": "${domain}",
+        "firewall_type": firewall_config.get("type", "unknown")
+    }
+    print(json.dumps(result))
+except Exception as e:
+    print(json.dumps({"success": False, "message": str(e), "rule_id": None}))
+      `]);
+
+      let result = '';
+      python.stdout.on('data', (data: any) => {
+        result += data.toString();
+      });
+
+      python.on('close', (code: any) => {
+        try {
+          const response = JSON.parse(result.trim());
+          
+          if (response.success) {
+            // Store the website block in database
+            const websiteBlock = storage.createWebsiteBlock({
+              deviceId: parseInt(deviceId),
+              targetDomain: domain,
+              blockType: 'domain',
+              reason: reason || 'Admin blocked',
+              createdBy: performedBy || 'system',
+              status: 'active',
+              firewallRule: response.rule_id || rule_name
+            });
+
+            res.json({
+              message: `Successfully blocked ${domain} for device`,
+              block: websiteBlock,
+              firewall_response: response
+            });
+          } else {
+            res.status(500).json({
+              message: `Failed to block ${domain}: ${response.message}`,
+              error: response.message
+            });
+          }
+        } catch (e) {
+          res.status(500).json({
+            message: "Failed to parse firewall response",
+            error: result
+          });
+        }
+      });
+    } catch (error: any) {
+      console.error('Block device error:', error);
+      res.status(500).json({ message: "Failed to block website for device" });
+    }
+  });
+
+  app.post("/api/device-management/unblock", async (req: Request, res: Response) => {
+    try {
+      const { deviceId, deviceIp, domain, performedBy } = req.body;
+
+      if (!deviceId || !deviceIp || !domain) {
+        return res.status(400).json({ message: "Device ID, IP, and domain are required" });
+      }
+
+      const { spawn } = require('child_process');
+      const python = spawn('python3', ['-c', `
+import sys
+sys.path.append('.')
+from router_config_manager import router_config
+from network_firewall import FirewallManager
+import json
+
+try:
+    # Get firewall configuration
+    firewall_config = router_config.get_firewall_config()
+    firewall_manager = FirewallManager(firewall_config)
+    
+    # Remove blocking rule
+    rule_name = f"block_{domain.replace('.', '_')}_device{deviceId}"
+    success, message = firewall_manager.unblock_domain("${deviceIp}", "${domain}", rule_name)
+    
+    result = {
+        "success": success,
+        "message": message,
+        "device_ip": "${deviceIp}",
+        "domain": "${domain}",
+        "firewall_type": firewall_config.get("type", "unknown")
+    }
+    print(json.dumps(result))
+except Exception as e:
+    print(json.dumps({"success": False, "message": str(e)}))
+      `]);
+
+      let result = '';
+      python.stdout.on('data', (data: any) => {
+        result += data.toString();
+      });
+
+      python.on('close', (code: any) => {
+        try {
+          const response = JSON.parse(result.trim());
+          
+          if (response.success) {
+            // Update website block status in database
+            const blocks = storage.getWebsiteBlocksByDevice(parseInt(deviceId));
+            const block = blocks.find(b => b.targetDomain === domain && b.status === 'active');
+            
+            if (block) {
+              storage.removeWebsiteBlock(block.id, performedBy || 'system');
+            }
+
+            res.json({
+              message: `Successfully unblocked ${domain} for device`,
+              firewall_response: response
+            });
+          } else {
+            res.status(500).json({
+              message: `Failed to unblock ${domain}: ${response.message}`,
+              error: response.message
+            });
+          }
+        } catch (e) {
+          res.status(500).json({
+            message: "Failed to parse firewall response",
+            error: result
+          });
+        }
+      });
+    } catch (error: any) {
+      console.error('Unblock device error:', error);
+      res.status(500).json({ message: "Failed to unblock website for device" });
+    }
+  });
+
+  app.post("/api/device-management/disconnect", async (req: Request, res: Response) => {
+    try {
+      const { deviceId, deviceIp, macAddress, reason, performedBy } = req.body;
+
+      if (!deviceId || !deviceIp) {
+        return res.status(400).json({ message: "Device ID and IP are required" });
+      }
+
+      const { spawn } = require('child_process');
+      const python = spawn('python3', ['-c', `
+import sys
+sys.path.append('.')
+from router_config_manager import router_config
+from network_firewall import FirewallManager
+import json
+
+try:
+    # Get firewall configuration
+    firewall_config = router_config.get_firewall_config()
+    firewall_manager = FirewallManager(firewall_config)
+    
+    # Block all traffic for device
+    rule_name = f"disconnect_device{deviceId}"
+    success, message, rule_id = firewall_manager.block_domain("${deviceIp}", "*", rule_name)
+    
+    result = {
+        "success": success,
+        "message": message,
+        "rule_id": rule_id,
+        "device_ip": "${deviceIp}",
+        "firewall_type": firewall_config.get("type", "unknown")
+    }
+    print(json.dumps(result))
+except Exception as e:
+    print(json.dumps({"success": False, "message": str(e), "rule_id": None}))
+      `]);
+
+      let result = '';
+      python.stdout.on('data', (data: any) => {
+        result += data.toString();
+      });
+
+      python.on('close', (code: any) => {
+        try {
+          const response = JSON.parse(result.trim());
+          
+          if (response.success) {
+            // Store the disconnect action in database
+            const websiteBlock = storage.createWebsiteBlock({
+              deviceId: parseInt(deviceId),
+              targetDomain: '*',
+              blockType: 'ip',
+              reason: reason || 'Device disconnected by admin',
+              createdBy: performedBy || 'system',
+              status: 'active',
+              firewallRule: response.rule_id || rule_name
+            });
+
+            res.json({
+              message: `Successfully disconnected device`,
+              block: websiteBlock,
+              firewall_response: response
+            });
+          } else {
+            res.status(500).json({
+              message: `Failed to disconnect device: ${response.message}`,
+              error: response.message
+            });
+          }
+        } catch (e) {
+          res.status(500).json({
+            message: "Failed to parse firewall response",
+            error: result
+          });
+        }
+      });
+    } catch (error: any) {
+      console.error('Disconnect device error:', error);
+      res.status(500).json({ message: "Failed to disconnect device" });
+    }
+  });
+
+  app.post("/api/device-management/reconnect", async (req: Request, res: Response) => {
+    try {
+      const { deviceId, deviceIp, performedBy } = req.body;
+
+      if (!deviceId || !deviceIp) {
+        return res.status(400).json({ message: "Device ID and IP are required" });
+      }
+
+      const { spawn } = require('child_process');
+      const python = spawn('python3', ['-c', `
+import sys
+sys.path.append('.')
+from router_config_manager import router_config
+from network_firewall import FirewallManager
+import json
+
+try:
+    # Get firewall configuration
+    firewall_config = router_config.get_firewall_config()
+    firewall_manager = FirewallManager(firewall_config)
+    
+    # Remove disconnect rule
+    rule_name = f"disconnect_device{deviceId}"
+    success, message = firewall_manager.unblock_domain("${deviceIp}", "*", rule_name)
+    
+    result = {
+        "success": success,
+        "message": message,
+        "device_ip": "${deviceIp}",
+        "firewall_type": firewall_config.get("type", "unknown")
+    }
+    print(json.dumps(result))
+except Exception as e:
+    print(json.dumps({"success": False, "message": str(e)}))
+      `]);
+
+      let result = '';
+      python.stdout.on('data', (data: any) => {
+        result += data.toString();
+      });
+
+      python.on('close', (code: any) => {
+        try {
+          const response = JSON.parse(result.trim());
+          
+          if (response.success) {
+            // Remove disconnect blocks from database
+            const blocks = storage.getWebsiteBlocksByDevice(parseInt(deviceId));
+            const disconnectBlocks = blocks.filter(b => b.targetDomain === '*' && b.status === 'active');
+            
+            disconnectBlocks.forEach(block => {
+              storage.removeWebsiteBlock(block.id, performedBy || 'system');
+            });
+
+            res.json({
+              message: `Successfully reconnected device`,
+              firewall_response: response
+            });
+          } else {
+            res.status(500).json({
+              message: `Failed to reconnect device: ${response.message}`,
+              error: response.message
+            });
+          }
+        } catch (e) {
+          res.status(500).json({
+            message: "Failed to parse firewall response",
+            error: result
+          });
+        }
+      });
+    } catch (error: any) {
+      console.error('Reconnect device error:', error);
+      res.status(500).json({ message: "Failed to reconnect device" });
+    }
+  });
+
+  app.get("/api/device-management/:deviceId/status", async (req: Request, res: Response) => {
+    try {
+      const deviceId = parseInt(req.params.deviceId);
+      
+      if (isNaN(deviceId)) {
+        return res.status(400).json({ message: "Invalid device ID" });
+      }
+
+      const blocks = storage.getWebsiteBlocksByDevice(deviceId);
+      const activeBlocks = blocks.filter(block => block.status === 'active');
+      
+      const isDisconnected = activeBlocks.some(block => block.targetDomain === '*');
+      const blockedDomains = activeBlocks
+        .filter(block => block.targetDomain !== '*')
+        .map(block => ({
+          domain: block.targetDomain,
+          reason: block.reason,
+          createdAt: block.createdAt,
+          createdBy: block.createdBy
+        }));
+
+      res.json({
+        deviceId,
+        isDisconnected,
+        blockedDomains,
+        totalBlocks: activeBlocks.length
+      });
+    } catch (error: any) {
+      console.error('Get device status error:', error);
+      res.status(500).json({ message: "Failed to get device status" });
+    }
+  });
+
   // Test firewall connectivity
   app.get("/api/firewall/status", async (req: Request, res: Response) => {
     try {

@@ -1,0 +1,41 @@
+I’ve completed the Router Setup panel in my ITAM dashboard on Replit. It allows the admin to enter the router IP, SSH username/password, and choose between Simulated or Real SSH mode. The config is saved and accessible.
+
+Now, I want to add a full "Manage Device" feature for each connected device in my dashboard.
+
+🎯 Feature Requirements:
+
+1. On the Devices page (e.g., in Network Discovery), for each device, show a "Manage" button or dropdown.
+2. In the dropdown, include:
+   - Block Website
+   - Unblock Website
+   - Disconnect Device (cuts all access)
+3. When “Block Website” is clicked:
+   - A modal pops up to enter the domain (e.g., facebook.com)
+   - On submit:
+     - The frontend sends a POST to `/api/block` with the device IP/MAC and domain
+     - The backend reads `router_config.json` or `config.py`:
+         - If mode = "Simulated" → use `WEBSITE_BLOCKING.py` to save mock rule
+         - If mode = "Real" → use `paramiko` SSH via `network_firewall.py` and run iptables or equivalent command to block site for that IP
+4. Same logic applies for:
+   - `/api/unblock`: Removes the rule
+   - `/api/disconnect`: Blocks all traffic for that device IP
+
+📁 Backend structure:
+- `network_firewall.py` → contains real SSH logic using `paramiko`
+- `WEBSITE_BLOCKING.py` → handles demo mode logic with JSON store
+- `router_config.json` → contains saved connection details (mode, IP, username, password)
+
+💻 Frontend updates:
+- Device table: Add "Manage" button or dropdown beside each row
+- Add modals for Block/Unblock/Disconnect
+- Show current blocked domains (from API or mock file)
+- Display status badge (e.g., “Blocked: facebook.com”)
+
+⚠️ The code must work in Replit for testing (simulated), and also support real SSH router control if the admin switches mode.
+
+Please generate:
+- Backend routes: `/api/block`, `/api/unblock`, `/api/disconnect`
+- Updated `network_firewall.py` functions
+- Updated `WEBSITE_BLOCKING.py` mock handlers
+- Sample frontend code (React or Streamlit) for managing a device row
+
