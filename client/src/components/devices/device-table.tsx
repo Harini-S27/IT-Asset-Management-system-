@@ -7,7 +7,8 @@ import {
   Trash2,
   Eye,
   Monitor,
-  Cpu
+  Cpu,
+  Shield
 } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import { formatTimeSince, getStatusColor, cn } from "@/lib/utils";
@@ -20,6 +21,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Device } from "@shared/schema";
 import EditDeviceDialog from "./edit-device-dialog";
+import BlockWebsiteDialog from "@/components/website-blocking/block-website-dialog";
 
 interface DeviceTableProps {
   onEditDevice: (device: Device) => void;
@@ -39,6 +41,8 @@ const DeviceTable = ({
   });
 
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const [showBlockDialog, setShowBlockDialog] = useState(false);
+  const [deviceToBlock, setDeviceToBlock] = useState<Device | null>(null);
 
   // Define table columns
   // Filter devices based on selected category
