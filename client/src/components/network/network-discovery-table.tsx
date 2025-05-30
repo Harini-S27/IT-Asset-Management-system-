@@ -296,7 +296,7 @@ const NetworkDiscoveryTable = () => {
                       <span className="text-xs text-gray-500 ml-2">({entry.leaseType})</span>
                     </div>
                     <div className="text-xs text-gray-500">
-                      {formatTimeSince(entry.assignedAt)}
+                      {entry.assignedAt ? formatTimeSince(entry.assignedAt) : "Unknown"}
                       {entry.releasedAt && ` - ${formatTimeSince(entry.releasedAt)}`}
                     </div>
                   </div>
