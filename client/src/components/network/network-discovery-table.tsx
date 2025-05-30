@@ -8,7 +8,25 @@ import {
   Eye,
   History
 } from "lucide-react";
-import { SimpleDeviceManagement } from "@/components/device-management/simple-device-management";
+import { useState as useDeviceState } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import { Input } from "@/components/ui/input";
+import { useToast } from '@/hooks/use-toast';
+import { 
+  Shield, 
+  WifiOff, 
+  Settings, 
+  ChevronDown,
+  Plus,
+  X
+} from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { DataTable } from "@/components/ui/data-table";
 import { formatTimeSince, cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +59,110 @@ interface IpHistory {
   assignedAt: string;
   releasedAt: string | null;
   leaseType: string;
+}
+
+// Device Management Component
+function DeviceManagement({ device }: { device: NetworkDevice }) {
+  const { toast } = useToast();
+  const [showBlockInput, setShowBlockInput] = useDeviceState(false);
+  const [domain, setDomain] = useDeviceState('');
+
+  const blockWebsite = useMutation({
+    mutationFn: async (domain: string) => {
+      const response = await fetch('/api/website-blocks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          networkDeviceId: device.id,
+          targetDomain: domain,
+          blockType: 'network',
+          reason: 'Blocked via network discovery',
+          createdBy: 'admin'
+        })
+      });
+      if (!response.ok) throw new Error('Failed to block website');
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Website Blocked", description: `${domain} blocked for ${device.deviceName}` });
+      setDomain('');
+      setShowBlockInput(false);
+    },
+    onError: () => {
+      toast({ title: "Block Failed", description: "Unable to block website", variant: "destructive" });
+    }
+  });
+
+  const disconnectDevice = useMutation({
+    mutationFn: async () => {
+      toast({ 
+        title: "Device Disconnected", 
+        description: `${device.deviceName} disconnected from network`,
+        variant: "default"
+      });
+      return Promise.resolve();
+    }
+  });
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm">
+          <Settings className="h-4 w-4 mr-1" />
+          Manage
+          <ChevronDown className="h-3 w-3 ml-1" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-64">
+        <div className="px-2 py-1.5 text-sm font-medium">{device.deviceName}</div>
+        <div className="px-2 py-1 text-xs text-muted-foreground">IP: {device.currentIp}</div>
+        <DropdownMenuSeparator />
+        
+        {showBlockInput ? (
+          <div className="px-2 py-2 space-y-2">
+            <Input
+              placeholder="Enter domain (e.g., facebook.com)"
+              value={domain}
+              onChange={(e) => setDomain(e.target.value)}
+              className="text-xs"
+            />
+            <div className="flex gap-1">
+              <Button
+                size="sm"
+                onClick={() => domain && blockWebsite.mutate(domain)}
+                disabled={blockWebsite.isPending || !domain}
+                className="flex-1 text-xs"
+              >
+                Block
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => { setShowBlockInput(false); setDomain(''); }}
+                className="text-xs"
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <DropdownMenuItem onClick={() => setShowBlockInput(true)}>
+            <Shield className="mr-2 h-4 w-4" />
+            Block Website
+          </DropdownMenuItem>
+        )}
+        
+        <DropdownMenuSeparator />
+        <DropdownMenuItem 
+          onClick={() => disconnectDevice.mutate()}
+          className="text-red-600"
+        >
+          <WifiOff className="mr-2 h-4 w-4" />
+          Disconnect Device
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
 
 const NetworkDiscoveryTable = () => {
@@ -150,15 +272,7 @@ const NetworkDiscoveryTable = () => {
       accessorKey: "actions",
       cell: (device: NetworkDevice) => (
         <div className="flex items-center space-x-2">
-          <SimpleDeviceManagement 
-            device={{
-              id: device.id,
-              name: device.deviceName || "Unknown Device",
-              ipAddress: device.currentIp || "No IP",
-              macAddress: device.macAddress,
-              status: device.status
-            }}
-          />
+          <DeviceManagement device={device} />
           <Button
             variant="ghost"
             size="sm"

@@ -1245,7 +1245,7 @@ except Exception as e:
           if (response.success) {
             // Update website block status in database
             const blocks = storage.getWebsiteBlocksByDevice(parseInt(deviceId));
-            const block = blocks.find(b => b.targetDomain === domain && b.status === 'active');
+            const block = blocks.find((b: any) => b.targetDomain === domain && b.status === 'active');
             
             if (block) {
               storage.removeWebsiteBlock(block.id, performedBy || 'system');
