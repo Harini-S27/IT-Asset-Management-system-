@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -70,19 +70,21 @@ export default function RouterSetup() {
 
   // Load current router configuration
   const { data: config, isLoading: configLoading } = useQuery<RouterConfig>({
-    queryKey: ['/api/router/config'],
-    onSuccess: (data) => {
-      if (data) {
-        setFormData({
-          router_ip: data.router_ip || '',
-          ssh_username: data.ssh_username || '',
-          ssh_password: data.ssh_password === '***' ? '' : data.ssh_password || '',
-          mode: data.mode || 'simulated',
-          router_type: data.router_type || 'generic'
-        });
-      }
-    }
+    queryKey: ['/api/router/config']
   });
+
+  // Update form data when config loads
+  useEffect(() => {
+    if (config) {
+      setFormData({
+        router_ip: config.router_ip || '',
+        ssh_username: config.ssh_username || '',
+        ssh_password: config.ssh_password === '***' ? '' : config.ssh_password || '',
+        mode: config.mode || 'simulated',
+        router_type: config.router_type || 'generic'
+      });
+    }
+  }, [config]);
 
   // Get router status
   const { data: status } = useQuery<RouterStatus>({
@@ -93,10 +95,19 @@ export default function RouterSetup() {
   // Test connection mutation
   const testConnectionMutation = useMutation({
     mutationFn: async (testData: { router_ip: string; ssh_username: string; ssh_password: string }) => {
-      return apiRequest('/api/router/test-connection', {
+      const response = await fetch('/api/router/test-connection', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(testData)
       });
+      
+      if (!response.ok) {
+        throw new Error('Connection test failed');
+      }
+      
+      return response.json();
     },
     onSuccess: (result: ConnectionTestResult) => {
       setTestResult(result);
@@ -125,10 +136,19 @@ export default function RouterSetup() {
   // Save configuration mutation
   const saveConfigMutation = useMutation({
     mutationFn: async (configData: typeof formData) => {
-      return apiRequest('/api/router/config', {
+      const response = await fetch('/api/router/config', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(configData)
       });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save configuration');
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       toast({

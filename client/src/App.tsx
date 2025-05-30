@@ -10,6 +10,7 @@ import MapView from "@/pages/map";
 import ProhibitedSoftware from "@/pages/prohibited-software";
 import Settings from "@/pages/settings";
 import Reports from "@/pages/reports";
+import RouterSetup from "@/pages/router-setup";
 import Sidebar from "@/components/layout/sidebar";
 import LoginPage from "@/pages/login";
 import { AuthProvider, useAuth } from "@/contexts/auth-context";
@@ -41,6 +42,7 @@ function Router() {
                 <Route path="/devices" component={Devices} />
                 <Route path="/map" component={MapView} />
                 <Route path="/prohibited-software" component={ProhibitedSoftware} />
+                <Route path="/router-setup" component={RouterSetup} />
                 <Route path="/settings" component={Settings} />
                 <Route path="/reports" component={Reports} />
                 <Route path="/login">

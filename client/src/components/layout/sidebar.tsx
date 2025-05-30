@@ -8,7 +8,8 @@ import {
   Settings, 
   FileBarChart, 
   LogOut,
-  Shield
+  Shield,
+  Router
 } from "lucide-react";
 import { UserMenu } from "./user-menu";
 import { useAuth } from "@/contexts/auth-context";
@@ -39,6 +40,11 @@ const Sidebar = () => {
       name: "Prohibited Software",
       href: "/prohibited-software",
       icon: Shield,
+    },
+    {
+      name: "Router Setup",
+      href: "/router-setup",
+      icon: Router,
     },
     {
       name: "Settings",
