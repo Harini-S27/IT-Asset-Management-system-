@@ -1524,6 +1524,240 @@ print(json.dumps(result))
     }
   });
 
+  // Global Website Blocking APIs
+  app.get("/api/global-blocks", async (req: Request, res: Response) => {
+    try {
+      const { spawn } = require('child_process');
+      const python = spawn('python3', ['global_blocking.py']);
+      
+      let result = '';
+      
+      python.stdout.on('data', (data: any) => {
+        result += data.toString();
+      });
+      
+      python.on('close', (code: any) => {
+        try {
+          const fs = require('fs');
+          const path = require('path');
+          const configPath = path.join(process.cwd(), 'global_blocked_sites.json');
+          
+          if (fs.existsSync(configPath)) {
+            const blockedDomains = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+            res.json(blockedDomains);
+          } else {
+            res.json([]);
+          }
+        } catch (error) {
+          console.error('Error reading global blocks:', error);
+          res.json([]);
+        }
+      });
+      
+      python.stderr.on('data', (data: any) => {
+        console.error('Python stderr:', data.toString());
+      });
+      
+    } catch (error) {
+      console.error('Error getting global blocks:', error);
+      res.status(500).json({ message: "Failed to get global blocks" });
+    }
+  });
+
+  app.post("/api/global-blocks", async (req: Request, res: Response) => {
+    try {
+      const { domain, reason = "Global block", createdBy = "admin" } = req.body;
+      
+      if (!domain) {
+        return res.status(400).json({ message: "Domain is required" });
+      }
+
+      const { spawn } = require('child_process');
+      const python = spawn('python3', ['-c', `
+import sys
+sys.path.append('.')
+from global_blocking import GlobalBlockingManager
+
+manager = GlobalBlockingManager()
+success, message = manager.add_blocked_domain("${domain}", "${reason}", "${createdBy}")
+print(f"{success}|{message}")
+      `]);
+      
+      let result = '';
+      
+      python.stdout.on('data', (data: any) => {
+        result += data.toString();
+      });
+      
+      python.on('close', (code: any) => {
+        try {
+          const [success, message] = result.trim().split('|');
+          
+          if (success === 'True') {
+            res.json({ 
+              success: true, 
+              message: message,
+              domain: domain 
+            });
+          } else {
+            res.status(400).json({ 
+              success: false, 
+              message: message || "Failed to block domain" 
+            });
+          }
+        } catch (error) {
+          console.error('Error processing block result:', error);
+          res.status(500).json({ message: "Failed to process block request" });
+        }
+      });
+      
+      python.stderr.on('data', (data: any) => {
+        console.error('Python stderr:', data.toString());
+      });
+      
+    } catch (error) {
+      console.error('Error blocking domain:', error);
+      res.status(500).json({ message: "Failed to block domain" });
+    }
+  });
+
+  app.delete("/api/global-blocks/:domain", async (req: Request, res: Response) => {
+    try {
+      const { domain } = req.params;
+      const { removedBy = "admin" } = req.body;
+      
+      const { spawn } = require('child_process');
+      const python = spawn('python3', ['-c', `
+import sys
+sys.path.append('.')
+from global_blocking import GlobalBlockingManager
+
+manager = GlobalBlockingManager()
+success, message = manager.remove_blocked_domain("${domain}", "${removedBy}")
+print(f"{success}|{message}")
+      `]);
+      
+      let result = '';
+      
+      python.stdout.on('data', (data: any) => {
+        result += data.toString();
+      });
+      
+      python.on('close', (code: any) => {
+        try {
+          const [success, message] = result.trim().split('|');
+          
+          if (success === 'True') {
+            res.json({ 
+              success: true, 
+              message: message,
+              domain: domain 
+            });
+          } else {
+            res.status(400).json({ 
+              success: false, 
+              message: message || "Failed to unblock domain" 
+            });
+          }
+        } catch (error) {
+          console.error('Error processing unblock result:', error);
+          res.status(500).json({ message: "Failed to process unblock request" });
+        }
+      });
+      
+      python.stderr.on('data', (data: any) => {
+        console.error('Python stderr:', data.toString());
+      });
+      
+    } catch (error) {
+      console.error('Error unblocking domain:', error);
+      res.status(500).json({ message: "Failed to unblock domain" });
+    }
+  });
+
+  app.post("/api/global-blocks/reapply", async (req: Request, res: Response) => {
+    try {
+      const { spawn } = require('child_process');
+      const python = spawn('python3', ['-c', `
+import sys
+sys.path.append('.')
+from global_blocking import GlobalBlockingManager
+
+manager = GlobalBlockingManager()
+success, message = manager.reapply_all_rules()
+print(f"{success}|{message}")
+      `]);
+      
+      let result = '';
+      
+      python.stdout.on('data', (data: any) => {
+        result += data.toString();
+      });
+      
+      python.on('close', (code: any) => {
+        try {
+          const [success, message] = result.trim().split('|');
+          
+          res.json({ 
+            success: success === 'True', 
+            message: message 
+          });
+        } catch (error) {
+          console.error('Error processing reapply result:', error);
+          res.status(500).json({ message: "Failed to process reapply request" });
+        }
+      });
+      
+      python.stderr.on('data', (data: any) => {
+        console.error('Python stderr:', data.toString());
+      });
+      
+    } catch (error) {
+      console.error('Error reapplying rules:', error);
+      res.status(500).json({ message: "Failed to reapply rules" });
+    }
+  });
+
+  app.get("/api/global-blocks/status", async (req: Request, res: Response) => {
+    try {
+      const { spawn } = require('child_process');
+      const python = spawn('python3', ['-c', `
+import sys
+import json
+sys.path.append('.')
+from global_blocking import GlobalBlockingManager
+
+manager = GlobalBlockingManager()
+status = manager.get_blocking_status()
+print(json.dumps(status))
+      `]);
+      
+      let result = '';
+      
+      python.stdout.on('data', (data: any) => {
+        result += data.toString();
+      });
+      
+      python.on('close', (code: any) => {
+        try {
+          const status = JSON.parse(result.trim());
+          res.json(status);
+        } catch (error) {
+          console.error('Error parsing status result:', error);
+          res.status(500).json({ message: "Failed to get status" });
+        }
+      });
+      
+      python.stderr.on('data', (data: any) => {
+        console.error('Python stderr:', data.toString());
+      });
+      
+    } catch (error) {
+      console.error('Error getting global blocking status:', error);
+      res.status(500).json({ message: "Failed to get status" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
