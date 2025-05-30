@@ -856,16 +856,313 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Router Configuration API endpoints
+  app.get("/api/router/config", async (req: Request, res: Response) => {
+    try {
+      const { spawn } = require('child_process');
+      const python = spawn('python3', ['-c', `
+import sys
+sys.path.append('.')
+from router_config_manager import router_config
+import json
+config = router_config.load_config()
+# Remove sensitive data
+if 'ssh_password' in config:
+    config['ssh_password'] = '***'
+print(json.dumps(config))
+      `]);
+
+      let result = '';
+      python.stdout.on('data', (data) => {
+        result += data.toString();
+      });
+
+      python.on('close', (code) => {
+        if (code === 0) {
+          try {
+            const config = JSON.parse(result.trim());
+            res.json(config);
+          } catch (e) {
+            res.json({
+              router_ip: "",
+              ssh_username: "",
+              mode: "simulated",
+              router_type: "generic",
+              last_status: "unknown"
+            });
+          }
+        } else {
+          res.status(500).json({ message: "Failed to load router configuration" });
+        }
+      });
+    } catch (error) {
+      console.error('Router config fetch error:', error);
+      res.status(500).json({ message: "Failed to fetch router configuration" });
+    }
+  });
+
+  app.post("/api/router/config", async (req: Request, res: Response) => {
+    try {
+      const { router_ip, ssh_username, ssh_password, mode, router_type } = req.body;
+
+      if (!router_ip || !ssh_username || !mode) {
+        return res.status(400).json({ message: "Router IP, SSH username, and mode are required" });
+      }
+
+      const { spawn } = require('child_process');
+      const python = spawn('python3', ['-c', `
+import sys
+sys.path.append('.')
+from router_config_manager import router_config
+import json
+
+config_data = {
+    "router_ip": "${router_ip}",
+    "ssh_username": "${ssh_username}",
+    "ssh_password": "${ssh_password || ''}",
+    "mode": "${mode}",
+    "router_type": "${router_type || 'generic'}",
+    "ssh_port": 22
+}
+
+success = router_config.save_config(config_data)
+print(json.dumps({"success": success}))
+      `]);
+
+      let result = '';
+      python.stdout.on('data', (data) => {
+        result += data.toString();
+      });
+
+      python.on('close', (code) => {
+        if (code === 0) {
+          try {
+            const response = JSON.parse(result.trim());
+            if (response.success) {
+              res.json({ message: "Router configuration saved successfully" });
+            } else {
+              res.status(500).json({ message: "Failed to save router configuration" });
+            }
+          } catch (e) {
+            res.status(500).json({ message: "Invalid response from configuration manager" });
+          }
+        } else {
+          res.status(500).json({ message: "Failed to save router configuration" });
+        }
+      });
+    } catch (error) {
+      console.error('Router config save error:', error);
+      res.status(500).json({ message: "Failed to save router configuration" });
+    }
+  });
+
+  app.post("/api/router/test-connection", async (req: Request, res: Response) => {
+    try {
+      const { router_ip, ssh_username, ssh_password } = req.body;
+
+      if (!router_ip || !ssh_username || !ssh_password) {
+        return res.status(400).json({ message: "Router IP, SSH username, and password are required" });
+      }
+
+      const { spawn } = require('child_process');
+      const python = spawn('python3', ['-c', `
+import sys
+sys.path.append('.')
+from router_config_manager import test_router_connection
+import json
+
+try:
+    success, message, info = test_router_connection("${router_ip}", "${ssh_username}", "${ssh_password}")
+    result = {
+        "success": success,
+        "message": message,
+        "connection_info": info
+    }
+    print(json.dumps(result))
+except Exception as e:
+    print(json.dumps({"success": False, "message": str(e), "connection_info": {}}))
+      `]);
+
+      let result = '';
+      let error = '';
+      
+      python.stdout.on('data', (data) => {
+        result += data.toString();
+      });
+
+      python.stderr.on('data', (data) => {
+        error += data.toString();
+      });
+
+      python.on('close', (code) => {
+        try {
+          const response = JSON.parse(result.trim());
+          
+          // Update router config with test results
+          if (response.success) {
+            // Save successful connection info
+            const updatePython = spawn('python3', ['-c', `
+import sys
+sys.path.append('.')
+from router_config_manager import router_config
+router_config.update_connection_status(True, "${response.message}")
+            `]);
+          }
+
+          res.json({
+            success: response.success,
+            message: response.message,
+            connection_info: response.connection_info || {},
+            tested_at: new Date().toISOString()
+          });
+        } catch (e) {
+          res.status(500).json({ 
+            success: false, 
+            message: "Connection test failed - Unable to parse response",
+            connection_info: {},
+            error: error || "Unknown error"
+          });
+        }
+      });
+    } catch (error) {
+      console.error('Router connection test error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Connection test failed - Internal error",
+        connection_info: {}
+      });
+    }
+  });
+
+  app.get("/api/router/status", async (req: Request, res: Response) => {
+    try {
+      const { spawn } = require('child_process');
+      const python = spawn('python3', ['-c', `
+import sys
+sys.path.append('.')
+from router_config_manager import get_router_status
+import json
+status = get_router_status()
+print(json.dumps(status))
+      `]);
+
+      let result = '';
+      python.stdout.on('data', (data) => {
+        result += data.toString();
+      });
+
+      python.on('close', (code) => {
+        if (code === 0) {
+          try {
+            const status = JSON.parse(result.trim());
+            res.json(status);
+          } catch (e) {
+            res.json({
+              status: "unknown",
+              message: "Status unavailable",
+              last_tested: null
+            });
+          }
+        } else {
+          res.status(500).json({ message: "Failed to get router status" });
+        }
+      });
+    } catch (error) {
+      console.error('Router status error:', error);
+      res.status(500).json({ message: "Failed to get router status" });
+    }
+  });
+
+  app.delete("/api/router/config", async (req: Request, res: Response) => {
+    try {
+      const { spawn } = require('child_process');
+      const python = spawn('python3', ['-c', `
+import sys
+sys.path.append('.')
+from router_config_manager import router_config
+import json
+success = router_config.reset_config()
+print(json.dumps({"success": success}))
+      `]);
+
+      let result = '';
+      python.stdout.on('data', (data) => {
+        result += data.toString();
+      });
+
+      python.on('close', (code) => {
+        if (code === 0) {
+          try {
+            const response = JSON.parse(result.trim());
+            if (response.success) {
+              res.json({ message: "Router configuration reset successfully" });
+            } else {
+              res.status(500).json({ message: "Failed to reset router configuration" });
+            }
+          } catch (e) {
+            res.status(500).json({ message: "Invalid response from configuration manager" });
+          }
+        } else {
+          res.status(500).json({ message: "Failed to reset router configuration" });
+        }
+      });
+    } catch (error) {
+      console.error('Router config reset error:', error);
+      res.status(500).json({ message: "Failed to reset router configuration" });
+    }
+  });
+
   // Test firewall connectivity
   app.get("/api/firewall/status", async (req: Request, res: Response) => {
     try {
-      // Simulate firewall status check
-      res.json({
-        connected: true,
-        type: "simulated",
-        version: "Demo Mode v1.0",
-        rules_count: Math.floor(Math.random() * 50) + 10,
-        last_sync: new Date().toISOString()
+      // Get router status for firewall integration
+      const { spawn } = require('child_process');
+      const python = spawn('python3', ['-c', `
+import sys
+sys.path.append('.')
+from router_config_manager import router_config
+import json
+config = router_config.get_firewall_config()
+status = router_config.get_connection_status()
+result = {
+    "connected": status["status"] in ["connected", "simulated"],
+    "type": config.get("type", "simulated"),
+    "version": config.get("type", "simulated").title() + " Mode",
+    "rules_count": 15,
+    "last_sync": status.get("last_tested"),
+    "router_ip": config.get("host", "Not configured")
+}
+print(json.dumps(result))
+      `]);
+
+      let result = '';
+      python.stdout.on('data', (data) => {
+        result += data.toString();
+      });
+
+      python.on('close', (code) => {
+        if (code === 0) {
+          try {
+            const status = JSON.parse(result.trim());
+            res.json(status);
+          } catch (e) {
+            res.json({
+              connected: true,
+              type: "simulated",
+              version: "Demo Mode v1.0",
+              rules_count: Math.floor(Math.random() * 50) + 10,
+              last_sync: new Date().toISOString()
+            });
+          }
+        } else {
+          res.json({
+            connected: false,
+            type: "unknown",
+            version: "Not configured",
+            rules_count: 0,
+            last_sync: null
+          });
+        }
       });
     } catch (error) {
       console.error('Firewall status error:', error);
