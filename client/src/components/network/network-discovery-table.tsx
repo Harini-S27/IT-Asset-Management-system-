@@ -8,6 +8,7 @@ import {
   Eye,
   History
 } from "lucide-react";
+import { SimpleDeviceManagement } from "@/components/device-management/simple-device-management";
 import { DataTable } from "@/components/ui/data-table";
 import { formatTimeSince, cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -149,6 +150,15 @@ const NetworkDiscoveryTable = () => {
       accessorKey: "actions",
       cell: (device: NetworkDevice) => (
         <div className="flex items-center space-x-2">
+          <SimpleDeviceManagement 
+            device={{
+              id: device.id,
+              name: device.deviceName || "Unknown Device",
+              ipAddress: device.currentIp || "No IP",
+              macAddress: device.macAddress,
+              status: device.status
+            }}
+          />
           <Button
             variant="ghost"
             size="sm"
