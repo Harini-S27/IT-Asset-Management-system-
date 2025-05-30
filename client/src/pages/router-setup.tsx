@@ -170,9 +170,15 @@ export default function RouterSetup() {
   // Reset configuration mutation
   const resetConfigMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest('/api/router/config', {
+      const response = await fetch('/api/router/config', {
         method: 'DELETE'
       });
+      
+      if (!response.ok) {
+        throw new Error('Failed to reset configuration');
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       setFormData({
