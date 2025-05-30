@@ -419,11 +419,71 @@ export function GlobalBlockingTable() {
           </div>
         </CardHeader>
         <CardContent>
-          <DataTable
-            columns={columns}
-            data={blockedDomains}
-            isLoading={isLoading}
-          />
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2" />
+                <p className="text-muted-foreground">Loading blocked domains...</p>
+              </div>
+            </div>
+          ) : blockedDomains.length === 0 ? (
+            <div className="text-center py-8">
+              <Globe className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-lg font-medium mb-2">No blocked domains</h3>
+              <p className="text-muted-foreground mb-4">
+                Start by adding domains to block across your network
+              </p>
+              <Button onClick={() => setShowAddDialog(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Block Your First Domain
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {blockedDomains.map((domain, index) => (
+                <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center space-x-4">
+                    <Globe className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <div className="font-mono font-medium">{domain.domain}</div>
+                      <div className="text-sm text-muted-foreground">{domain.reason}</div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-4">
+                    <Badge variant={domain.status === 'active' ? 'destructive' : 'secondary'}>
+                      {domain.status === 'active' ? (
+                        <>
+                          <Shield className="h-3 w-3 mr-1" />
+                          Blocked
+                        </>
+                      ) : (
+                        <>
+                          <ShieldOff className="h-3 w-3 mr-1" />
+                          Inactive
+                        </>
+                      )}
+                    </Badge>
+                    
+                    <div className="text-right text-sm">
+                      <div>{formatDate(domain.created_at)}</div>
+                      <div className="text-xs text-muted-foreground">by {domain.created_by}</div>
+                    </div>
+                    
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeDomainMutation.mutate(domain.domain)}
+                      disabled={removeDomainMutation.isPending}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -44,6 +44,7 @@ function Router() {
                 <Route path="/map" component={MapView} />
                 <Route path="/prohibited-software" component={ProhibitedSoftware} />
                 <Route path="/router-setup" component={RouterSetup} />
+                <Route path="/global-blocking" component={GlobalBlocking} />
                 <Route path="/settings" component={Settings} />
                 <Route path="/reports" component={Reports} />
                 <Route path="/login">

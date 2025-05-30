@@ -9,7 +9,8 @@ import {
   FileBarChart, 
   LogOut,
   Shield,
-  Router
+  Router,
+  Globe
 } from "lucide-react";
 import { UserMenu } from "./user-menu";
 import { useAuth } from "@/contexts/auth-context";
@@ -45,6 +46,11 @@ const Sidebar = () => {
       name: "Router Setup",
       href: "/router-setup",
       icon: Router,
+    },
+    {
+      name: "Blocked Websites",
+      href: "/global-blocking",
+      icon: Globe,
     },
     {
       name: "Settings",
