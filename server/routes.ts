@@ -1,9 +1,9 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
-import { spawn } from "child_process";
 import fs from "fs";
 import path from "path";
 import { storage } from "./storage";
+import { routerManager } from "./router-manager";
 import { 
   insertDeviceSchema, 
   insertProhibitedSoftwareSchema,
@@ -862,42 +862,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Router Configuration API endpoints
   app.get("/api/router/config", async (req: Request, res: Response) => {
     try {
-      const { spawn } = require('child_process');
-      const python = spawn('python3', ['-c', `
-import sys
-sys.path.append('.')
-from router_config_manager import router_config
-import json
-config = router_config.load_config()
-# Remove sensitive data
-if 'ssh_password' in config:
-    config['ssh_password'] = '***'
-print(json.dumps(config))
-      `]);
-
-      let result = '';
-      python.stdout.on('data', (data) => {
-        result += data.toString();
-      });
-
-      python.on('close', (code) => {
-        if (code === 0) {
-          try {
-            const config = JSON.parse(result.trim());
-            res.json(config);
-          } catch (e) {
-            res.json({
-              router_ip: "",
-              ssh_username: "",
-              mode: "simulated",
-              router_type: "generic",
-              last_status: "unknown"
-            });
-          }
-        } else {
-          res.status(500).json({ message: "Failed to load router configuration" });
+      const configPath = path.join(process.cwd(), 'router_config.json');
+      
+      if (fs.existsSync(configPath)) {
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        // Remove sensitive data
+        if (config.ssh_password) {
+          config.ssh_password = '***';
         }
-      });
+        res.json(config);
+      } else {
+        res.json({
+          router_ip: "",
+          ssh_username: "",
+          mode: "simulated",
+          router_type: "generic",
+          last_status: "unknown"
+        });
+      }
     } catch (error) {
       console.error('Router config fetch error:', error);
       res.status(500).json({ message: "Failed to fetch router configuration" });
