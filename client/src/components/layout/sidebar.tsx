@@ -53,14 +53,14 @@ const Sidebar = () => {
       icon: Globe,
     },
     {
-      name: "Settings",
-      href: "/settings",
-      icon: Settings,
-    },
-    {
       name: "Reports",
       href: "/reports",
       icon: FileBarChart,
+    },
+    {
+      name: "Settings",
+      href: "/settings",
+      icon: Settings,
     },
   ];
 
@@ -68,7 +68,9 @@ const Sidebar = () => {
     <aside className="sidebar w-64 bg-[#2D3748] text-white p-4 flex flex-col h-screen fixed">
       <div className="mb-8 mt-4">
         <h1 className="text-xl font-bold flex items-center">
-          <img src={logoImage} alt="IT Asset Manager Logo" className="h-16 w-16 mr-3" />
+          <div className="h-16 w-16 mr-3 bg-white rounded-lg p-2 flex items-center justify-center">
+            <img src={logoImage} alt="IT Asset Manager Logo" className="h-12 w-12 object-contain" />
+          </div>
           IT Asset Manager
         </h1>
       </div>
