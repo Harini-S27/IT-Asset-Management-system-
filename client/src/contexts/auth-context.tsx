@@ -27,7 +27,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Role-based permissions configuration
 const ROLE_PERMISSIONS = {
-  admin: [
+  Admin: [
     'view_devices', 'edit_devices', 'delete_devices',
     'view_software', 'edit_software', 'delete_software',
     'view_reports', 'export_reports',
@@ -35,14 +35,14 @@ const ROLE_PERMISSIONS = {
     'view_settings', 'manage_settings', 'manage_users',
     'configure_router', 'scan_devices'
   ] as Permission[],
-  manager: [
+  Manager: [
     'view_devices', 'edit_devices', 'delete_devices',
     'view_software', 'edit_software', 'delete_software',
     'view_reports',
     'view_network', 'manage_network', 'block_websites',
     'configure_router', 'scan_devices'
   ] as Permission[],
-  viewer: [
+  Viewer: [
     'view_devices',
     'view_software',
     'view_reports',
@@ -52,9 +52,9 @@ const ROLE_PERMISSIONS = {
 
 // Pages accessible by role
 const ROLE_PAGES = {
-  admin: ['/', '/devices', '/map', '/prohibited-software', '/router-setup', '/global-blocking', '/settings', '/reports'],
-  manager: ['/', '/devices', '/map', '/prohibited-software', '/router-setup', '/global-blocking', '/reports'],
-  viewer: ['/', '/devices', '/map', '/prohibited-software', '/reports']
+  Admin: ['/', '/devices', '/map', '/prohibited-software', '/router-setup', '/global-blocking', '/settings', '/reports'],
+  Manager: ['/', '/devices', '/map', '/prohibited-software', '/router-setup', '/global-blocking', '/reports'],
+  Viewer: ['/', '/devices', '/map', '/prohibited-software', '/reports']
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {

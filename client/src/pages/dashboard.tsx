@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/auth-context";
+import { RoleSwitcher } from "@/components/ui/role-switcher";
 
 const Dashboard = () => {
   const { user, hasPermission } = useAuth();
@@ -55,19 +56,19 @@ const Dashboard = () => {
     if (!user) return [];
     
     const capabilities = {
-      admin: [
+      Admin: [
         "Full system administration",
-        "User management and system settings",
+        "User management and system settings", 
         "Complete device and network control",
         "All reporting and export capabilities"
       ],
-      manager: [
+      Manager: [
         "Device and software management",
         "Network configuration and blocking",
         "Router setup and monitoring",
         "Operational reporting"
       ],
-      viewer: [
+      Viewer: [
         "View all devices and reports",
         "Monitor network discovery",
         "Access prohibited software list",
@@ -75,19 +76,19 @@ const Dashboard = () => {
       ]
     };
     
-    return capabilities[user.role.toLowerCase() as keyof typeof capabilities] || [];
+    return capabilities[user.role as keyof typeof capabilities] || [];
   };
 
   const getRoleColor = () => {
     if (!user) return "gray";
     
     const colors = {
-      admin: "red",
-      manager: "blue", 
-      viewer: "green"
+      Admin: "red",
+      Manager: "blue", 
+      Viewer: "green"
     };
     
-    return colors[user.role.toLowerCase() as keyof typeof colors] || "gray";
+    return colors[user.role as keyof typeof colors] || "gray";
   };
 
   return (
@@ -106,9 +107,10 @@ const Dashboard = () => {
           </div>
           
           <div className="flex items-center space-x-4">
+            <RoleSwitcher />
             <Badge 
               variant="outline" 
-              className={`px-3 py-1 text-sm font-medium border-${getRoleColor()}-200 text-${getRoleColor()}-700 bg-${getRoleColor()}-50`}
+              className="px-3 py-1 text-sm font-medium"
             >
               <Shield className="h-3 w-3 mr-1" />
               {user?.role} Access
