@@ -257,15 +257,22 @@ export function GlobalBlockingTable() {
       header: "Actions",
       accessorKey: "actions",
       cell: (domain: BlockedDomain) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => removeDomainMutation.mutate(domain.domain)}
-          disabled={removeDomainMutation.isPending}
-          className="text-red-600 hover:text-red-700"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
+        canManage ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => removeDomainMutation.mutate(domain.domain)}
+            disabled={removeDomainMutation.isPending}
+            className="text-red-600 hover:text-red-700"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        ) : (
+          <div className="flex items-center text-xs text-muted-foreground">
+            <Lock className="h-3 w-3 mr-1" />
+            Read Only
+          </div>
+        )
       ),
     },
   ];
@@ -360,67 +367,76 @@ export function GlobalBlockingTable() {
               </CardDescription>
             </div>
             <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => reapplyRulesMutation.mutate()}
-                disabled={reapplyRulesMutation.isPending}
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Reapply Rules
-              </Button>
-              
-              <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-                <DialogTrigger asChild>
-                  <Button size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Block Domain
+              {canManage ? (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => reapplyRulesMutation.mutate()}
+                    disabled={reapplyRulesMutation.isPending}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Reapply Rules
                   </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Block New Domain</DialogTitle>
-                    <DialogDescription>
-                      Add a domain to block across all network devices. Rules will be applied {blockingStatus?.mode === 'real_ssh' ? 'to your router via SSH' : 'in simulation mode'}.
-                    </DialogDescription>
-                  </DialogHeader>
                   
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="domain">Domain</Label>
-                      <Input
-                        id="domain"
-                        placeholder="facebook.com, youtube.com, twitter.com"
-                        value={newDomain}
-                        onChange={(e) => setNewDomain(e.target.value)}
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="reason">Reason (Optional)</Label>
-                      <Textarea
-                        id="reason"
-                        placeholder="Productivity policy, inappropriate content, etc."
-                        value={blockReason}
-                        onChange={(e) => setBlockReason(e.target.value)}
-                        rows={3}
-                      />
-                    </div>
-                  </div>
-                  
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setShowAddDialog(false)}>
-                      Cancel
-                    </Button>
-                    <Button 
-                      onClick={handleAddDomain}
-                      disabled={addDomainMutation.isPending}
-                    >
-                      {addDomainMutation.isPending ? 'Blocking...' : 'Block Domain'}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+                  <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+                    <DialogTrigger asChild>
+                      <Button size="sm">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Block Domain
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Block New Domain</DialogTitle>
+                        <DialogDescription>
+                          Add a domain to block across all network devices. Rules will be applied {blockingStatus?.mode === 'real_ssh' ? 'to your router via SSH' : 'in simulation mode'}.
+                        </DialogDescription>
+                      </DialogHeader>
+                      
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="domain">Domain</Label>
+                          <Input
+                            id="domain"
+                            placeholder="facebook.com, youtube.com, twitter.com"
+                            value={newDomain}
+                            onChange={(e) => setNewDomain(e.target.value)}
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="reason">Reason (Optional)</Label>
+                          <Textarea
+                            id="reason"
+                            placeholder="Productivity policy, inappropriate content, etc."
+                            value={blockReason}
+                            onChange={(e) => setBlockReason(e.target.value)}
+                            rows={3}
+                          />
+                        </div>
+                      </div>
+                      
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+                          Cancel
+                        </Button>
+                        <Button 
+                          onClick={handleAddDomain}
+                          disabled={addDomainMutation.isPending}
+                        >
+                          {addDomainMutation.isPending ? 'Blocking...' : 'Block Domain'}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </>
+              ) : (
+                <div className="flex items-center text-sm text-muted-foreground bg-gray-50 px-3 py-2 rounded-md">
+                  <Lock className="h-4 w-4 mr-2" />
+                  Read-only access - Contact Admin/Manager to modify blocking rules
+                </div>
+              )}
             </div>
           </div>
         </CardHeader>

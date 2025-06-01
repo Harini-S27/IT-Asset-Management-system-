@@ -7,13 +7,20 @@ import {
   Monitor, 
   MapPin, 
   AlertCircle, 
-  CheckCircle2
+  CheckCircle2,
+  Shield,
+  User,
+  Settings,
+  Lock
 } from "lucide-react";
 import { Device } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/auth-context";
 
 const Dashboard = () => {
+  const { user, hasPermission } = useAuth();
   const { data: devices = [], isLoading } = useQuery<Device[]>({
     queryKey: ['/api/devices'],
   });
@@ -43,12 +50,101 @@ const Dashboard = () => {
     .sort((a, b) => new Date(b.lastUpdated || 0).getTime() - new Date(a.lastUpdated || 0).getTime())
     .slice(0, 5);
 
+  // Role-specific capabilities
+  const getRoleCapabilities = () => {
+    if (!user) return [];
+    
+    const capabilities = {
+      admin: [
+        "Full system administration",
+        "User management and system settings",
+        "Complete device and network control",
+        "All reporting and export capabilities"
+      ],
+      manager: [
+        "Device and software management",
+        "Network configuration and blocking",
+        "Router setup and monitoring",
+        "Operational reporting"
+      ],
+      viewer: [
+        "View all devices and reports",
+        "Monitor network discovery",
+        "Access prohibited software list",
+        "Read-only dashboard access"
+      ]
+    };
+    
+    return capabilities[user.role.toLowerCase() as keyof typeof capabilities] || [];
+  };
+
+  const getRoleColor = () => {
+    if (!user) return "gray";
+    
+    const colors = {
+      admin: "red",
+      manager: "blue", 
+      viewer: "green"
+    };
+    
+    return colors[user.role.toLowerCase() as keyof typeof colors] || "gray";
+  };
+
   return (
     <div className="space-y-6">
+      {/* Role-Based Welcome Section */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <User className="h-8 w-8 text-blue-600" />
+              <div>
+                <h1 className="text-2xl font-bold">Welcome back, {user?.username}</h1>
+                <p className="text-gray-600">IT Asset Management Dashboard</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            <Badge 
+              variant="outline" 
+              className={`px-3 py-1 text-sm font-medium border-${getRoleColor()}-200 text-${getRoleColor()}-700 bg-${getRoleColor()}-50`}
+            >
+              <Shield className="h-3 w-3 mr-1" />
+              {user?.role} Access
+            </Badge>
+          </div>
+        </div>
+        
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">Your Access Level</h3>
+            <ul className="text-sm text-gray-600 space-y-1">
+              {getRoleCapabilities().map((capability, index) => (
+                <li key={index} className="flex items-center">
+                  <CheckCircle2 className="h-3 w-3 text-green-600 mr-2 flex-shrink-0" />
+                  {capability}
+                </li>
+              ))}
+            </ul>
+          </div>
+          
+          <div className="flex items-center justify-center">
+            <div className="text-center p-4 bg-white rounded-lg shadow-sm border">
+              <div className="text-lg font-bold text-gray-800">{totalDevices}</div>
+              <div className="text-sm text-gray-600">Devices Under Management</div>
+              <div className="text-xs text-gray-500 mt-1">
+                {hasPermission('edit_devices') ? 'Full Control' : 'View Only'}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-gray-500">Overview of your IT asset management</p>
+          <h2 className="text-xl font-semibold">System Overview</h2>
+          <p className="text-gray-500">Current status of your IT infrastructure</p>
         </div>
       </div>
 
