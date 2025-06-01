@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { DataTable } from '@/components/ui/data-table';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient } from '@/lib/queryClient';
+import { useAuth } from '@/contexts/auth-context';
 import {
   Shield,
   ShieldOff,
@@ -16,7 +17,8 @@ import {
   Globe,
   Router,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Lock
 } from 'lucide-react';
 import {
   Dialog,
@@ -49,9 +51,13 @@ interface BlockingStatus {
 
 export function GlobalBlockingTable() {
   const { toast } = useToast();
+  const { user, hasPermission } = useAuth();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [newDomain, setNewDomain] = useState('');
   const [blockReason, setBlockReason] = useState('');
+
+  const canManage = hasPermission('block_websites');
+  const canView = hasPermission('view_network');
 
   // Fetch blocked domains
   const { data: blockedDomains = [], isLoading, refetch } = useQuery<BlockedDomain[]>({

@@ -19,7 +19,7 @@ import logoImage from "../../assets/logo.png";
 
 const Sidebar = () => {
   const [location] = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, canAccess } = useAuth();
 
   const navigationItems = [
     {
@@ -75,21 +75,26 @@ const Sidebar = () => {
       
       <nav className="flex-1">
         <ul>
-          {navigationItems.map((item) => (
-            <li key={item.name} className="mb-1">
-              <Link href={item.href}>
-                <div
-                  className={cn(
-                    "flex items-center py-2 px-4 rounded hover:bg-[#4299E1] transition-colors cursor-pointer",
-                    location === item.href ? "bg-[#4299E1]" : ""
-                  )}
-                >
-                  <item.icon className="h-5 w-5 mr-3" />
-                  {item.name}
-                </div>
-              </Link>
-            </li>
-          ))}
+          {navigationItems.map((item) => {
+            // Only show navigation items that the user can access
+            if (!canAccess(item.href)) return null;
+            
+            return (
+              <li key={item.name} className="mb-1">
+                <Link href={item.href}>
+                  <div
+                    className={cn(
+                      "flex items-center py-2 px-4 rounded hover:bg-[#4299E1] transition-colors cursor-pointer",
+                      location === item.href ? "bg-[#4299E1]" : ""
+                    )}
+                  >
+                    <item.icon className="h-5 w-5 mr-3" />
+                    {item.name}
+                  </div>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       </nav>
       
