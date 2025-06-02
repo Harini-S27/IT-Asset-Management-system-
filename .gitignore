@@ -4,3 +4,32 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Python files and virtual environments (exclude from TypeScript deployment)
+*.py
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.cache/
+*.egg-info/
+.pytest_cache/
+.coverage
+.tox/
+*.log
+
+# Python project files
+pyproject.toml
+uv.lock
+
+# Configuration files that might interfere with deployment
+global_blocked_sites.json
+global_blocking.py
+router_config.json
+firewall_rules.json
