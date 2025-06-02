@@ -263,7 +263,6 @@ const MapComponent = () => {
       
       console.log("Map created successfully");
     }
-  }, []);
 
     return () => {
       clearTimeout(timer);
