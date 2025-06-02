@@ -777,12 +777,34 @@ export function MapPreferencesForm() {
 
 // Access Control Form
 export function AccessControlForm() {
+  const { toast } = useToast();
   const [permissionsList, setPermissionsList] = useState(permissions);
 
   const togglePermission = (index: number, role: 'admin' | 'manager' | 'viewer', checked: boolean) => {
     const newPermissions = [...permissionsList];
     newPermissions[index][role] = checked;
     setPermissionsList(newPermissions);
+    
+    // Emit event to notify parent that settings changed
+    const event = new CustomEvent('settings-changed');
+    window.dispatchEvent(event);
+    
+    // Show feedback toast
+    toast({
+      title: "Permission Updated",
+      description: `${role.charAt(0).toUpperCase() + role.slice(1)} access to ${newPermissions[index].resource} ${checked ? 'enabled' : 'disabled'}`,
+      duration: 2000
+    });
+  };
+
+  const isDisabled = (resource: string, role: 'admin' | 'manager' | 'viewer') => {
+    // Dashboard access is required for all roles
+    if (resource === "Dashboard") return true;
+    
+    // Admin always has full access to User Management and Settings
+    if (role === "admin" && (resource === "User Management" || resource === "Settings")) return true;
+    
+    return false;
   };
 
   return (
@@ -804,25 +826,30 @@ export function AccessControlForm() {
             </TableHeader>
             <TableBody>
               {permissionsList.map((permission, index) => (
-                <TableRow key={index}>
+                <TableRow key={`permission-${index}`}>
                   <TableCell className="font-medium">{permission.resource}</TableCell>
                   <TableCell className="text-center">
                     <Switch 
                       checked={permission.admin} 
                       onCheckedChange={(checked) => togglePermission(index, 'admin', checked)} 
-                      disabled={permission.resource === "Dashboard"} 
+                      disabled={isDisabled(permission.resource, 'admin')}
+                      className="data-[state=checked]:bg-red-600"
                     />
                   </TableCell>
                   <TableCell className="text-center">
                     <Switch 
                       checked={permission.manager} 
                       onCheckedChange={(checked) => togglePermission(index, 'manager', checked)} 
+                      disabled={isDisabled(permission.resource, 'manager')}
+                      className="data-[state=checked]:bg-blue-600"
                     />
                   </TableCell>
                   <TableCell className="text-center">
                     <Switch 
                       checked={permission.viewer} 
                       onCheckedChange={(checked) => togglePermission(index, 'viewer', checked)} 
+                      disabled={isDisabled(permission.resource, 'viewer')}
+                      className="data-[state=checked]:bg-green-600"
                     />
                   </TableCell>
                 </TableRow>
@@ -830,9 +857,23 @@ export function AccessControlForm() {
             </TableBody>
           </Table>
         </div>
-        <div className="mt-4 text-sm text-gray-500">
+        <div className="mt-4 space-y-2 text-sm text-gray-500">
           <p>* Changes to role permissions will be applied to all users with that role.</p>
           <p>* Some permissions are required for specific roles and cannot be modified.</p>
+          <div className="flex items-center gap-4 mt-3">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-red-600 rounded-full"></div>
+              <span>Admin</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
+              <span>Manager</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+              <span>Viewer</span>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
