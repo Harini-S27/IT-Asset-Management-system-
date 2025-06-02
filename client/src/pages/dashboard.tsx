@@ -18,7 +18,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/auth-context";
-import { RoleSwitcher } from "@/components/ui/role-switcher";
 
 const Dashboard = () => {
   const { user, hasPermission } = useAuth();
@@ -107,7 +106,6 @@ const Dashboard = () => {
           </div>
           
           <div className="flex items-center space-x-4">
-            <RoleSwitcher />
             <Badge 
               variant="outline" 
               className="px-3 py-1 text-sm font-medium"
