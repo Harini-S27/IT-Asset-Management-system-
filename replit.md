@@ -39,16 +39,13 @@ This is a comprehensive IT Asset Management (ITAM) platform designed for monitor
 
 ### Security Management
 - **Prohibited Software Detection**: Automated scanning and alerting
-- **Website Blocking**: Network-level domain blocking per device
-- **Router Integration**: Support for pfSense, OpenWrt, FortiGate, and simulation mode
-- **Global Blocking**: Network-wide website restrictions
 - **Compliance Monitoring**: Software compliance tracking and reporting
+- **Security Alerts**: Real-time threat detection and reporting
 
 ### Network Management
 - **Discovery Engine**: Automated network scanning using nmap and scapy
 - **IP History Tracking**: Historical IP assignment monitoring
 - **Traffic Logging**: Network activity monitoring
-- **Firewall Integration**: Direct router management via SSH/API
 
 ### Reporting & Analytics
 - **Dashboard Analytics**: Real-time metrics and KPIs
