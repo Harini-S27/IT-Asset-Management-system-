@@ -282,6 +282,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Device update endpoint for Python agents
+  app.post("/api/device-update", async (req: Request, res: Response) => {
+    try {
+      const { deviceName, operatingSystem, installedSoftware, ipAddress, location, agentVersion, reportTime, systemUptime } = req.body;
+
+      if (!deviceName || !operatingSystem) {
+        return res.status(400).json({ message: "Device name and operating system are required" });
+      }
+
+      // Check if device already exists by hostname
+      const existingDevices = await storage.getDevices();
+      const existingDevice = existingDevices.find(device => device.name === deviceName);
+
+      let device;
+      if (existingDevice) {
+        // Update existing device
+        device = await storage.updateDevice(existingDevice.id, {
+          name: deviceName,
+          model: `${operatingSystem} Device`,
+          ipAddress: ipAddress || "Unknown",
+          status: "Active"
+        });
+      } else {
+        // Create new device
+        device = await storage.createDevice({
+          name: deviceName,
+          type: "Workstation",
+          model: `${operatingSystem} Device`,
+          status: "Active",
+          location: "Remote",
+          ipAddress: ipAddress || "Unknown",
+          latitude: "37.7749",
+          longitude: "-122.4194"
+        });
+      }
+
+      // Check for prohibited software if installed software is provided
+      let detectedThreats = 0;
+      if (installedSoftware && installedSoftware.length > 0 && device) {
+        const prohibitedSoftware = await storage.getProhibitedSoftware();
+        const prohibitedNames = prohibitedSoftware.map(ps => ps.name.toLowerCase());
+        
+        for (const software of installedSoftware) {
+          if (prohibitedNames.some(prohibited => software.toLowerCase().includes(prohibited))) {
+            detectedThreats++;
+            
+            // Find the prohibited software entry
+            const matchedProhibited = prohibitedSoftware.find(ps => 
+              software.toLowerCase().includes(ps.name.toLowerCase())
+            );
+            
+            if (matchedProhibited) {
+              // Log the detection
+              await storage.createSoftwareDetectionLog({
+                deviceId: device.id,
+                prohibitedSoftwareId: matchedProhibited.id,
+                detectedVersion: "Unknown",
+                actionTaken: "Flagged",
+                status: "Active"
+              });
+            }
+          }
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Device ${deviceName} updated successfully`,
+        deviceId: device?.id,
+        detectedThreats,
+        agentVersion: agentVersion || "unknown",
+        lastUpdate: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('Device update error:', error);
+      res.status(500).json({ message: "Failed to update device information" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
