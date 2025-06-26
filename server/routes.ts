@@ -8,7 +8,8 @@ import {
   insertDeviceSchema, 
   insertProhibitedSoftwareSchema,
   insertSoftwareDetectionLogSchema,
-  insertSoftwareScanResultsSchema
+  insertSoftwareScanResultsSchema,
+  insertTicketSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -359,6 +360,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Device update error:', error);
       res.status(500).json({ message: "Failed to update device information" });
+    }
+  });
+
+  // Ticket Management API endpoints
+  app.get("/api/tickets", async (req: Request, res: Response) => {
+    try {
+      const tickets = await storage.getTickets();
+      res.json(tickets);
+    } catch (error) {
+      console.error('Get tickets error:', error);
+      res.status(500).json({ message: "Failed to fetch tickets" });
+    }
+  });
+
+  app.get("/api/tickets/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ticket ID" });
+      }
+      
+      const ticket = await storage.getTicket(id);
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      
+      res.json(ticket);
+    } catch (error) {
+      console.error('Get ticket error:', error);
+      res.status(500).json({ message: "Failed to fetch ticket" });
+    }
+  });
+
+  app.get("/api/tickets/device/:deviceId", async (req: Request, res: Response) => {
+    try {
+      const deviceId = parseInt(req.params.deviceId);
+      if (isNaN(deviceId)) {
+        return res.status(400).json({ message: "Invalid device ID" });
+      }
+      
+      const tickets = await storage.getTicketsByDevice(deviceId);
+      res.json(tickets);
+    } catch (error) {
+      console.error('Get device tickets error:', error);
+      res.status(500).json({ message: "Failed to fetch device tickets" });
+    }
+  });
+
+  app.post("/api/tickets", async (req: Request, res: Response) => {
+    try {
+      const ticketData = insertTicketSchema.parse(req.body);
+      
+      // Generate ticket number if not provided
+      if (!ticketData.ticketNumber) {
+        const year = new Date().getFullYear();
+        const random = Math.floor(Math.random() * 9999).toString().padStart(4, '0');
+        ticketData.ticketNumber = `TKT-${year}-${random}`;
+      }
+      
+      const ticket = await storage.createTicket(ticketData);
+      res.status(201).json(ticket);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid ticket data", errors: error.errors });
+      }
+      console.error('Create ticket error:', error);
+      res.status(500).json({ message: "Failed to create ticket" });
+    }
+  });
+
+  app.patch("/api/tickets/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ticket ID" });
+      }
+
+      const updateData = insertTicketSchema.partial().parse(req.body);
+      const ticket = await storage.updateTicket(id, updateData);
+      
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      
+      res.json(ticket);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid ticket data", errors: error.errors });
+      }
+      console.error('Update ticket error:', error);
+      res.status(500).json({ message: "Failed to update ticket" });
+    }
+  });
+
+  app.post("/api/tickets/:id/close", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ticket ID" });
+      }
+
+      const { resolvedBy, notes } = req.body;
+      if (!resolvedBy) {
+        return res.status(400).json({ message: "resolvedBy is required" });
+      }
+
+      const ticket = await storage.closeTicket(id, resolvedBy, notes);
+      
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      
+      res.json(ticket);
+    } catch (error) {
+      console.error('Close ticket error:', error);
+      res.status(500).json({ message: "Failed to close ticket" });
     }
   });
 

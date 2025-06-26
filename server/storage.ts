@@ -28,7 +28,10 @@ import {
   type InsertWebsiteBlock,
   blockingHistory,
   type BlockingHistory,
-  type InsertBlockingHistory
+  type InsertBlockingHistory,
+  tickets,
+  type Ticket,
+  type InsertTicket
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -101,6 +104,17 @@ export interface IStorage {
   // Blocking History operations
   getBlockingHistory(websiteBlockId: number): Promise<BlockingHistory[]>;
   createBlockingHistoryEntry(entry: InsertBlockingHistory): Promise<BlockingHistory>;
+  
+  // Ticket operations
+  getTickets(): Promise<Ticket[]>;
+  getTicket(id: number): Promise<Ticket | undefined>;
+  getTicketsByDevice(deviceId: number): Promise<Ticket[]>;
+  createTicket(ticket: InsertTicket): Promise<Ticket>;
+  updateTicket(id: number, ticket: Partial<InsertTicket>): Promise<Ticket | undefined>;
+  closeTicket(id: number, resolvedBy: string, notes?: string): Promise<Ticket | undefined>;
+  
+  // Auto-ticket generation
+  generateAutoTicket(deviceId: number, triggerEvent: string, oldStatus?: string, newStatus?: string): Promise<Ticket | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -143,12 +157,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateDevice(id: number, updatedDevice: Partial<InsertDevice>): Promise<Device | undefined> {
+    // Get current device state before update
+    const currentDevice = await this.getDevice(id);
+    const oldStatus = currentDevice?.status;
+
     const now = new Date();
     const [device] = await db
       .update(devices)
       .set({ ...updatedDevice, lastUpdated: now })
       .where(eq(devices.id, id))
       .returning();
+
+    // Check if status changed and generate auto-ticket if needed
+    if (device && updatedDevice.status && oldStatus !== updatedDevice.status) {
+      await this.generateAutoTicket(
+        id, 
+        `status_change_${updatedDevice.status.toLowerCase()}`,
+        oldStatus,
+        updatedDevice.status
+      );
+    }
+
     return device;
   }
 
@@ -796,6 +825,125 @@ export class DatabaseStorage implements IStorage {
         await this.createProhibitedSoftware(software);
       }
     }
+  }
+
+  // Ticket operations
+  async getTickets(): Promise<Ticket[]> {
+    return await db.select().from(tickets).orderBy(desc(tickets.createdAt));
+  }
+
+  async getTicket(id: number): Promise<Ticket | undefined> {
+    const [ticket] = await db.select().from(tickets).where(eq(tickets.id, id));
+    return ticket;
+  }
+
+  async getTicketsByDevice(deviceId: number): Promise<Ticket[]> {
+    return await db.select().from(tickets)
+      .where(eq(tickets.deviceId, deviceId))
+      .orderBy(desc(tickets.createdAt));
+  }
+
+  async createTicket(ticket: InsertTicket): Promise<Ticket> {
+    const [newTicket] = await db.insert(tickets).values(ticket).returning();
+    return newTicket;
+  }
+
+  async updateTicket(id: number, ticket: Partial<InsertTicket>): Promise<Ticket | undefined> {
+    const [updatedTicket] = await db.update(tickets)
+      .set({ ...ticket, updatedAt: new Date() })
+      .where(eq(tickets.id, id))
+      .returning();
+    return updatedTicket;
+  }
+
+  async closeTicket(id: number, resolvedBy: string, notes?: string): Promise<Ticket | undefined> {
+    const [closedTicket] = await db.update(tickets)
+      .set({ 
+        status: "Resolved",
+        resolvedAt: new Date(),
+        updatedAt: new Date(),
+        notes: notes || undefined
+      })
+      .where(eq(tickets.id, id))
+      .returning();
+    return closedTicket;
+  }
+
+  // Generate ticket number in format: TKT-YYYY-NNNN
+  private generateTicketNumber(): string {
+    const year = new Date().getFullYear();
+    const random = Math.floor(Math.random() * 9999).toString().padStart(4, '0');
+    return `TKT-${year}-${random}`;
+  }
+
+  // Auto-ticket generation based on device status changes
+  async generateAutoTicket(deviceId: number, triggerEvent: string, oldStatus?: string, newStatus?: string): Promise<Ticket | undefined> {
+    const device = await this.getDevice(deviceId);
+    if (!device) return undefined;
+
+    // Only generate tickets for problematic statuses
+    const problematicStatuses = ['Inactive', 'Damage', 'Abnormal'];
+    if (!newStatus || !problematicStatuses.includes(newStatus)) {
+      return undefined;
+    }
+
+    // Check if there's already an open ticket for this device with the same issue
+    const existingTickets = await db.select().from(tickets)
+      .where(and(
+        eq(tickets.deviceId, deviceId),
+        eq(tickets.status, "Open"),
+        eq(tickets.triggerEvent, triggerEvent)
+      ));
+
+    if (existingTickets.length > 0) {
+      // Don't create duplicate tickets
+      return undefined;
+    }
+
+    // Determine ticket details based on status
+    let title: string;
+    let description: string;
+    let priority: "Low" | "Medium" | "High" | "Critical";
+    let category: "Hardware" | "Software" | "Network" | "Security";
+
+    switch (newStatus) {
+      case 'Damage':
+        title = `Hardware Damage Detected - ${device.name}`;
+        description = `Device ${device.name} (${device.model}) has been marked as damaged. Immediate attention required for hardware assessment and potential replacement.`;
+        priority = "High";
+        category = "Hardware";
+        break;
+      case 'Inactive':
+        title = `Device Inactive - ${device.name}`;
+        description = `Device ${device.name} (${device.model}) has become inactive. This may indicate connectivity issues, power problems, or system failure.`;
+        priority = "Medium";
+        category = "Hardware";
+        break;
+      case 'Abnormal':
+        title = `Abnormal Behavior Detected - ${device.name}`;
+        description = `Device ${device.name} (${device.model}) is exhibiting abnormal behavior. Investigation needed to identify root cause and restore normal operation.`;
+        priority = "High";
+        category = "Security";
+        break;
+      default:
+        return undefined;
+    }
+
+    const ticketData: InsertTicket = {
+      ticketNumber: this.generateTicketNumber(),
+      title,
+      description,
+      priority,
+      status: "Open",
+      category,
+      deviceId,
+      createdBy: "System",
+      isAutoGenerated: true,
+      triggerEvent,
+      notes: oldStatus ? `Status changed from '${oldStatus}' to '${newStatus}'` : undefined
+    };
+
+    return await this.createTicket(ticketData);
   }
 }
 
