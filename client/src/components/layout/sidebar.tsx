@@ -10,7 +10,8 @@ import {
   LogOut,
   Shield,
   Router,
-  Globe
+  Globe,
+  Ticket
 } from "lucide-react";
 import { UserMenu } from "./user-menu";
 import { useAuth } from "@/contexts/auth-context";
@@ -41,6 +42,11 @@ const Sidebar = () => {
       name: "Prohibited Software",
       href: "/prohibited-software",
       icon: Shield,
+    },
+    {
+      name: "Support Tickets",
+      href: "/tickets",
+      icon: Ticket,
     },
     {
       name: "Router Setup",

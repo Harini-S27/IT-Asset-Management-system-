@@ -30,6 +30,7 @@ const ROLE_PERMISSIONS = {
   Admin: [
     'view_devices', 'edit_devices', 'delete_devices',
     'view_software', 'edit_software', 'delete_software',
+    'view_tickets', 'manage_tickets', 'close_tickets',
     'view_reports', 'export_reports',
     'view_network', 'manage_network', 'block_websites',
     'view_settings', 'manage_settings', 'manage_users',
@@ -38,6 +39,7 @@ const ROLE_PERMISSIONS = {
   Manager: [
     'view_devices', 'edit_devices', 'delete_devices',
     'view_software', 'edit_software', 'delete_software',
+    'view_tickets', 'manage_tickets', 'close_tickets',
     'view_reports',
     'view_network', 'manage_network', 'block_websites',
     'configure_router', 'scan_devices'
@@ -45,6 +47,7 @@ const ROLE_PERMISSIONS = {
   Viewer: [
     'view_devices',
     'view_software',
+    'view_tickets',
     'view_reports',
     'view_network'
   ] as Permission[]
@@ -52,9 +55,9 @@ const ROLE_PERMISSIONS = {
 
 // Pages accessible by role
 const ROLE_PAGES = {
-  Admin: ['/', '/devices', '/map', '/prohibited-software', '/router-setup', '/global-blocking', '/settings', '/reports'],
-  Manager: ['/', '/devices', '/map', '/prohibited-software', '/router-setup', '/global-blocking', '/reports'],
-  Viewer: ['/', '/devices', '/map', '/prohibited-software', '/reports']
+  Admin: ['/', '/devices', '/map', '/prohibited-software', '/tickets', '/router-setup', '/global-blocking', '/settings', '/reports'],
+  Manager: ['/', '/devices', '/map', '/prohibited-software', '/tickets', '/router-setup', '/global-blocking', '/reports'],
+  Viewer: ['/', '/devices', '/map', '/prohibited-software', '/tickets', '/reports']
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {

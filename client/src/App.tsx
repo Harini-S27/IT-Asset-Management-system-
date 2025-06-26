@@ -8,6 +8,7 @@ import Dashboard from "@/pages/dashboard";
 import Devices from "@/pages/devices";
 import MapView from "@/pages/map";
 import ProhibitedSoftware from "@/pages/prohibited-software";
+import Tickets from "@/pages/tickets";
 import Settings from "@/pages/settings";
 import Reports from "@/pages/reports";
 import RouterSetup from "@/pages/router-setup";
@@ -43,6 +44,7 @@ function Router() {
                 <Route path="/devices" component={Devices} />
                 <Route path="/map" component={MapView} />
                 <Route path="/prohibited-software" component={ProhibitedSoftware} />
+                <Route path="/tickets" component={Tickets} />
                 <Route path="/router-setup" component={RouterSetup} />
                 <Route path="/global-blocking" component={GlobalBlocking} />
                 <Route path="/settings" component={Settings} />
