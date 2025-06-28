@@ -260,6 +260,7 @@ export const tickets = pgTable("tickets", {
 export const insertTicketSchema = createInsertSchema(tickets)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({
+    ticketNumber: z.string().optional(), // Make ticketNumber optional for auto-generation
     priority: z.enum(["Low", "Medium", "High", "Critical"]).default("Medium"),
     status: z.enum(["Open", "In Progress", "Resolved", "Closed"]).default("Open"),
     category: z.enum(["Hardware", "Software", "Network", "Security"]).default("Hardware"),
