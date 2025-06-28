@@ -145,7 +145,7 @@ export default function Tickets() {
         description: data.description,
         priority: data.priority,
         category: data.category,
-        deviceId: data.deviceId ? parseInt(data.deviceId) : undefined,
+        deviceId: data.deviceId && data.deviceId !== "none" ? parseInt(data.deviceId) : undefined,
         assignedTo: data.assignedTo || undefined,
         notes: data.notes || undefined,
         createdBy: "Manual", // Mark as manually created
@@ -348,7 +348,7 @@ export default function Tickets() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="">No specific device</SelectItem>
+                              <SelectItem value="none">No specific device</SelectItem>
                               {devices.map((device) => (
                                 <SelectItem key={device.id} value={device.id.toString()}>
                                   {device.name} ({device.model})
