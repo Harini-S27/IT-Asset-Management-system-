@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import { storage } from "./storage";
 import { routerManager } from "./router-manager";
+import { emailService } from "./email-service";
 import { 
   insertDeviceSchema, 
   insertProhibitedSoftwareSchema,
