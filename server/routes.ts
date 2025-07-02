@@ -480,6 +480,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Email logs endpoint
+  app.get("/api/email-logs", async (req: Request, res: Response) => {
+    try {
+      const logs = emailService.getEmailLogs();
+      res.json(logs);
+    } catch (error) {
+      console.error('Failed to fetch email logs:', error);
+      res.status(500).json({ message: "Failed to fetch email logs" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

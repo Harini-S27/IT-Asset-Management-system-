@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,134 +5,54 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Mail, CheckCircle, Clock, AlertCircle, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 
 interface EmailLog {
-  id: string;
-  ticketNumber: string;
-  deviceName: string;
-  deviceModel: string;
-  brand: string;
-  supportEmail: string;
-  issueType: string;
   timestamp: string;
-  status: 'sent' | 'logged' | 'failed';
-  messageId?: string;
+  recipient: string;
+  subject: string;
 }
 
 export default function EmailLogsPage() {
-  const [emailLogs, setEmailLogs] = useState<EmailLog[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  // Simulate email logs from console output
-  const loadEmailLogs = () => {
-    const logs: EmailLog[] = [
-      {
-        id: '1',
-        ticketNumber: 'TKT-2025-8990',
-        deviceName: 'RTR-MAIN-001',
-        deviceModel: 'Cisco ASR 1000',
-        brand: 'Cisco',
-        supportEmail: 'support@cisco.com',
-        issueType: 'damage',
-        timestamp: '2025-07-01T08:31:20.839Z',
-        status: 'logged',
-      },
-      {
-        id: '2',
-        ticketNumber: 'TKT-2025-6262',
-        deviceName: 'SRV-DB-001',
-        deviceModel: 'Dell PowerEdge R740',
-        brand: 'Dell',
-        supportEmail: 'support@dell.com',
-        issueType: 'damage',
-        timestamp: '2025-07-01T08:24:49.504Z',
-        status: 'logged',
-      },
-      {
-        id: '3',
-        ticketNumber: 'TKT-2025-5594',
-        deviceName: 'SRV-APP-002',
-        deviceModel: 'Dell PowerEdge R640',
-        brand: 'Dell',
-        supportEmail: 'support@dell.com',
-        issueType: 'inactive',
-        timestamp: '2025-07-01T08:26:52.452Z',
-        status: 'logged',
-      },
-      {
-        id: '4',
-        ticketNumber: 'TKT-2025-6294',
-        deviceName: 'MacBook-Pro-001',
-        deviceModel: 'Apple MacBook Pro M3',
-        brand: 'Apple',
-        supportEmail: 'support@apple.com',
-        issueType: 'damage',
-        timestamp: '2025-07-01T07:40:10.579Z',
-        status: 'logged',
-      },
-      {
-        id: '5',
-        ticketNumber: 'TKT-2025-2539',
-        deviceName: 'Surface-Pro-001',
-        deviceModel: 'Microsoft Surface Pro 9',
-        brand: 'Microsoft',
-        supportEmail: 'support@microsoft.com',
-        issueType: 'abnormal',
-        timestamp: '2025-07-01T07:39:58.663Z',
-        status: 'logged',
-      },
-      {
-        id: '6',
-        ticketNumber: 'TKT-2025-1807',
-        deviceName: 'WS-001-DEV',
-        deviceModel: 'Dell XPS 8940',
-        brand: 'Dell',
-        supportEmail: 'support@dell.com',
-        issueType: 'damage',
-        timestamp: '2025-07-01T07:39:33.652Z',
-        status: 'logged',
-      },
-    ];
-    
-    setEmailLogs(logs);
-    setIsLoading(false);
+  // Fetch email logs from API
+  const { data: emailLogs = [], isLoading, refetch } = useQuery({
+    queryKey: ['/api/email-logs'],
+    queryFn: async () => {
+      const response = await fetch('/api/email-logs');
+      if (!response.ok) {
+        throw new Error('Failed to fetch email logs');
+      }
+      return response.json() as Promise<EmailLog[]>;
+    }
+  });
+
+  const extractBrandFromEmail = (email: string): string => {
+    if (email.includes('@')) {
+      const domain = email.split('@')[1];
+      return domain.split('.')[0].toLowerCase();
+    }
+    return 'unknown';
   };
 
-  useEffect(() => {
-    loadEmailLogs();
-  }, []);
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'sent':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'logged':
-        return <Clock className="h-4 w-4 text-blue-500" />;
-      case 'failed':
-        return <AlertCircle className="h-4 w-4 text-red-500" />;
-      default:
-        return <Clock className="h-4 w-4" />;
-    }
+  const extractTicketFromSubject = (subject: string): string => {
+    const match = subject.match(/TKT-\d{4}-\d{4}/);
+    return match ? match[0] : 'N/A';
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'sent':
-        return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">Sent</Badge>;
-      case 'logged':
-        return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">Logged (Dev Mode)</Badge>;
-      case 'failed':
-        return <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">Failed</Badge>;
-      default:
-        return <Badge variant="secondary">Unknown</Badge>;
-    }
+  const extractIssueTypeFromSubject = (subject: string): string => {
+    if (subject.includes('Damaged')) return 'damage';
+    if (subject.includes('Inactive')) return 'inactive';
+    if (subject.includes('Abnormal')) return 'abnormal';
+    return 'unknown';
   };
 
   const getIssueTypeBadge = (issueType: string) => {
     const color = issueType === 'damage' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' :
                   issueType === 'inactive' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300' :
-                  'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+                  issueType === 'abnormal' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' :
+                  'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
     
     return <Badge className={color}>{issueType.charAt(0).toUpperCase() + issueType.slice(1)}</Badge>;
   };
@@ -143,10 +62,9 @@ export default function EmailLogsPage() {
   };
 
   const triggerTestEmail = async () => {
-    setIsLoading(true);
     try {
       // Trigger a test device status change to show email notification
-      const response = await fetch('/api/devices/15', {
+      const response = await fetch('/api/devices/18', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -162,13 +80,11 @@ export default function EmailLogsPage() {
         
         // Reload logs after a short delay
         setTimeout(() => {
-          loadEmailLogs();
-          setIsLoading(false);
+          refetch();
         }, 2000);
       }
     } catch (error) {
       console.error('Failed to trigger test email:', error);
-      setIsLoading(false);
       toast({
         title: "Error",
         description: "Failed to trigger test email",
@@ -176,6 +92,9 @@ export default function EmailLogsPage() {
       });
     }
   };
+
+  // Calculate unique brands from email logs
+  const uniqueBrands = new Set(emailLogs.map(log => extractBrandFromEmail(log.recipient)));
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -191,7 +110,7 @@ export default function EmailLogsPage() {
             <Mail className="mr-2 h-4 w-4" />
             Trigger Test Email
           </Button>
-          <Button variant="outline" onClick={loadEmailLogs}>
+          <Button variant="outline" onClick={() => refetch()}>
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
           </Button>
@@ -218,7 +137,7 @@ export default function EmailLogsPage() {
             <Clock className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{emailLogs.filter(log => log.status === 'logged').length}</div>
+            <div className="text-2xl font-bold">{emailLogs.length}</div>
             <p className="text-xs text-muted-foreground">
               Emails logged (not sent)
             </p>
@@ -231,7 +150,7 @@ export default function EmailLogsPage() {
             <CheckCircle className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{new Set(emailLogs.map(log => log.brand)).size}</div>
+            <div className="text-2xl font-bold">{uniqueBrands.size}</div>
             <p className="text-xs text-muted-foreground">
               Manufacturers contacted
             </p>
@@ -256,7 +175,7 @@ export default function EmailLogsPage() {
         <CardHeader>
           <CardTitle>Email Notification Log</CardTitle>
           <CardDescription>
-            All automatic email notifications sent to device manufacturers for support tickets.
+            All automatic email notifications logged to email_log.txt file.
             Currently running in development mode - emails are logged but not actually sent.
           </CardDescription>
         </CardHeader>
@@ -267,7 +186,6 @@ export default function EmailLogsPage() {
                 <TableRow>
                   <TableHead>Status</TableHead>
                   <TableHead>Ticket</TableHead>
-                  <TableHead>Device</TableHead>
                   <TableHead>Brand</TableHead>
                   <TableHead>Support Email</TableHead>
                   <TableHead>Issue Type</TableHead>
@@ -275,37 +193,41 @@ export default function EmailLogsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {emailLogs.map((log) => (
-                  <TableRow key={log.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(log.status)}
-                        {getStatusBadge(log.status)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-medium">{log.ticketNumber}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{log.deviceName}</div>
-                        <div className="text-sm text-muted-foreground">{log.deviceModel}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{log.brand}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-mono text-sm">{log.supportEmail}</div>
-                    </TableCell>
-                    <TableCell>
-                      {getIssueTypeBadge(log.issueType)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">{formatTimestamp(log.timestamp)}</div>
+                {emailLogs.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-4">
+                      {isLoading ? "Loading email logs..." : "No email logs found. Generate some tickets to see email notifications."}
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  emailLogs.map((log, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-blue-500" />
+                          <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                            Logged (Dev Mode)
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">{extractTicketFromSubject(log.subject)}</div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{extractBrandFromEmail(log.recipient)}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-mono text-sm">{log.recipient}</div>
+                      </TableCell>
+                      <TableCell>
+                        {getIssueTypeBadge(extractIssueTypeFromSubject(log.subject))}
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">{formatTimestamp(log.timestamp)}</div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </ScrollArea>
@@ -317,7 +239,7 @@ export default function EmailLogsPage() {
           <CardTitle className="text-blue-700 dark:text-blue-300">Development Mode Active</CardTitle>
           <CardDescription className="text-blue-600 dark:text-blue-400">
             The system is currently running in development mode. Email notifications are being logged 
-            to the console but not actually sent to manufacturers.
+            to email_log.txt but not actually sent to manufacturers.
           </CardDescription>
         </CardHeader>
         <CardContent>

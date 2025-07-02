@@ -1,5 +1,7 @@
 import nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
+import fs from 'fs';
+import path from 'path';
 
 interface DeviceEmailData {
   ticketNumber: string;
@@ -42,8 +44,10 @@ const BRAND_EMAIL_MAPPING: Record<string, string> = {
 class EmailService {
   private transporter: Transporter | null = null;
   private isConfigured = false;
+  private logFilePath: string;
 
   constructor() {
+    this.logFilePath = path.join(process.cwd(), 'email_log.txt');
     this.initializeTransporter();
   }
 
@@ -107,6 +111,42 @@ class EmailService {
   private getBrandEmail(brand: string): string | null {
     const brandLower = brand.toLowerCase();
     return BRAND_EMAIL_MAPPING[brandLower] || null;
+  }
+
+  private logEmailToFile(recipientEmail: string, subject: string, timestamp: string): void {
+    try {
+      const logEntry = `${timestamp} | TO: ${recipientEmail} | SUBJECT: ${subject}\n`;
+      fs.appendFileSync(this.logFilePath, logEntry, 'utf8');
+      console.log(`📧 Email logged to ${this.logFilePath}`);
+    } catch (error) {
+      console.error('📧 Failed to write email log:', error);
+    }
+  }
+
+  getEmailLogs(): { timestamp: string; recipient: string; subject: string }[] {
+    try {
+      if (!fs.existsSync(this.logFilePath)) {
+        return [];
+      }
+      
+      const logContent = fs.readFileSync(this.logFilePath, 'utf8');
+      const lines = logContent.trim().split('\n').filter(line => line.length > 0);
+      
+      return lines.map(line => {
+        const parts = line.split(' | ');
+        if (parts.length >= 3) {
+          return {
+            timestamp: parts[0],
+            recipient: parts[1].replace('TO: ', ''),
+            subject: parts[2].replace('SUBJECT: ', '')
+          };
+        }
+        return null;
+      }).filter(log => log !== null) as { timestamp: string; recipient: string; subject: string }[];
+    } catch (error) {
+      console.error('📧 Failed to read email logs:', error);
+      return [];
+    }
   }
 
   private generateEmailContent(data: DeviceEmailData): { subject: string; html: string; text: string } {
@@ -225,11 +265,16 @@ Please contact our IT department if you need additional information about this d
         html: emailContent.html
       };
 
+      const currentTimestamp = new Date().toISOString();
+
       if (this.isConfigured) {
         // Send real email
         const result = await this.transporter.sendMail(mailOptions);
         console.log(`📧 Email sent successfully to ${brandEmail} for ticket ${deviceData.ticketNumber}`);
         console.log(`📧 Message ID: ${result.messageId}`);
+        
+        // Log to file
+        this.logEmailToFile(brandEmail, emailContent.subject, currentTimestamp);
         return true;
       } else {
         // Development mode - log email content
@@ -242,6 +287,9 @@ Please contact our IT department if you need additional information about this d
         console.log(`📧 Timestamp: ${deviceData.timestamp}`);
         console.log('📧 Email content logged - would be sent in production');
         console.log('===============================================\n');
+        
+        // Log to file even in development mode
+        this.logEmailToFile(brandEmail, emailContent.subject, currentTimestamp);
         return true;
       }
     } catch (error) {
