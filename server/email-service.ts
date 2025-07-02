@@ -158,6 +158,14 @@ class EmailService {
     }
   }
 
+  getConfiguration(): { isConfigured: boolean; mode: string; hasCredentials: boolean } {
+    return {
+      isConfigured: this.isConfigured,
+      mode: this.isConfigured ? 'production' : 'development',
+      hasCredentials: !!(process.env.SMTP_EMAIL && process.env.SMTP_PASSWORD)
+    };
+  }
+
   private generateEmailContent(data: DeviceEmailData): { subject: string; html: string; text: string } {
     const issueTypeText = data.issueType === 'damage' ? 'Damaged' : 
                          data.issueType === 'inactive' ? 'Inactive' : 'Abnormal';

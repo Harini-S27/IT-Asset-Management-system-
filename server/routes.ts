@@ -491,6 +491,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Email configuration status endpoint
+  app.get("/api/email-config", async (req: Request, res: Response) => {
+    try {
+      const config = emailService.getConfiguration();
+      res.json(config);
+    } catch (error) {
+      console.error('Failed to fetch email configuration:', error);
+      res.status(500).json({ message: "Failed to fetch email configuration" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -28,6 +28,22 @@ export default function EmailLogsPage() {
     }
   });
 
+  // Fetch email configuration status
+  const { data: emailConfig } = useQuery({
+    queryKey: ['/api/email-config'],
+    queryFn: async () => {
+      const response = await fetch('/api/email-config');
+      if (!response.ok) {
+        throw new Error('Failed to fetch email configuration');
+      }
+      return response.json() as Promise<{
+        isConfigured: boolean;
+        mode: string;
+        hasCredentials: boolean;
+      }>;
+    }
+  });
+
   const extractBrandFromEmail = (email: string): string => {
     if (email.includes('@')) {
       const domain = email.split('@')[1];
@@ -133,13 +149,18 @@ export default function EmailLogsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Development Mode</CardTitle>
-            <Clock className="h-4 w-4 text-blue-500" />
+            <CardTitle className="text-sm font-medium">Email Mode</CardTitle>
+            {emailConfig?.isConfigured ? 
+              <CheckCircle className="h-4 w-4 text-green-500" /> : 
+              <Clock className="h-4 w-4 text-blue-500" />
+            }
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{emailLogs.length}</div>
+            <div className="text-lg font-bold text-green-600 dark:text-green-400">
+              {emailConfig?.mode === 'production' ? 'Production' : 'Development'}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Emails logged (not sent)
+              {emailConfig?.isConfigured ? 'Emails being sent to manufacturers' : 'Emails logged (not sent)'}
             </p>
           </CardContent>
         </Card>
@@ -159,13 +180,18 @@ export default function EmailLogsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Mode Status</CardTitle>
-            <AlertCircle className="h-4 w-4 text-orange-500" />
+            <CardTitle className="text-sm font-medium">SMTP Status</CardTitle>
+            {emailConfig?.hasCredentials ? 
+              <CheckCircle className="h-4 w-4 text-green-500" /> : 
+              <AlertCircle className="h-4 w-4 text-orange-500" />
+            }
           </CardHeader>
           <CardContent>
-            <div className="text-lg font-bold text-blue-600 dark:text-blue-400">Development</div>
+            <div className={`text-lg font-bold ${emailConfig?.hasCredentials ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}`}>
+              {emailConfig?.hasCredentials ? 'Configured' : 'Not Set'}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Set SMTP to enable sending
+              {emailConfig?.hasCredentials ? 'SMTP credentials available' : 'Set SMTP to enable sending'}
             </p>
           </CardContent>
         </Card>
@@ -177,7 +203,10 @@ export default function EmailLogsPage() {
           <CardDescription>
             Complete history of all automatic email notifications sent to device manufacturers.
             All emails are logged to email_log.txt file for audit trail and compliance.
-            Currently in development mode - emails are logged but not sent to prevent spam during testing.
+            {emailConfig?.isConfigured ? 
+              'Production mode active - emails are being sent to manufacturer support teams.' :
+              'Development mode active - emails are logged but not sent to prevent spam during testing.'
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
