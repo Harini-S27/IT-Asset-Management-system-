@@ -6,3 +6,4 @@
 2025-07-02T13:06:40.340Z | TO: support@cisco.com | SUBJECT: Device Damaged - Support Ticket TKT-2025-9040
 2025-07-02T13:07:20.387Z | TO: ic-support@cisco.com | SUBJECT: Device Abnormal - Support Ticket TKT-2025-4078
 2025-07-02T13:27:03.557Z | TO: ic-support@cisco.com | SUBJECT: [FAILED] Device Damaged - Support Ticket TKT-2025-0935
+2025-07-02T13:42:13.717Z | TO: support@dell.com | SUBJECT: [FAILED] Device Damaged - Support Ticket TKT-2025-9745
