@@ -55,9 +55,9 @@ const ROLE_PERMISSIONS = {
 
 // Pages accessible by role
 const ROLE_PAGES = {
-  Admin: ['/', '/devices', '/map', '/prohibited-software', '/tickets', '/router-setup', '/global-blocking', '/settings', '/reports'],
-  Manager: ['/', '/devices', '/map', '/prohibited-software', '/tickets', '/router-setup', '/global-blocking', '/reports'],
-  Viewer: ['/', '/devices', '/map', '/prohibited-software', '/tickets', '/reports']
+  Admin: ['/', '/devices', '/map', '/prohibited-software', '/tickets', '/email-logs', '/router-setup', '/global-blocking', '/settings', '/reports'],
+  Manager: ['/', '/devices', '/map', '/prohibited-software', '/tickets', '/email-logs', '/router-setup', '/global-blocking', '/reports'],
+  Viewer: ['/', '/devices', '/map', '/prohibited-software', '/tickets', '/email-logs', '/reports']
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
