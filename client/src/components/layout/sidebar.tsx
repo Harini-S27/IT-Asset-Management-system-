@@ -11,7 +11,8 @@ import {
   Shield,
   Router,
   Globe,
-  Ticket
+  Ticket,
+  Mail
 } from "lucide-react";
 import { UserMenu } from "./user-menu";
 import { useAuth } from "@/contexts/auth-context";
@@ -47,6 +48,11 @@ const Sidebar = () => {
       name: "Support Tickets",
       href: "/tickets",
       icon: Ticket,
+    },
+    {
+      name: "Email Notifications",
+      href: "/email-logs",
+      icon: Mail,
     },
     {
       name: "Router Setup",
