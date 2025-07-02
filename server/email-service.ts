@@ -281,13 +281,28 @@ Please contact our IT department if you need additional information about this d
 
       if (this.isConfigured) {
         // Send real email
-        const result = await this.transporter.sendMail(mailOptions);
-        console.log(`📧 Email sent successfully to ${brandEmail} for ticket ${deviceData.ticketNumber}`);
-        console.log(`📧 Message ID: ${result.messageId}`);
-        
-        // Log to file
-        this.logEmailToFile(brandEmail, emailContent.subject, currentTimestamp);
-        return true;
+        try {
+          const result = await this.transporter.sendMail(mailOptions);
+          console.log(`📧 Email sent successfully to ${brandEmail} for ticket ${deviceData.ticketNumber}`);
+          console.log(`📧 Message ID: ${result.messageId}`);
+          
+          // Log to file
+          this.logEmailToFile(brandEmail, emailContent.subject, currentTimestamp);
+          return true;
+        } catch (error: any) {
+          console.error('📧 Email Service: Failed to send email:', error.message);
+          
+          // Still log to file even if sending fails
+          this.logEmailToFile(brandEmail, `[FAILED] ${emailContent.subject}`, currentTimestamp);
+          
+          if (error.code === 'EAUTH') {
+            console.log('📧 Gmail Authentication Fix:');
+            console.log('📧 1. Enable 2-Factor Authentication on Google Account');
+            console.log('📧 2. Generate App Password: https://myaccount.google.com/apppasswords');
+            console.log('📧 3. Use App Password (not regular password) in SMTP_PASSWORD');
+          }
+          return false;
+        }
       } else {
         // Development mode - log email content
         console.log('\n=== EMAIL NOTIFICATION (Development Mode) ===');
