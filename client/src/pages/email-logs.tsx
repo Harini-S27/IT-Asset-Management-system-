@@ -112,7 +112,7 @@ export default function EmailLogsPage() {
           </Button>
           <Button variant="outline" onClick={() => refetch()}>
             <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh
+            Refresh Email History
           </Button>
         </div>
       </div>
@@ -173,10 +173,11 @@ export default function EmailLogsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Email Notification Log</CardTitle>
+          <CardTitle>📧 Email History & Notification Log</CardTitle>
           <CardDescription>
-            All automatic email notifications logged to email_log.txt file.
-            Currently running in development mode - emails are logged but not actually sent.
+            Complete history of all automatic email notifications sent to device manufacturers.
+            All emails are logged to email_log.txt file for audit trail and compliance.
+            Currently in development mode - emails are logged but not sent to prevent spam during testing.
           </CardDescription>
         </CardHeader>
         <CardContent>
