@@ -132,10 +132,11 @@ const Devices = () => {
         ? devices 
         : devices.filter(device => {
             if (activeCategory === 'Workstations') return device.type === 'Workstation';
+            if (activeCategory === 'Laptops') return device.type === 'Laptop';
             if (activeCategory === 'Servers') return device.type === 'Server';
             if (activeCategory === 'Network Devices') return device.type === 'Network';
             if (activeCategory === 'Cameras') return device.type === 'Security Camera';
-            if (activeCategory === 'Mobile Devices') return device.type === 'Mobile' || device.type === 'Laptop';
+            if (activeCategory === 'Mobile Devices') return device.type === 'Mobile' || device.type === 'Mobile Phone' || device.type === 'Tablet';
             return true;
           });
       
@@ -447,7 +448,7 @@ const Devices = () => {
           {/* View selector tabs */}
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex space-x-6">
-              {['All', 'Workstations', 'Servers', 'Network Devices', 'Cameras', 'Mobile Devices'].map((category) => (
+              {['All', 'Workstations', 'Laptops', 'Servers', 'Network Devices', 'Cameras', 'Mobile Devices'].map((category) => (
                 <button
                   key={category}
                   onClick={() => setActiveCategory(category)}
