@@ -48,6 +48,21 @@ const BRAND_EMAIL_MAPPING: Record<string, string> = {
   'tp-link': 'support@tp-link.com',
   'dlink': 'support@dlink.com',
   'ubiquiti': 'support@ubnt.com',
+  
+  // Finecons inventory specific manufacturers
+  'hikvision': 'support@hikvision.com',
+  'hangzhou': 'support@hikvision.com', // Full company name
+  'fortinet': 'support@fortinet.com',
+  'aruba': 'support@arubanetworks.com',
+  'vivo': 'support@vivo.com',
+  'elitegroup': 'support@ecs.com.tw',
+  'ecs': 'support@ecs.com.tw',
+  'universal': 'support@ugs.com.tw',
+  'micro-star': 'support@msi.com',
+  'msi': 'support@msi.com',
+  'liteon': 'support@liteon.com',
+  'chongqing': 'support@cqfugui.com',
+  'azurewave': 'support@azurewave.com',
 };
 
 class EmailService {
