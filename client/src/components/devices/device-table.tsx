@@ -51,6 +51,7 @@ const DeviceTable = ({
     if (categoryFilter === "Workstations") return device.type === "Workstation";
     if (categoryFilter === "Servers") return device.type === "Server";
     if (categoryFilter === "Network Devices") return ["Router", "Switch", "Firewall", "Access Point"].includes(device.type);
+    if (categoryFilter === "Cameras") return device.type === "Security Camera";
     if (categoryFilter === "Mobile Devices") return ["Laptop", "Tablet", "Mobile Phone"].includes(device.type);
     if (categoryFilter === "Agent-Reported") return device.location === "Agent-Reported" || device.location === "Remote Office";
     return true;
