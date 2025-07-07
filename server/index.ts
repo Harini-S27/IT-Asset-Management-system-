@@ -38,16 +38,8 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Initialize database with sample data
-  try {
-    // Initialize sample data in the database
-    await storage.initSampleDevices();
-    await storage.initSampleProhibitedSoftware();
-    await storage.initNetworkDiscovery();
-    console.log("Database initialized with sample data");
-  } catch (err) {
-    console.error("Error initializing database:", err);
-  }
+  // Production database - no sample data initialization
+  console.log("Database ready for production use");
 
   const server = await registerRoutes(app);
 

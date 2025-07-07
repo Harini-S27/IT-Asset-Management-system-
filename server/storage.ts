@@ -845,7 +845,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTicket(ticket: InsertTicket): Promise<Ticket> {
-    const [newTicket] = await db.insert(tickets).values(ticket).returning();
+    const [newTicket] = await db.insert(tickets).values([ticket]).returning();
     return newTicket;
   }
 

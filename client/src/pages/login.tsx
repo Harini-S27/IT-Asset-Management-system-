@@ -20,11 +20,9 @@ export default function LoginPage() {
   const [_, setLocation] = useLocation();
   const { login } = useAuth();
 
-  // Mock credentials for demo purposes
+  // Production credentials
   const mockCredentials = [
-    { username: "admin", password: "admin123", role: "Admin" },
-    { username: "manager", password: "manager123", role: "Manager" },
-    { username: "viewer", password: "viewer123", role: "Viewer" }
+    { username: "finecons", password: "finecons@123", role: "Admin" }
   ];
 
   const handleLogin = (e: React.FormEvent) => {
