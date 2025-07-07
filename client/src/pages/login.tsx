@@ -135,25 +135,6 @@ export default function LoginPage() {
                   </label>
                 </div>
                 
-                {/* Role capabilities section */}
-                <div className="rounded-md bg-gray-50 p-4">
-                  <h4 className="text-sm font-medium mb-3">Available Roles & Access Levels</h4>
-                  <div className="space-y-3 text-xs">
-                    <div className="border-l-4 border-red-500 pl-2">
-                      <div className="font-semibold text-red-700">Admin (admin/admin123)</div>
-                      <div className="text-gray-600">Full system access - Manage users, settings, all device operations, reports</div>
-                    </div>
-                    <div className="border-l-4 border-blue-500 pl-2">
-                      <div className="font-semibold text-blue-700">Manager (manager/manager123)</div>
-                      <div className="text-gray-600">Operational control - Edit devices, manage network, configure blocking</div>
-                    </div>
-                    <div className="border-l-4 border-green-500 pl-2">
-                      <div className="font-semibold text-green-700">Viewer (viewer/viewer123)</div>
-                      <div className="text-gray-600">Read-only access - View devices, reports, network discovery</div>
-                    </div>
-                  </div>
-                </div>
-                
                 <Button
                   type="submit"
                   className="w-full bg-[#4299E1] hover:bg-[#4299E1]/90"
