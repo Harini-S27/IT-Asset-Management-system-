@@ -28,6 +28,9 @@ import DeviceTable from "@/components/devices/device-table";
 import AddDeviceDialog from "@/components/devices/add-device-dialog";
 import EditDeviceDialog from "@/components/devices/edit-device-dialog";
 import NetworkDiscoveryTable from "@/components/network/network-discovery-table";
+import { DeviceNotification } from "@/components/devices/device-notification";
+import { useDeviceNotifications } from "@/hooks/use-device-notifications";
+import { LiveDeviceCounter } from "@/components/devices/live-device-counter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, getQueryFn } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
@@ -71,8 +74,12 @@ const Devices = () => {
   // Fetch devices
   const { data: devices = [] } = useQuery({
     queryKey: ['/api/devices'],
-    queryFn: getQueryFn<Device[]>({ on401: "throw" })
+    queryFn: getQueryFn<Device[]>({ on401: "throw" }),
+    refetchInterval: 30000, // Auto-refresh every 30 seconds
   });
+
+  // Device notifications hook
+  const { notifications, dismissNotification } = useDeviceNotifications(devices);
 
   // Fetch prohibited software summary for audit dashboard
   const { data: prohibitedSummary } = useQuery<ProhibitedSoftwareSummary>({
@@ -482,6 +489,8 @@ const Devices = () => {
 
         <TabsContent value="live" className="space-y-6 mt-6">
           {/* Live Devices Overview */}
+          <LiveDeviceCounter devices={devices} />
+          
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -951,6 +960,20 @@ const Devices = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Device notifications */}
+      {notifications.map((device) => (
+        <DeviceNotification
+          key={device.id}
+          device={device}
+          onDismiss={() => dismissNotification(device.id)}
+          onViewDetails={(device) => {
+            setSelectedDevice(device);
+            setIsDetailsDialogOpen(true);
+            dismissNotification(device.id);
+          }}
+        />
+      ))}
     </div>
   );
 };
