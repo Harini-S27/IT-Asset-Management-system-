@@ -17,6 +17,7 @@ import GlobalBlocking from "@/pages/global-blocking";
 import Sidebar from "@/components/layout/sidebar";
 import LoginPage from "@/pages/login";
 import { AuthProvider, useAuth } from "@/contexts/auth-context";
+import { NotificationManager } from "@/components/notifications/notification-manager";
 
 // Protected route component
 function ProtectedRoute({ component: Component, ...rest }: { component: React.ComponentType<any> }) {
@@ -58,6 +59,7 @@ function Router() {
               </Switch>
             </div>
           </main>
+          <NotificationManager />
         </div>
       ) : (
         <Switch>

@@ -1,5 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
+import { WebSocketServer, WebSocket } from "ws";
 import fs from "fs";
 import path from "path";
 import { storage } from "./storage";
@@ -14,7 +15,38 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 
+// WebSocket connection management
+const connectedClients = new Set<WebSocket>();
+
+function broadcastToClients(message: any) {
+  const messageString = JSON.stringify(message);
+  connectedClients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(messageString);
+    }
+  });
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  const httpServer = createServer(app);
+  
+  // Setup WebSocket server
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  
+  wss.on('connection', (ws) => {
+    console.log('Client connected to WebSocket');
+    connectedClients.add(ws);
+    
+    ws.on('close', () => {
+      console.log('Client disconnected from WebSocket');
+      connectedClients.delete(ws);
+    });
+    
+    ws.on('error', (error) => {
+      console.error('WebSocket error:', error);
+      connectedClients.delete(ws);
+    });
+  });
   // Get all devices
   app.get("/api/devices", async (req: Request, res: Response) => {
     try {
@@ -49,6 +81,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const deviceData = insertDeviceSchema.parse(req.body);
       const device = await storage.createDevice(deviceData);
+      
+      // Broadcast real-time notification to all connected clients
+      broadcastToClients({
+        type: 'DEVICE_ADDED',
+        data: device,
+        timestamp: new Date().toISOString()
+      });
+      
       res.status(201).json(device);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -298,6 +338,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const existingDevice = existingDevices.find(device => device.name === deviceName);
 
       let device;
+      let isNewDevice = false;
       if (existingDevice) {
         // Update existing device
         device = await storage.updateDevice(existingDevice.id, {
@@ -306,6 +347,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ipAddress: ipAddress || "Unknown",
           status: "Active"
         });
+        
+        // Broadcast device update notification
+        broadcastToClients({
+          type: 'DEVICE_UPDATED',
+          data: device,
+          timestamp: new Date().toISOString()
+        });
       } else {
         // Create new device
         device = await storage.createDevice({
@@ -313,10 +361,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: "Workstation",
           model: `${operatingSystem} Device`,
           status: "Active",
-          location: "Remote",
+          location: "Agent-Reported",
           ipAddress: ipAddress || "Unknown",
           latitude: "37.7749",
           longitude: "-122.4194"
+        });
+        isNewDevice = true;
+        
+        // Broadcast new device notification
+        broadcastToClients({
+          type: 'DEVICE_ADDED',
+          data: device,
+          timestamp: new Date().toISOString(),
+          isNewDevice: true
         });
       }
 
@@ -502,6 +559,5 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  const httpServer = createServer(app);
   return httpServer;
 }

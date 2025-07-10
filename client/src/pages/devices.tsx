@@ -28,9 +28,9 @@ import DeviceTable from "@/components/devices/device-table";
 import AddDeviceDialog from "@/components/devices/add-device-dialog";
 import EditDeviceDialog from "@/components/devices/edit-device-dialog";
 import NetworkDiscoveryTable from "@/components/network/network-discovery-table";
-import { DeviceNotification } from "@/components/devices/device-notification";
-import { useDeviceNotifications } from "@/hooks/use-device-notifications";
-import { LiveDeviceCounter } from "@/components/devices/live-device-counter";
+import { AnimatedDeviceList } from "@/components/devices/animated-device-list";
+import { useRealtimeDevices } from "@/hooks/useRealtimeDevices";
+import { RealtimeStats } from "@/components/dashboard/realtime-stats";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, getQueryFn } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
@@ -71,15 +71,8 @@ const Devices = () => {
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [isExporting, setIsExporting] = useState(false);
   
-  // Fetch devices
-  const { data: devices = [] } = useQuery({
-    queryKey: ['/api/devices'],
-    queryFn: getQueryFn<Device[]>({ on401: "throw" }),
-    refetchInterval: 30000, // Auto-refresh every 30 seconds
-  });
-
-  // Device notifications hook
-  const { notifications, dismissNotification } = useDeviceNotifications(devices);
+  // Use realtime devices hook
+  const { devices, stats, newDeviceIds, recentlyUpdatedIds, isLoading } = useRealtimeDevices();
 
   // Fetch prohibited software summary for audit dashboard
   const { data: prohibitedSummary } = useQuery<ProhibitedSoftwareSummary>({
@@ -443,13 +436,38 @@ const Devices = () => {
       </div>
 
       {/* Tabbed Interface */}
-      <Tabs defaultValue="inventory" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs defaultValue="realtime" className="w-full">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="realtime">Real-time View</TabsTrigger>
           <TabsTrigger value="inventory">Device Inventory</TabsTrigger>
           <TabsTrigger value="discovery">Network Discovery</TabsTrigger>
           <TabsTrigger value="live">Live Devices</TabsTrigger>
           <TabsTrigger value="audit">Audit & Compliance</TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="realtime" className="space-y-6 mt-6">
+          {/* Real-time Dashboard */}
+          <RealtimeStats />
+          
+          {/* Real-time Device List */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Live Device Feed</CardTitle>
+              <CardDescription>
+                Real-time updates from your network devices with automatic notifications
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AnimatedDeviceList
+                devices={devices}
+                onEditDevice={handleEditDevice}
+                onDeleteDevice={handleDeleteIntent}
+                onViewDetails={handleViewDeviceDetails}
+                newDeviceIds={newDeviceIds}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
         
         <TabsContent value="inventory" className="space-y-6 mt-6">
           {/* View selector tabs */}
