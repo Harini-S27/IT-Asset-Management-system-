@@ -31,6 +31,7 @@ import NetworkDiscoveryTable from "@/components/network/network-discovery-table"
 import { AnimatedDeviceList } from "@/components/devices/animated-device-list";
 import { useRealtimeDevices } from "@/hooks/useRealtimeDevices";
 import { RealtimeStats } from "@/components/dashboard/realtime-stats";
+import { LiveDeviceCounter } from "@/components/devices/live-device-counter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, getQueryFn } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
@@ -73,6 +74,17 @@ const Devices = () => {
   
   // Use realtime devices hook
   const { devices, stats, newDeviceIds, recentlyUpdatedIds, isLoading } = useRealtimeDevices();
+
+  // Fallback to regular query if realtime hook fails
+  const { data: fallbackDevices = [] } = useQuery({
+    queryKey: ['/api/devices'],
+    queryFn: getQueryFn<Device[]>({ on401: "throw" }),
+    refetchInterval: 30000,
+    enabled: !devices || devices.length === 0,
+  });
+
+  // Use fallback devices if realtime devices are not available
+  const displayDevices = devices && devices.length > 0 ? devices : fallbackDevices;
 
   // Fetch prohibited software summary for audit dashboard
   const { data: prohibitedSummary } = useQuery<ProhibitedSoftwareSummary>({
@@ -459,7 +471,7 @@ const Devices = () => {
             </CardHeader>
             <CardContent>
               <AnimatedDeviceList
-                devices={devices}
+                devices={displayDevices}
                 onEditDevice={handleEditDevice}
                 onDeleteDevice={handleDeleteIntent}
                 onViewDetails={handleViewDeviceDetails}
@@ -507,7 +519,7 @@ const Devices = () => {
 
         <TabsContent value="live" className="space-y-6 mt-6">
           {/* Live Devices Overview */}
-          <LiveDeviceCounter devices={devices} />
+          <LiveDeviceCounter devices={displayDevices} />
           
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
@@ -517,7 +529,7 @@ const Devices = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600">
-                  {devices?.filter(d => d.location === "Agent-Reported" || d.location === "Remote Office").length || 0}
+                  {displayDevices?.filter(d => d.location === "Agent-Reported" || d.location === "Remote Office").length || 0}
                 </div>
                 <p className="text-xs text-muted-foreground">Live monitoring active</p>
               </CardContent>

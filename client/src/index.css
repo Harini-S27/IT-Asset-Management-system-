@@ -56,3 +56,19 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+/* Custom animations for device notifications */
+@keyframes animate-pulse-subtle {
+  0%, 100% { 
+    transform: scale(1); 
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+  }
+  50% { 
+    transform: scale(1.02); 
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+  }
+}
+
+.animate-pulse-subtle {
+  animation: animate-pulse-subtle 2s infinite;
+}

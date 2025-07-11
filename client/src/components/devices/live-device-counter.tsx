@@ -1,108 +1,160 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Activity, TrendingUp, Clock, Zap } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { Device } from '@shared/schema';
+import { Activity, Monitor, Laptop, Server, Smartphone, Camera, Wifi } from 'lucide-react';
 
 interface LiveDeviceCounterProps {
   devices: Device[];
 }
 
 export function LiveDeviceCounter({ devices }: LiveDeviceCounterProps) {
-  const [previousCount, setPreviousCount] = useState(0);
-  const [isNewDevice, setIsNewDevice] = useState(false);
-  
+  const [animatingCount, setAnimatingCount] = useState(0);
+  const totalDevices = devices.length;
+
   useEffect(() => {
-    const currentCount = devices.length;
-    if (previousCount > 0 && currentCount > previousCount) {
-      setIsNewDevice(true);
-      const timer = setTimeout(() => setIsNewDevice(false), 3000);
+    if (totalDevices > animatingCount) {
+      const timer = setTimeout(() => {
+        setAnimatingCount(prev => Math.min(prev + 1, totalDevices));
+      }, 50);
       return () => clearTimeout(timer);
     }
-    setPreviousCount(currentCount);
-  }, [devices.length, previousCount]);
+  }, [totalDevices, animatingCount]);
 
-  const activeDevices = devices.filter(d => d.status === 'Active').length;
-  const inactiveDevices = devices.filter(d => d.status === 'Inactive').length;
-  const recentDevices = devices.filter(d => {
-    const lastUpdated = new Date(d.lastUpdated as any);
-    const now = new Date();
-    return (now.getTime() - lastUpdated.getTime()) < 24 * 60 * 60 * 1000; // 24 hours
-  }).length;
+  const getDeviceTypeStats = () => {
+    const stats: Record<string, number> = {};
+    devices.forEach(device => {
+      stats[device.type] = (stats[device.type] || 0) + 1;
+    });
+    return stats;
+  };
+
+  const getStatusStats = () => {
+    const stats: Record<string, number> = {};
+    devices.forEach(device => {
+      stats[device.status] = (stats[device.status] || 0) + 1;
+    });
+    return stats;
+  };
+
+  const getLocationStats = () => {
+    const stats: Record<string, number> = {};
+    devices.forEach(device => {
+      stats[device.location] = (stats[device.location] || 0) + 1;
+    });
+    return stats;
+  };
+
+  const typeStats = getDeviceTypeStats();
+  const statusStats = getStatusStats();
+  const locationStats = getLocationStats();
+
+  const getDeviceIcon = (type: string) => {
+    switch (type) {
+      case 'Workstation':
+        return <Monitor className="h-4 w-4" />;
+      case 'Laptop':
+        return <Laptop className="h-4 w-4" />;
+      case 'Server':
+        return <Server className="h-4 w-4" />;
+      case 'Mobile':
+      case 'Mobile Phone':
+        return <Smartphone className="h-4 w-4" />;
+      case 'Security Camera':
+        return <Camera className="h-4 w-4" />;
+      default:
+        return <Wifi className="h-4 w-4" />;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Active':
+        return 'bg-green-100 text-green-800';
+      case 'Inactive':
+        return 'bg-red-100 text-red-800';
+      case 'Maintenance':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'Damage':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <Card className={cn(
-        "transition-all duration-300",
-        isNewDevice && "ring-2 ring-green-500 bg-green-50"
-      )}>
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {/* Total Devices Counter */}
+      <Card className="border-l-4 border-l-blue-500">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Devices</CardTitle>
-          <div className="relative">
-            <Activity className="h-4 w-4 text-blue-600" />
-            {isNewDevice && (
-              <div className="absolute -top-1 -right-1 h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
-            )}
-          </div>
+          <CardTitle className="text-sm font-medium">Live Device Count</CardTitle>
+          <Activity className="h-4 w-4 text-blue-600" />
         </CardHeader>
         <CardContent>
-          <div className="flex items-center space-x-2">
-            <div className={cn(
-              "text-2xl font-bold transition-all duration-300",
-              isNewDevice ? "text-green-600" : "text-blue-600"
-            )}>
-              {devices.length}
-            </div>
-            {isNewDevice && (
-              <Badge className="bg-green-100 text-green-800 animate-pulse">
-                <TrendingUp className="h-3 w-3 mr-1" />
-                New!
-              </Badge>
-            )}
+          <div className="text-3xl font-bold text-blue-600 mb-2">
+            {animatingCount}
           </div>
           <p className="text-xs text-muted-foreground">
-            {isNewDevice ? "Device just added!" : "Monitored assets"}
+            Devices currently monitored
           </p>
         </CardContent>
       </Card>
 
+      {/* Device Types */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Active Devices</CardTitle>
-          <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">Device Types</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-green-600">{activeDevices}</div>
-          <p className="text-xs text-muted-foreground">
-            {((activeDevices / devices.length) * 100).toFixed(1)}% operational
-          </p>
+          <div className="space-y-2">
+            {Object.entries(typeStats).map(([type, count]) => (
+              <div key={type} className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  {getDeviceIcon(type)}
+                  <span className="text-sm">{type}</span>
+                </div>
+                <Badge variant="secondary" className="text-xs">
+                  {count}
+                </Badge>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
+      {/* Status Distribution */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Inactive Devices</CardTitle>
-          <div className="h-2 w-2 bg-red-500 rounded-full"></div>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">Status Distribution</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-red-600">{inactiveDevices}</div>
-          <p className="text-xs text-muted-foreground">
-            {((inactiveDevices / devices.length) * 100).toFixed(1)}% offline
-          </p>
+          <div className="space-y-2">
+            {Object.entries(statusStats).map(([status, count]) => (
+              <div key={status} className="flex items-center justify-between">
+                <span className="text-sm">{status}</span>
+                <Badge className={getStatusColor(status)}>
+                  {count}
+                </Badge>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
-          <Clock className="h-4 w-4 text-purple-600" />
+      {/* Location Distribution */}
+      <Card className="md:col-span-2 lg:col-span-3">
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">Location Distribution</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-purple-600">{recentDevices}</div>
-          <p className="text-xs text-muted-foreground">
-            Updated in last 24h
-          </p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {Object.entries(locationStats).map(([location, count]) => (
+              <div key={location} className="text-center">
+                <div className="text-2xl font-bold text-gray-900">{count}</div>
+                <div className="text-sm text-gray-600">{location}</div>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
     </div>
