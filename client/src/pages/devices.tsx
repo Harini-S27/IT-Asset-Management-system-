@@ -991,19 +991,6 @@ const Devices = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Device notifications */}
-      {notifications.map((device) => (
-        <DeviceNotification
-          key={device.id}
-          device={device}
-          onDismiss={() => dismissNotification(device.id)}
-          onViewDetails={(device) => {
-            setSelectedDevice(device);
-            setIsDetailsDialogOpen(true);
-            dismissNotification(device.id);
-          }}
-        />
-      ))}
     </div>
   );
 };
