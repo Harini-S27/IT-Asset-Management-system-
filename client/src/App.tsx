@@ -40,7 +40,7 @@ function Router() {
       {isAuthenticated ? (
         <div className="flex h-screen bg-background text-foreground">
           <Sidebar />
-          <main className="flex-1 overflow-auto ml-64">
+          <main className="flex-1 overflow-auto ml-64 relative">
             <div className="p-4 h-full">
               <Switch>
                 <Route path="/" component={Dashboard} />

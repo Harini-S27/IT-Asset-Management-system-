@@ -82,7 +82,7 @@ const Sidebar = () => {
   ];
 
   return (
-    <aside className="sidebar w-64 bg-[#2D3748] text-white p-4 flex flex-col h-screen fixed">
+    <aside className="sidebar w-64 bg-[#2D3748] text-white p-4 flex flex-col h-screen fixed left-0 top-0 z-50">
       <div className="mb-8 mt-4">
         <h1 className="text-xl font-bold flex items-center">
           <div className="h-16 w-16 mr-3 bg-white rounded-lg p-2 flex items-center justify-center">
