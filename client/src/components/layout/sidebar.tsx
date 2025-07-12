@@ -65,6 +65,11 @@ const Sidebar = () => {
       icon: Globe,
     },
     {
+      name: "Network Discovery",
+      href: "/network-discovery",
+      icon: Router,
+    },
+    {
       name: "Reports",
       href: "/reports",
       icon: FileBarChart,

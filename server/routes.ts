@@ -6,6 +6,7 @@ import path from "path";
 import { storage } from "./storage";
 import { routerManager } from "./router-manager";
 import { emailService } from "./email-service";
+import { networkScanner } from "./network-scanner";
 import { 
   insertDeviceSchema, 
   insertProhibitedSoftwareSchema,
@@ -558,6 +559,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch email configuration" });
     }
   });
+
+  // Network Scanner API endpoints
+  app.get("/api/network-scanner/status", (req: Request, res: Response) => {
+    res.json(networkScanner.getStatus());
+  });
+
+  app.get("/api/network-scanner/discovered-devices", (req: Request, res: Response) => {
+    res.json(networkScanner.getDiscoveredDevices());
+  });
+
+  app.get("/api/network-scanner/api-keys", (req: Request, res: Response) => {
+    res.json(networkScanner.getDeviceApiKeys());
+  });
+
+  app.post("/api/network-scanner/start", (req: Request, res: Response) => {
+    const { intervalMinutes } = req.body;
+    networkScanner.startScanning(intervalMinutes || 5);
+    res.json({ message: "Network scanner started", intervalMinutes: intervalMinutes || 5 });
+  });
+
+  app.post("/api/network-scanner/stop", (req: Request, res: Response) => {
+    networkScanner.stopScanning();
+    res.json({ message: "Network scanner stopped" });
+  });
+
+  app.post("/api/network-scanner/verify-key", (req: Request, res: Response) => {
+    const { apiKey } = req.body;
+    const deviceKey = networkScanner.isValidApiKey(apiKey);
+    
+    if (deviceKey) {
+      res.json({ valid: true, device: deviceKey });
+    } else {
+      res.json({ valid: false, message: "Invalid API key" });
+    }
+  });
+
+  // Auto-enrollment endpoint for devices with API keys
+  app.post("/api/auto-enroll", (req: Request, res: Response) => {
+    const { apiKey, deviceInfo } = req.body;
+    
+    if (!apiKey) {
+      return res.status(400).json({ message: "API key is required" });
+    }
+
+    const deviceKey = networkScanner.isValidApiKey(apiKey);
+    if (!deviceKey) {
+      return res.status(401).json({ message: "Invalid API key" });
+    }
+
+    // Update device information if provided
+    if (deviceInfo) {
+      console.log(`🔄 Auto-enrollment update for device ${deviceKey.deviceName}:`, deviceInfo);
+    }
+
+    res.json({
+      success: true,
+      message: "Device auto-enrolled successfully",
+      deviceId: deviceKey.deviceId,
+      deviceName: deviceKey.deviceName,
+      enrollmentTime: new Date().toISOString()
+    });
+  });
+
+  // Start network scanner when server starts
+  console.log('🚀 Starting Finecons network scanner...');
+  networkScanner.startScanning(5); // Scan every 5 minutes
 
   return httpServer;
 }
