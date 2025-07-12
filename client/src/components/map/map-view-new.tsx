@@ -142,7 +142,7 @@ const MapView = () => {
       
       // Create map
       const map = L.map('mapContainer', {
-        center: [20, 0], // World view by default
+        center: [13.0827, 80.2707], // Chennai, India (Finecons location)
         zoom: zoom,
         zoomControl: false
       });
@@ -310,12 +310,12 @@ const MapView = () => {
         console.log("Map fitted to bounds of all markers");
       } catch (error) {
         console.error("Error fitting bounds:", error);
-        // Default view if bounds fitting fails
-        mapRef.current.setView([20, 0], 2);
+        // Default view if bounds fitting fails - Chennai, India
+        mapRef.current.setView([13.0827, 80.2707], 12);
       }
     } else {
-      // Default view if no markers
-      mapRef.current.setView([20, 0], 2);
+      // Default view if no markers - Chennai, India
+      mapRef.current.setView([13.0827, 80.2707], 12);
     }
   };
   
