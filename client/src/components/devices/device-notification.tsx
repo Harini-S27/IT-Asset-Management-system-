@@ -139,7 +139,7 @@ export function DeviceNotification({ device, onDismiss, onViewDetails }: DeviceN
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
               >
                 <CheckCircle className="h-4 w-4 mr-1" />
-                View Details
+                Accept
               </Button>
               <Button
                 size="sm"
