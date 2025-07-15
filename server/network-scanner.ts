@@ -168,41 +168,8 @@ export class NetworkScanner {
       }
     }
 
-    // Add some simulated devices for demo purposes
-    if (devices.length === 0) {
-      devices.push(
-        {
-          ip: `${baseIP}.1`,
-          mac: '00:11:22:33:44:55',
-          hostname: 'Router-Gateway',
-          vendor: 'Cisco Systems',
-          ports: [80, 443],
-          osGuess: 'Linux',
-          responseTime: 1.2,
-          lastSeen: new Date().toISOString()
-        },
-        {
-          ip: `${baseIP}.10`,
-          mac: '00:11:22:33:44:66',
-          hostname: 'Office-PC-01',
-          vendor: 'Dell Inc.',
-          ports: [22, 80],
-          osGuess: 'Windows 11',
-          responseTime: 2.5,
-          lastSeen: new Date().toISOString()
-        },
-        {
-          ip: `${baseIP}.15`,
-          mac: '00:11:22:33:44:77',
-          hostname: 'iPhone-Executive',
-          vendor: 'Apple Inc.',
-          ports: [],
-          osGuess: 'iOS',
-          responseTime: 0.8,
-          lastSeen: new Date().toISOString()
-        }
-      );
-    }
+    // No simulated devices - rely on Python agents for device discovery
+    console.log(`📱 Agent-only mode: ${devices.length} devices found via ping scan`);
 
     return devices;
   }
