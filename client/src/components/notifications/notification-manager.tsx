@@ -57,17 +57,54 @@ export function NotificationManager() {
     }
   }, [lastMessage, queryClient, toast]);
 
-  const handleDismissNotification = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+  const handleDismissNotification = async (id: string) => {
+    const notification = notifications.find(n => n.id === id);
+    if (!notification) return;
+    
+    // Remove device from database when dismissed
+    try {
+      const response = await fetch(`/api/devices/${notification.device.id}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        // Remove notification
+        setNotifications(prev => prev.filter(n => n.id !== id));
+        
+        // Invalidate device queries to refresh the dashboard
+        queryClient.invalidateQueries({ queryKey: ['/api/devices'] });
+        
+        toast({
+          title: "Device Rejected",
+          description: `${notification.device.name} has been removed from the system`,
+          duration: 3000,
+        });
+      }
+    } catch (error) {
+      console.error('Error removing device:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove device from system",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
   };
 
-  const handleViewDeviceDetails = (device: Device) => {
-    // This could navigate to device details or open a modal
-    console.log('View device details:', device);
-    // For now, just dismiss the notification
+  const handleAcceptDevice = async (device: Device) => {
+    console.log('Accepting device:', device);
+    
+    // Device is already in the system, just mark as accepted
     const notificationId = notifications.find(n => n.device.id === device.id)?.id;
     if (notificationId) {
-      handleDismissNotification(notificationId);
+      // Remove notification (device stays in system)
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      
+      toast({
+        title: "Device Accepted",
+        description: `${device.name} has been accepted into the system`,
+        duration: 3000,
+      });
     }
   };
 
@@ -78,7 +115,7 @@ export function NotificationManager() {
           key={notification.id}
           device={notification.device}
           onDismiss={() => handleDismissNotification(notification.id)}
-          onViewDetails={handleViewDeviceDetails}
+          onViewDetails={handleAcceptDevice}
         />
       ))}
     </div>
