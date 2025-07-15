@@ -6,7 +6,7 @@ echo ===============================================
 REM Set environment variables for Windows
 set NODE_ENV=development
 set PORT=5000
-set DATABASE_URL=postgresql://neondb_owner:npg_A2U5b6XEgaLi@ep-muddy-silence-a55iod1i.us-east-2.aws.neon.tech/neondb?sslmode=require
+set DATABASE_URL=postgresql://neondb_owner:npg_AKoQlmcqJ59D@ep-shy-union-a5177jy5.us-east-2.aws.neon.tech/neondb?sslmode=require
 
 echo Environment configured for Development:
 echo - Node Environment: %NODE_ENV%
