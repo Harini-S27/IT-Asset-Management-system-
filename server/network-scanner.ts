@@ -94,7 +94,14 @@ export class NetworkScanner {
     const devices: DiscoveredDevice[] = [];
 
     try {
-      // Use nmap for network discovery
+      // Try ARP scan first (works better in most networks)
+      const arpDevices = await this.arpScan(network);
+      if (arpDevices.length > 0) {
+        console.log(`📡 ARP scan found ${arpDevices.length} devices`);
+        return arpDevices;
+      }
+
+      // Fallback to nmap if available
       const nmapCommand = `nmap -sn ${network} | grep -E "(Nmap scan report|MAC Address)"`;
       const { stdout } = await execAsync(nmapCommand);
       
@@ -103,12 +110,10 @@ export class NetworkScanner {
 
       for (const line of lines) {
         if (line.includes('Nmap scan report')) {
-          // Save previous device if exists
           if (currentDevice.ip) {
             devices.push(currentDevice as DiscoveredDevice);
           }
           
-          // Extract IP and hostname
           const ipMatch = line.match(/(\d+\.\d+\.\d+\.\d+)/);
           const hostnameMatch = line.match(/for (.+) \(/);
           
@@ -123,7 +128,6 @@ export class NetworkScanner {
             lastSeen: new Date().toISOString()
           };
         } else if (line.includes('MAC Address')) {
-          // Extract MAC address and vendor
           const macMatch = line.match(/MAC Address: ([A-Fa-f0-9:]{17})/);
           const vendorMatch = line.match(/\((.+)\)/);
           
@@ -134,18 +138,165 @@ export class NetworkScanner {
         }
       }
 
-      // Add last device
       if (currentDevice.ip) {
         devices.push(currentDevice as DiscoveredDevice);
       }
 
     } catch (error) {
       console.error(`Error scanning network ${network}:`, error);
-      // Fallback to ping scan for basic discovery
       return this.fallbackPingScan(network);
     }
 
     return devices;
+  }
+
+  private async arpScan(network: string): Promise<DiscoveredDevice[]> {
+    const devices: DiscoveredDevice[] = [];
+    
+    try {
+      // Method 1: Use arp-scan if available
+      try {
+        const arpScanCommand = `arp-scan ${network}`;
+        const { stdout } = await execAsync(arpScanCommand);
+        return this.parseArpScanOutput(stdout);
+      } catch (error) {
+        console.log('arp-scan not available, trying alternative methods');
+      }
+
+      // Method 2: Use system ARP table + ping sweep
+      const baseIP = network.split('/')[0].split('.').slice(0, 3).join('.');
+      const subnet = parseInt(network.split('/')[1]) || 24;
+      const hostCount = subnet === 24 ? 254 : 20; // Limit scan range
+
+      // Ping sweep to populate ARP table
+      console.log(`🔄 Ping sweep for ${network}`);
+      const pingPromises = [];
+      for (let i = 1; i <= Math.min(hostCount, 50); i++) {
+        const ip = `${baseIP}.${i}`;
+        pingPromises.push(this.quickPing(ip));
+      }
+      
+      await Promise.allSettled(pingPromises);
+      
+      // Read ARP table
+      const arpDevices = await this.readArpTable();
+      console.log(`📋 ARP table scan found ${arpDevices.length} devices`);
+      
+      return arpDevices;
+
+    } catch (error) {
+      console.error('ARP scan failed:', error);
+      return [];
+    }
+  }
+
+  private async parseArpScanOutput(output: string): Promise<DiscoveredDevice[]> {
+    const devices: DiscoveredDevice[] = [];
+    const lines = output.split('\n');
+    
+    for (const line of lines) {
+      // Parse arp-scan output: IP MAC Vendor
+      const match = line.match(/(\d+\.\d+\.\d+\.\d+)\s+([a-fA-F0-9:]{17})\s+(.+)/);
+      if (match) {
+        devices.push({
+          ip: match[1],
+          mac: match[2],
+          hostname: await this.getHostname(match[1]),
+          vendor: match[3].trim(),
+          ports: [],
+          osGuess: 'Unknown',
+          responseTime: 0,
+          lastSeen: new Date().toISOString()
+        });
+      }
+    }
+    
+    return devices;
+  }
+
+  private async quickPing(ip: string): Promise<boolean> {
+    try {
+      const command = process.platform === 'win32' 
+        ? `ping -n 1 -w 1000 ${ip}` 
+        : `ping -c 1 -W 1 ${ip}`;
+      
+      await execAsync(command);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  private async readArpTable(): Promise<DiscoveredDevice[]> {
+    const devices: DiscoveredDevice[] = [];
+    
+    try {
+      const command = process.platform === 'win32' ? 'arp -a' : 'arp -a';
+      const { stdout } = await execAsync(command);
+      
+      const lines = stdout.split('\n');
+      for (const line of lines) {
+        let match;
+        
+        if (process.platform === 'win32') {
+          // Windows ARP format: IP Address Physical Address Type
+          match = line.match(/(\d+\.\d+\.\d+\.\d+)\s+([a-fA-F0-9-]{17})\s+dynamic/i);
+          if (match) {
+            const mac = match[2].replace(/-/g, ':').toLowerCase();
+            devices.push({
+              ip: match[1],
+              mac: mac,
+              hostname: await this.getHostname(match[1]),
+              vendor: this.guessVendorFromMac(mac),
+              ports: [],
+              osGuess: 'Unknown',
+              responseTime: 0,
+              lastSeen: new Date().toISOString()
+            });
+          }
+        } else {
+          // Linux ARP format: host (IP) at MAC [ether] on interface
+          match = line.match(/(\S+)\s+\((\d+\.\d+\.\d+\.\d+)\)\s+at\s+([a-fA-F0-9:]{17})/);
+          if (match) {
+            devices.push({
+              ip: match[2],
+              mac: match[3].toLowerCase(),
+              hostname: match[1] !== '?' ? match[1] : await this.getHostname(match[2]),
+              vendor: this.guessVendorFromMac(match[3]),
+              ports: [],
+              osGuess: 'Unknown',
+              responseTime: 0,
+              lastSeen: new Date().toISOString()
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error reading ARP table:', error);
+    }
+    
+    return devices;
+  }
+
+  private guessVendorFromMac(mac: string): string {
+    const oui = mac.substring(0, 8).toUpperCase();
+    const vendors: { [key: string]: string } = {
+      '00:50:56': 'VMware',
+      '08:00:27': 'VirtualBox',
+      '00:15:5D': 'Microsoft Hyper-V',
+      '00:1B:21': 'Intel Corporation',
+      '00:1A:A0': 'Marvell',
+      '00:E0:4C': 'Realtek',
+      '00:25:90': 'Apple',
+      '00:26:BB': 'Apple',
+      '28:CD:C1': 'Apple',
+      '3C:15:C2': 'Apple',
+      '00:21:CC': 'Intel',
+      '00:24:D7': 'Intel',
+      '00:1F:3C': 'Intel'
+    };
+    
+    return vendors[oui] || 'Unknown Vendor';
   }
 
   private async fallbackPingScan(network: string): Promise<DiscoveredDevice[]> {
