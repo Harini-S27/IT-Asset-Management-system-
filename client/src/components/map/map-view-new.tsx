@@ -101,15 +101,148 @@ const MapView = () => {
   const { toast } = useToast();
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
+  const userLocationMarkerRef = useRef<L.Marker | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [mapMode, setMapMode] = useState<string>('streets');
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [locationStatus, setLocationStatus] = useState<'loading' | 'success' | 'error' | 'denied'>('loading');
   
   // Get the devices data
   const { data: devices = [], isLoading } = useQuery<Device[]>({
     queryKey: ['/api/devices'],
   });
+
+  // Request user's current location using Geolocation API
+  const requestUserLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationStatus('error');
+      toast({
+        title: "Geolocation not supported",
+        description: "Your browser doesn't support location services",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLocationStatus('loading');
+    
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const userLat = position.coords.latitude;
+        const userLng = position.coords.longitude;
+        
+        setUserLocation({ lat: userLat, lng: userLng });
+        setLocationStatus('success');
+        
+        // Add user location marker to map
+        if (mapRef.current) {
+          addUserLocationMarker(userLat, userLng);
+          // Center map on user location
+          mapRef.current.setView([userLat, userLng], 14);
+        }
+        
+        toast({
+          title: "Location detected",
+          description: `Your location: ${userLat.toFixed(4)}, ${userLng.toFixed(4)}`,
+          duration: 5000
+        });
+      },
+      (error) => {
+        let errorMessage = "Failed to get your location";
+        
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            setLocationStatus('denied');
+            errorMessage = "Location access denied. Please enable location permissions.";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            setLocationStatus('error');
+            errorMessage = "Location information unavailable.";
+            break;
+          case error.TIMEOUT:
+            setLocationStatus('error');
+            errorMessage = "Location request timed out.";
+            break;
+        }
+        
+        toast({
+          title: "Location Error",
+          description: errorMessage,
+          variant: "destructive",
+          duration: 5000
+        });
+        
+        // Fall back to Chennai location
+        if (mapRef.current) {
+          mapRef.current.setView([13.0827, 80.2707], 12);
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000 // 5 minutes
+      }
+    );
+  };
+
+  // Add user location marker
+  const addUserLocationMarker = (lat: number, lng: number) => {
+    if (!mapRef.current) return;
+    
+    // Remove existing user location marker
+    if (userLocationMarkerRef.current) {
+      mapRef.current.removeLayer(userLocationMarkerRef.current);
+    }
+    
+    // Create user location icon
+    const userLocationIcon = L.divIcon({
+      className: 'user-location-marker',
+      html: `<div style="position: relative; width: 40px; height: 40px;">
+               <div style="position: absolute; top: 0; left: 5px; background-color: #3B82F6; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid #1D4ED8; box-shadow: 0 2px 8px rgba(0,0,0,0.5);">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                   <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                   <circle cx="12" cy="10" r="3"></circle>
+                 </svg>
+               </div>
+               <div style="position: absolute; bottom: 0; left: 14px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 10px solid #1D4ED8;"></div>
+             </div>`,
+      iconSize: [40, 40],
+      iconAnchor: [20, 40],
+      popupAnchor: [0, -40]
+    });
+    
+    // Create marker
+    const marker = L.marker([lat, lng], { icon: userLocationIcon });
+    
+    // Add popup
+    marker.bindPopup(`
+      <div class="user-location-popup">
+        <h3 class="text-lg font-semibold mb-2">Your Location</h3>
+        <div class="grid grid-cols-2 gap-2 text-sm">
+          <span class="font-medium">Latitude:</span>
+          <span>${lat.toFixed(6)}</span>
+          <span class="font-medium">Longitude:</span>
+          <span>${lng.toFixed(6)}</span>
+          <span class="font-medium">Accuracy:</span>
+          <span>High precision</span>
+        </div>
+      </div>
+    `);
+    
+    // Add tooltip
+    marker.bindTooltip("Your Current Location", {
+      direction: 'top',
+      offset: L.point(0, -30)
+    });
+    
+    // Add to map
+    marker.addTo(mapRef.current);
+    
+    // Store reference
+    userLocationMarkerRef.current = marker;
+  };
   
   // Get map preferences from localStorage
   const getMapPreferences = () => {
@@ -140,9 +273,9 @@ const MapView = () => {
       const zoom = parseInt(prefs.defaultZoom) || 2;
       const usesSatellite = prefs.enableSatelliteView || prefs.satelliteView;
       
-      // Create map
+      // Create map with initial center (will be updated when user location is found)
       const map = L.map('mapContainer', {
-        center: [13.0827, 80.2707], // Chennai, India (Finecons location)
+        center: [13.0827, 80.2707], // Chennai, India (default fallback)
         zoom: zoom,
         zoomControl: false
       });
@@ -165,6 +298,11 @@ const MapView = () => {
       
       mapRef.current = map;
       console.log("Map created successfully");
+      
+      // Automatically request user location when map is created
+      setTimeout(() => {
+        requestUserLocation();
+      }, 1000);
     }
     
     // Listen for map preferences changes
