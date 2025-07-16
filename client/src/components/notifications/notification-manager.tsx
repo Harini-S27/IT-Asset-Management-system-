@@ -40,13 +40,6 @@ export function NotificationManager() {
           
           // Mark device as notified
           setNotifiedDevices(prev => new Set([...prev, data.id]));
-          
-          // Show toast notification
-          toast({
-            title: "New Device Detected",
-            description: `${data.name} has been added to your network`,
-            duration: 5000,
-          });
         }
         
         // For device updates, just show a subtle toast
