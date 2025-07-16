@@ -12,7 +12,8 @@ import {
   Router,
   Globe,
   Ticket,
-  Mail
+  Mail,
+  Bell
 } from "lucide-react";
 import { UserMenu } from "./user-menu";
 import { useAuth } from "@/contexts/auth-context";
@@ -68,6 +69,11 @@ const Sidebar = () => {
       name: "Network Discovery",
       href: "/network-discovery",
       icon: Router,
+    },
+    {
+      name: "Notifications",
+      href: "/notifications",
+      icon: Bell,
     },
     {
       name: "Reports",

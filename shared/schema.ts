@@ -237,6 +237,27 @@ export type WebsiteBlock = typeof websiteBlocks.$inferSelect;
 export type InsertBlockingHistory = z.infer<typeof insertBlockingHistorySchema>;
 export type BlockingHistory = typeof blockingHistory.$inferSelect;
 
+// Notification History Table
+export const notificationHistory = pgTable("notification_history", {
+  id: serial("id").primaryKey(),
+  deviceId: integer("device_id").notNull(),
+  deviceName: text("device_name").notNull(),
+  deviceModel: text("device_model").notNull(),
+  deviceType: text("device_type").notNull(),
+  deviceStatus: text("device_status").notNull(),
+  deviceLocation: text("device_location").notNull(),
+  notificationType: text("notification_type").notNull(), // 'DEVICE_ADDED' | 'DEVICE_UPDATED'
+  timestamp: timestamp("timestamp").defaultNow(),
+  action: text("action"), // 'accepted' | 'dismissed' | null
+  actionTimestamp: timestamp("action_timestamp"),
+});
+
+export const insertNotificationHistorySchema = createInsertSchema(notificationHistory)
+  .omit({ id: true, timestamp: true });
+
+export type InsertNotificationHistory = z.infer<typeof insertNotificationHistorySchema>;
+export type NotificationHistory = typeof notificationHistory.$inferSelect;
+
 // Support Tickets Table for Auto-Generated Issues
 export const tickets = pgTable("tickets", {
   id: serial("id").primaryKey(),

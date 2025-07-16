@@ -1,18 +1,21 @@
 import { useState, useEffect } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { X, CheckCircle, AlertCircle, Plus, Wifi, MapPin, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Device } from '@shared/schema';
+import { apiRequest } from '@/lib/queryClient';
 
 interface DeviceNotificationProps {
   device: Device;
   onDismiss: () => void;
   onViewDetails: (device: Device) => void;
+  notificationHistoryId?: number;
 }
 
-export function DeviceNotification({ device, onDismiss, onViewDetails }: DeviceNotificationProps) {
+export function DeviceNotification({ device, onDismiss, onViewDetails, notificationHistoryId }: DeviceNotificationProps) {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -20,6 +23,26 @@ export function DeviceNotification({ device, onDismiss, onViewDetails }: DeviceN
     const timer = setTimeout(() => setIsVisible(true), 100);
     return () => clearTimeout(timer);
   }, []);
+
+  const updateNotificationMutation = useMutation({
+    mutationFn: (action: string) => {
+      if (!notificationHistoryId) return Promise.resolve();
+      return apiRequest(`/api/notifications/history/${notificationHistoryId}/action`, {
+        method: "PATCH",
+        body: { action }
+      });
+    },
+  });
+
+  const handleAccept = () => {
+    updateNotificationMutation.mutate("accepted");
+    onViewDetails(device);
+  };
+
+  const handleDismiss = () => {
+    updateNotificationMutation.mutate("dismissed");
+    onDismiss();
+  };
 
   const getDeviceIcon = (type: string) => {
     switch (type) {
@@ -93,7 +116,7 @@ export function DeviceNotification({ device, onDismiss, onViewDetails }: DeviceN
             <Button
               variant="ghost"
               size="sm"
-              onClick={onDismiss}
+              onClick={handleDismiss}
               className="h-6 w-6 p-0 hover:bg-gray-100"
             >
               <X className="h-4 w-4" />
@@ -135,8 +158,9 @@ export function DeviceNotification({ device, onDismiss, onViewDetails }: DeviceN
             <div className="flex space-x-2 pt-2">
               <Button
                 size="sm"
-                onClick={() => onViewDetails(device)}
+                onClick={handleAccept}
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={updateNotificationMutation.isPending}
               >
                 <CheckCircle className="h-4 w-4 mr-1" />
                 Accept
@@ -144,8 +168,9 @@ export function DeviceNotification({ device, onDismiss, onViewDetails }: DeviceN
               <Button
                 size="sm"
                 variant="outline"
-                onClick={onDismiss}
+                onClick={handleDismiss}
                 className="flex-1"
+                disabled={updateNotificationMutation.isPending}
               >
                 Dismiss
               </Button>

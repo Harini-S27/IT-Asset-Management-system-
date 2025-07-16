@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useWebSocket } from '@/hooks/useWebSocket';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { DeviceNotification } from '@/components/devices/device-notification';
 import { Device } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
 
 interface NotificationItem {
   id: string;
   device: Device;
   type: 'DEVICE_ADDED' | 'DEVICE_UPDATED';
   timestamp: string;
+  notificationHistoryId?: number;
 }
 
 export function NotificationManager() {
@@ -18,6 +20,14 @@ export function NotificationManager() {
   const { lastMessage } = useWebSocket();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  const createNotificationHistoryMutation = useMutation({
+    mutationFn: (notificationData: any) => 
+      apiRequest('/api/notifications/history', {
+        method: "POST",
+        body: notificationData
+      }),
+  });
 
   useEffect(() => {
     if (lastMessage) {
@@ -29,17 +39,31 @@ export function NotificationManager() {
         
         // Create notification for new devices (only if not already notified)
         if (type === 'DEVICE_ADDED' && !notifiedDevices.has(data.id)) {
-          const newNotification: NotificationItem = {
-            id: `${data.id}-${timestamp}`,
-            device: data,
-            type,
-            timestamp
-          };
-          
-          setNotifications(prev => [...prev, newNotification]);
-          
-          // Mark device as notified
-          setNotifiedDevices(prev => new Set([...prev, data.id]));
+          // Create notification history record first
+          createNotificationHistoryMutation.mutate({
+            deviceId: data.id,
+            deviceName: data.name,
+            deviceModel: data.model,
+            deviceType: data.type,
+            deviceStatus: data.status,
+            deviceLocation: data.location || 'Unknown',
+            notificationType: 'DEVICE_ADDED'
+          }, {
+            onSuccess: (historyRecord: any) => {
+              const newNotification: NotificationItem = {
+                id: `${data.id}-${timestamp}`,
+                device: data,
+                type,
+                timestamp,
+                notificationHistoryId: historyRecord.id
+              };
+              
+              setNotifications(prev => [...prev, newNotification]);
+              
+              // Mark device as notified
+              setNotifiedDevices(prev => new Set([...prev, data.id]));
+            }
+          });
         }
         
         // For device updates, just show a subtle toast
@@ -113,6 +137,7 @@ export function NotificationManager() {
           device={notification.device}
           onDismiss={() => handleDismissNotification(notification.id)}
           onViewDetails={handleAcceptDevice}
+          notificationHistoryId={notification.notificationHistoryId}
         />
       ))}
     </div>
