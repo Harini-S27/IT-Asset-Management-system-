@@ -66,13 +66,10 @@ export function NotificationManager() {
           });
         }
         
-        // For device updates, just show a subtle toast
+        // For device updates, just record in history (no toast notification)
         if (type === 'DEVICE_UPDATED') {
-          toast({
-            title: "Device Updated",
-            description: `${data.name} information has been updated`,
-            duration: 3000,
-          });
+          // Silent update - no toast notification to avoid spam
+          // History is already recorded in the server-side endpoint
         }
       }
     }
