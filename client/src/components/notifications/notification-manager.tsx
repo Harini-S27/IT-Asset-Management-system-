@@ -53,6 +53,7 @@ export function NotificationManager() {
             notificationType: 'DEVICE_ADDED'
           }, {
             onSuccess: (historyRecord: any) => {
+              console.log('Notification history created:', historyRecord);
               const newNotification: NotificationItem = {
                 id: `${data.id}-${timestamp}`,
                 device: data,
@@ -62,6 +63,23 @@ export function NotificationManager() {
               };
               
               setNotifications(prev => [...prev, newNotification]);
+              console.log('Notification added to state:', newNotification);
+              
+              // Mark device as notified
+              setNotifiedDevices(prev => new Set([...prev, data.id]));
+            },
+            onError: (error: any) => {
+              console.error('Failed to create notification history:', error);
+              // Still show notification even if history creation fails
+              const newNotification: NotificationItem = {
+                id: `${data.id}-${timestamp}`,
+                device: data,
+                type,
+                timestamp
+              };
+              
+              setNotifications(prev => [...prev, newNotification]);
+              console.log('Notification added to state (without history):', newNotification);
               
               // Mark device as notified
               setNotifiedDevices(prev => new Set([...prev, data.id]));
@@ -131,6 +149,7 @@ export function NotificationManager() {
 
   return (
     <div className="fixed top-4 left-4 z-50 space-y-4">
+      {console.log('Rendering notifications:', notifications)}
       {notifications.map((notification) => (
         <DeviceNotification
           key={notification.id}
