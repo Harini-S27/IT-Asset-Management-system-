@@ -22,11 +22,13 @@ export function NotificationManager() {
   const { toast } = useToast();
 
   const createNotificationHistoryMutation = useMutation({
-    mutationFn: (notificationData: any) => 
-      apiRequest('/api/notifications/history', {
+    mutationFn: (notificationData: any) => {
+      console.log('Creating notification history with data:', notificationData);
+      return apiRequest('/api/notifications/history', {
         method: "POST",
         body: notificationData
-      }),
+      });
+    },
   });
 
   useEffect(() => {
