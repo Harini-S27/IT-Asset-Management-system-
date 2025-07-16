@@ -579,6 +579,83 @@ const MapView = () => {
         
         {/* Side Stats Panel */}
         <div className="col-span-1 space-y-4">
+          {/* Location Status Panel */}
+          <div className="bg-white rounded-md shadow-sm p-4 border-l-4 border-blue-500">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-base font-semibold text-gray-800">Your Location</h3>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={requestUserLocation}
+                disabled={locationStatus === 'loading'}
+                className="h-8 px-2"
+              >
+                {locationStatus === 'loading' ? (
+                  <div className="animate-spin h-3 w-3 border-2 border-blue-500 border-t-transparent rounded-full" />
+                ) : (
+                  <MapPin className="h-3 w-3" />
+                )}
+                <span className="ml-1 text-xs">
+                  {locationStatus === 'loading' ? 'Finding...' : 'Locate Me'}
+                </span>
+              </Button>
+            </div>
+            
+            <div className="space-y-2">
+              {locationStatus === 'loading' && (
+                <div className="text-sm text-gray-600">
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-pulse h-2 w-2 bg-blue-500 rounded-full"></div>
+                    <span>Requesting location access...</span>
+                  </div>
+                </div>
+              )}
+              
+              {locationStatus === 'success' && userLocation && (
+                <div className="space-y-1">
+                  <div className="flex items-center space-x-2 text-sm">
+                    <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                    <span className="text-green-700 font-medium">Location detected</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="font-medium text-gray-500">Latitude:</span>
+                      <div className="text-gray-800">{userLocation.lat.toFixed(6)}</div>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-500">Longitude:</span>
+                      <div className="text-gray-800">{userLocation.lng.toFixed(6)}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {locationStatus === 'denied' && (
+                <div className="text-sm">
+                  <div className="flex items-center space-x-2 text-red-600">
+                    <div className="h-2 w-2 bg-red-500 rounded-full"></div>
+                    <span className="font-medium">Access denied</span>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Please enable location permissions in your browser to use this feature.
+                  </p>
+                </div>
+              )}
+              
+              {locationStatus === 'error' && (
+                <div className="text-sm">
+                  <div className="flex items-center space-x-2 text-orange-600">
+                    <div className="h-2 w-2 bg-orange-500 rounded-full"></div>
+                    <span className="font-medium">Location unavailable</span>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Unable to determine your location. Using default map view.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Selected Device Details */}
           {selectedDevice && (
             <div className="bg-white rounded-md shadow-sm p-4 border-l-4 border-[#4299E1]">
