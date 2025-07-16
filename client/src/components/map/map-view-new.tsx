@@ -704,39 +704,30 @@ const MapView = () => {
             </div>
           )}
           
-          {/* Status Summary */}
+          {/* Active Devices Summary */}
           <div className="bg-white rounded-md shadow-sm p-4">
             <h3 className="text-base font-semibold mb-2 flex items-center">
-              <Server className="w-4 h-4 mr-1" /> Status Summary
+              <Server className="w-4 h-4 mr-1" /> Active Devices
             </h3>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between pb-2">
-                <div className="flex items-center">
-                  <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
-                  <span className="text-sm">Active</span>
+            <div className="space-y-2 max-h-[300px] overflow-y-auto">
+              {devices.filter(d => d.status === 'Active').map(device => (
+                <div key={device.id} className="flex items-center justify-between pb-2 border-b border-gray-100 last:border-b-0">
+                  <div className="flex-1">
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
+                      <span className="text-sm font-medium">{device.name}</span>
+                    </div>
+                    <div className="text-xs text-gray-500 ml-4">
+                      📍 {device.location}
+                    </div>
+                  </div>
                 </div>
-                <span className="text-sm font-medium">
-                  {devices.filter(d => d.status === 'Active').length} devices
-                </span>
-              </div>
-              <div className="flex items-center justify-between pb-2">
-                <div className="flex items-center">
-                  <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
-                  <span className="text-sm">Inactive</span>
+              ))}
+              {devices.filter(d => d.status === 'Active').length === 0 && (
+                <div className="text-sm text-gray-500 text-center py-2">
+                  No active devices found
                 </div>
-                <span className="text-sm font-medium">
-                  {devices.filter(d => d.status === 'Inactive').length} devices
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="w-3 h-3 rounded-full bg-yellow-500 mr-2"></div>
-                  <span className="text-sm">Maintenance</span>
-                </div>
-                <span className="text-sm font-medium">
-                  {devices.filter(d => d.status === 'Maintenance').length} devices
-                </span>
-              </div>
+              )}
             </div>
           </div>
           

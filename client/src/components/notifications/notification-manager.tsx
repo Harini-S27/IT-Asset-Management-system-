@@ -14,6 +14,7 @@ interface NotificationItem {
 
 export function NotificationManager() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [notifiedDevices, setNotifiedDevices] = useState<Set<number>>(new Set());
   const { lastMessage } = useWebSocket();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -26,8 +27,8 @@ export function NotificationManager() {
         // Invalidate and refetch device queries
         queryClient.invalidateQueries({ queryKey: ['/api/devices'] });
         
-        // Create notification for new devices
-        if (type === 'DEVICE_ADDED') {
+        // Create notification for new devices (only if not already notified)
+        if (type === 'DEVICE_ADDED' && !notifiedDevices.has(data.id)) {
           const newNotification: NotificationItem = {
             id: `${data.id}-${timestamp}`,
             device: data,
@@ -36,6 +37,9 @@ export function NotificationManager() {
           };
           
           setNotifications(prev => [...prev, newNotification]);
+          
+          // Mark device as notified
+          setNotifiedDevices(prev => new Set([...prev, data.id]));
           
           // Show toast notification
           toast({
