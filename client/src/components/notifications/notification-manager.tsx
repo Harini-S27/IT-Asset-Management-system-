@@ -22,13 +22,11 @@ export function NotificationManager() {
   const { toast } = useToast();
 
   const createNotificationHistoryMutation = useMutation({
-    mutationFn: (notificationData: any) => {
-      console.log('Creating notification history with data:', notificationData);
-      return apiRequest('/api/notifications/history', {
+    mutationFn: (notificationData: any) => 
+      apiRequest('/api/notifications/history', {
         method: "POST",
         body: notificationData
-      });
-    },
+      }),
   });
 
   useEffect(() => {
@@ -151,7 +149,7 @@ export function NotificationManager() {
 
   return (
     <div className="fixed top-4 left-4 z-50 space-y-4">
-      {console.log('Rendering notifications:', notifications)}
+
       {notifications.map((notification) => (
         <DeviceNotification
           key={notification.id}
