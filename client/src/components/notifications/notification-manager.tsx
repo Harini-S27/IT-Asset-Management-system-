@@ -32,6 +32,7 @@ export function NotificationManager() {
   useEffect(() => {
     if (lastMessage) {
       const { type, data, timestamp } = lastMessage;
+      console.log('Received WebSocket message:', { type, data, timestamp });
       
       if (type === 'DEVICE_ADDED' || type === 'DEVICE_UPDATED') {
         // Invalidate and refetch device queries
@@ -39,6 +40,8 @@ export function NotificationManager() {
         
         // Create notification for new devices (only if not already notified)
         if (type === 'DEVICE_ADDED' && !notifiedDevices.has(data.id)) {
+          console.log('Creating notification for new device:', data.name);
+          console.log('Notified devices:', notifiedDevices);
           // Create notification history record first
           createNotificationHistoryMutation.mutate({
             deviceId: data.id,
