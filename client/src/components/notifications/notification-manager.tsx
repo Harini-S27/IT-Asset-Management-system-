@@ -127,7 +127,7 @@ export function NotificationManager() {
   };
 
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-4">
+    <div className="fixed top-4 left-4 z-50 space-y-4">
       {notifications.map((notification) => (
         <DeviceNotification
           key={notification.id}
