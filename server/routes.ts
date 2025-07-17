@@ -405,35 +405,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const randomIP = autoDeviceNames[Math.floor(Math.random() * autoDeviceNames.length)];
       const deviceName = `Device-${randomIP.split('.').pop()}`;
       
-      // Create a new auto-discovered device
-      const device = await storage.createDevice({
+      // Create a new pending device for approval
+      const pendingDevice = await storage.createPendingDevice({
         name: deviceName,
         type: "Workstation",
         model: "Unknown Vendor Device",
         status: "Active",
         location: "Auto-Discovered",
         ipAddress: randomIP,
+        macAddress: `00:11:22:33:44:${Math.floor(Math.random() * 100).toString(16).padStart(2, '0')}`,
         latitude: "37.7749",
-        longitude: "-122.4194"
+        longitude: "-122.4194",
+        discoveryMethod: "auto-discovery",
+        discoveryData: JSON.stringify({
+          vendor: "Unknown Vendor",
+          hostname: deviceName,
+          ports: [],
+          osGuess: "Unknown",
+          responseTime: 0,
+          lastSeen: new Date().toISOString()
+        })
       });
       
       // Broadcast new device notification to trigger popup
       broadcastToClients({
         type: 'DEVICE_ADDED',
-        data: device,
+        data: {
+          id: pendingDevice.id,
+          name: pendingDevice.name,
+          model: pendingDevice.model,
+          type: pendingDevice.type,
+          status: pendingDevice.status,
+          location: pendingDevice.location,
+          ipAddress: pendingDevice.ipAddress,
+          latitude: pendingDevice.latitude,
+          longitude: pendingDevice.longitude,
+          lastUpdated: pendingDevice.createdAt
+        },
         timestamp: new Date().toISOString(),
-        isNewDevice: true
+        isNewDevice: true,
+        isPending: true
       });
 
       // Create notification history record
       try {
         await storage.createNotificationHistory({
-          deviceId: device.id,
-          deviceName: device.name,
-          deviceModel: device.model,
-          deviceType: device.type,
-          deviceStatus: device.status,
-          deviceLocation: device.location || 'Unknown',
+          deviceId: pendingDevice.id,
+          deviceName: pendingDevice.name,
+          deviceModel: pendingDevice.model,
+          deviceType: pendingDevice.type,
+          deviceStatus: pendingDevice.status,
+          deviceLocation: pendingDevice.location || 'Unknown',
           notificationType: 'DEVICE_ADDED'
         });
       } catch (error) {
@@ -442,13 +464,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         success: true,
-        message: `Auto-discovered device ${deviceName} created successfully`,
-        device: device
+        message: `Auto-discovered device ${deviceName} created for approval`,
+        device: pendingDevice
       });
 
     } catch (error) {
       console.error('Auto-discovered device creation error:', error);
       res.status(500).json({ message: "Failed to create auto-discovered device" });
+    }
+  });
+
+  // Device approval endpoint
+  app.post("/api/devices/approve/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid device ID" });
+      }
+
+      const approvedDevice = await storage.approvePendingDevice(id);
+      if (!approvedDevice) {
+        return res.status(404).json({ message: "Pending device not found" });
+      }
+
+      // Broadcast device approved notification
+      broadcastToClients({
+        type: 'DEVICE_APPROVED',
+        data: approvedDevice,
+        timestamp: new Date().toISOString()
+      });
+
+      res.json({
+        success: true,
+        message: `Device ${approvedDevice.name} approved and added to dashboard`,
+        device: approvedDevice
+      });
+
+    } catch (error) {
+      console.error('Device approval error:', error);
+      res.status(500).json({ message: "Failed to approve device" });
+    }
+  });
+
+  // Device rejection endpoint
+  app.post("/api/devices/reject/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid device ID" });
+      }
+
+      const success = await storage.rejectPendingDevice(id);
+      if (!success) {
+        return res.status(404).json({ message: "Pending device not found" });
+      }
+
+      // Broadcast device rejected notification
+      broadcastToClients({
+        type: 'DEVICE_REJECTED',
+        data: { id },
+        timestamp: new Date().toISOString()
+      });
+
+      res.json({
+        success: true,
+        message: "Device rejected successfully"
+      });
+
+    } catch (error) {
+      console.error('Device rejection error:', error);
+      res.status(500).json({ message: "Failed to reject device" });
     }
   });
 

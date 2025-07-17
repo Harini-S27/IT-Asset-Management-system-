@@ -258,6 +258,33 @@ export const insertNotificationHistorySchema = createInsertSchema(notificationHi
 export type InsertNotificationHistory = z.infer<typeof insertNotificationHistorySchema>;
 export type NotificationHistory = typeof notificationHistory.$inferSelect;
 
+// Pending Devices schema for approval workflow
+export const pendingDevices = pgTable("pending_devices", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  model: text("model").notNull(),
+  type: text("type").notNull(),
+  status: text("status").notNull(),
+  location: text("location").notNull(),
+  ipAddress: text("ip_address"),
+  macAddress: text("mac_address"),
+  latitude: text("latitude"),
+  longitude: text("longitude"),
+  discoveryMethod: text("discovery_method").notNull(), // 'agent' or 'auto-discovery'
+  discoveryData: text("discovery_data"), // JSON string for additional data
+  createdAt: timestamp("created_at").defaultNow(),
+  approvedAt: timestamp("approved_at"),
+  rejectedAt: timestamp("rejected_at"),
+  isApproved: boolean("is_approved").default(false),
+  isRejected: boolean("is_rejected").default(false),
+});
+
+export const insertPendingDeviceSchema = createInsertSchema(pendingDevices)
+  .omit({ id: true, createdAt: true, approvedAt: true, rejectedAt: true });
+
+export type InsertPendingDevice = z.infer<typeof insertPendingDeviceSchema>;
+export type PendingDevice = typeof pendingDevices.$inferSelect;
+
 // Support Tickets Table for Auto-Generated Issues
 export const tickets = pgTable("tickets", {
   id: serial("id").primaryKey(),

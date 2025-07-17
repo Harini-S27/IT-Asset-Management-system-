@@ -34,7 +34,10 @@ import {
   type InsertTicket,
   notificationHistory,
   type NotificationHistory,
-  type InsertNotificationHistory
+  type InsertNotificationHistory,
+  pendingDevices,
+  type PendingDevice,
+  type InsertPendingDevice
 } from "@shared/schema";
 import { db } from "./db";
 import { emailService } from "./email-service";
@@ -124,6 +127,13 @@ export interface IStorage {
   getNotificationHistory(): Promise<NotificationHistory[]>;
   createNotificationHistory(notification: InsertNotificationHistory): Promise<NotificationHistory>;
   updateNotificationAction(id: number, action: string): Promise<NotificationHistory | undefined>;
+  
+  // Pending Device operations
+  getPendingDevices(): Promise<PendingDevice[]>;
+  getPendingDevice(id: number): Promise<PendingDevice | undefined>;
+  createPendingDevice(device: InsertPendingDevice): Promise<PendingDevice>;
+  approvePendingDevice(id: number): Promise<Device | undefined>;
+  rejectPendingDevice(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1031,6 +1041,67 @@ export class DatabaseStorage implements IStorage {
       .where(eq(notificationHistory.id, id))
       .returning();
     return updated;
+  }
+
+  // Pending Device operations
+  async getPendingDevices(): Promise<PendingDevice[]> {
+    return await db.select().from(pendingDevices).orderBy(desc(pendingDevices.createdAt));
+  }
+
+  async getPendingDevice(id: number): Promise<PendingDevice | undefined> {
+    const [device] = await db.select().from(pendingDevices).where(eq(pendingDevices.id, id));
+    return device;
+  }
+
+  async createPendingDevice(device: InsertPendingDevice): Promise<PendingDevice> {
+    const [created] = await db
+      .insert(pendingDevices)
+      .values(device)
+      .returning();
+    return created;
+  }
+
+  async approvePendingDevice(id: number): Promise<Device | undefined> {
+    const pendingDevice = await this.getPendingDevice(id);
+    if (!pendingDevice) return undefined;
+
+    // Create actual device from pending device
+    const deviceData: InsertDevice = {
+      name: pendingDevice.name,
+      model: pendingDevice.model,
+      type: pendingDevice.type,
+      status: pendingDevice.status,
+      location: pendingDevice.location,
+      ipAddress: pendingDevice.ipAddress,
+      latitude: pendingDevice.latitude,
+      longitude: pendingDevice.longitude
+    };
+
+    const createdDevice = await this.createDevice(deviceData);
+
+    // Mark pending device as approved
+    await db
+      .update(pendingDevices)
+      .set({ 
+        isApproved: true,
+        approvedAt: new Date()
+      })
+      .where(eq(pendingDevices.id, id));
+
+    return createdDevice;
+  }
+
+  async rejectPendingDevice(id: number): Promise<boolean> {
+    const result = await db
+      .update(pendingDevices)
+      .set({ 
+        isRejected: true,
+        rejectedAt: new Date()
+      })
+      .where(eq(pendingDevices.id, id))
+      .returning();
+    
+    return result.length > 0;
   }
 }
 

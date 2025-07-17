@@ -376,54 +376,76 @@ export class NetworkScanner {
     const deviceName = device.hostname !== 'Unknown' ? device.hostname : `Device-${device.ip.split('.').pop()}`;
     const apiKey = this.generateApiKey();
 
-    // Create device in database (for approval notification)
-    const dbDevice = await storage.createDevice({
+    // Create pending device for approval
+    const pendingDevice = await storage.createPendingDevice({
       name: deviceName,
       type: this.guessDeviceType(device),
       model: `${device.vendor} Device`,
       status: 'Active',
       location: 'Auto-Discovered',
       ipAddress: device.ip,
+      macAddress: device.mac,
       latitude: '37.7749',  // Default to San Francisco
-      longitude: '-122.4194'
+      longitude: '-122.4194',
+      discoveryMethod: 'auto-discovery',
+      discoveryData: JSON.stringify({
+        vendor: device.vendor,
+        hostname: device.hostname,
+        ports: device.ports,
+        osGuess: device.osGuess,
+        responseTime: device.responseTime,
+        lastSeen: device.lastSeen
+      })
     });
 
     // Broadcast device added notification for approval popup
     this.broadcastDeviceNotification({
       type: 'DEVICE_ADDED',
-      data: dbDevice,
+      data: {
+        id: pendingDevice.id,
+        name: pendingDevice.name,
+        model: pendingDevice.model,
+        type: pendingDevice.type,
+        status: pendingDevice.status,
+        location: pendingDevice.location,
+        ipAddress: pendingDevice.ipAddress,
+        latitude: pendingDevice.latitude,
+        longitude: pendingDevice.longitude,
+        lastUpdated: pendingDevice.createdAt
+      },
       timestamp: new Date().toISOString(),
-      isNewDevice: true
+      isNewDevice: true,
+      isPending: true
     });
 
-    // Create API key record
+    // Create API key record (will be activated upon approval)
     const apiKeyRecord: DeviceApiKey = {
-      deviceId: dbDevice.id,
+      deviceId: pendingDevice.id,
       apiKey,
       deviceName,
       ipAddress: device.ip,
       macAddress: device.mac,
       createdAt: new Date().toISOString(),
-      status: 'active'
+      status: 'pending' // Mark as pending until approved
     };
 
     this.deviceApiKeys.set(device.mac, apiKeyRecord);
     this.saveApiKeys();
 
-    console.log(`🔑 Generated API key for ${deviceName} (${device.ip}): ${apiKey.substring(0, 16)}...`);
+    console.log(`🔑 Generated API key for pending device ${deviceName} (${device.ip}): ${apiKey.substring(0, 16)}...`);
     
-    // Create notification history record for the new device
+    // Create notification history record for the pending device
     try {
       await storage.createNotificationHistory({
-        deviceId: dbDevice.id,
-        deviceName: dbDevice.name,
-        deviceModel: dbDevice.model,
-        deviceType: dbDevice.type,
-        deviceStatus: dbDevice.status,
-        deviceLocation: dbDevice.location,
+        deviceId: pendingDevice.id,
+        deviceName: pendingDevice.name,
+        deviceModel: pendingDevice.model,
+        deviceType: pendingDevice.type,
+        deviceStatus: pendingDevice.status,
+        deviceLocation: pendingDevice.location,
         notificationType: 'DEVICE_ADDED'
       });
-      console.log(`📱 Notification history created for new device: ${deviceName}`);
+      console.log(`📱 Notification history created for pending device: ${deviceName}`);
     } catch (error) {
       console.error(`Failed to create notification history for ${deviceName}:`, error);
     }

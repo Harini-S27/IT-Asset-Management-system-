@@ -100,10 +100,10 @@ export function NotificationManager() {
     const notification = notifications.find(n => n.id === id);
     if (!notification) return;
     
-    // Remove device from database when dismissed
+    // Reject pending device
     try {
-      const response = await fetch(`/api/devices/${notification.device.id}`, {
-        method: 'DELETE'
+      const response = await fetch(`/api/devices/reject/${notification.device.id}`, {
+        method: 'POST'
       });
       
       if (response.ok) {
@@ -115,15 +115,15 @@ export function NotificationManager() {
         
         toast({
           title: "Device Rejected",
-          description: `${notification.device.name} has been removed from the system`,
+          description: `${notification.device.name} has been rejected and will not be added to the system`,
           duration: 3000,
         });
       }
     } catch (error) {
-      console.error('Error removing device:', error);
+      console.error('Error rejecting device:', error);
       toast({
         title: "Error",
-        description: "Failed to remove device from system",
+        description: "Failed to reject device",
         variant: "destructive",
         duration: 3000,
       });
@@ -133,15 +133,36 @@ export function NotificationManager() {
   const handleAcceptDevice = async (device: Device) => {
     console.log('Accepting device:', device);
     
-    // Device is already in the system, just mark as accepted
-    const notificationId = notifications.find(n => n.device.id === device.id)?.id;
-    if (notificationId) {
-      // Remove notification (device stays in system)
-      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    // Approve pending device
+    try {
+      const response = await fetch(`/api/devices/approve/${device.id}`, {
+        method: 'POST'
+      });
       
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Remove notification
+        const notificationId = notifications.find(n => n.device.id === device.id)?.id;
+        if (notificationId) {
+          setNotifications(prev => prev.filter(n => n.id !== notificationId));
+        }
+        
+        // Invalidate device queries to refresh the dashboard
+        queryClient.invalidateQueries({ queryKey: ['/api/devices'] });
+        
+        toast({
+          title: "Device Accepted",
+          description: `${device.name} has been approved and added to the dashboard`,
+          duration: 3000,
+        });
+      }
+    } catch (error) {
+      console.error('Error approving device:', error);
       toast({
-        title: "Device Accepted",
-        description: `${device.name} has been accepted into the system`,
+        title: "Error",
+        description: "Failed to approve device",
+        variant: "destructive",
         duration: 3000,
       });
     }
