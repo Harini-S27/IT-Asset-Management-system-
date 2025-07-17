@@ -200,120 +200,148 @@ export function DataTable<T extends { id: number }>({
       </div>
 
       {pagination && totalPages > 0 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-neutral-500">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-neutral-500 text-center sm:text-left">
             Showing <span className="font-medium">{startIndex}</span> to{" "}
             <span className="font-medium">{endIndex}</span> of{" "}
             <span className="font-medium">{filteredData.length}</span> results
           </p>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(1)}
-              disabled={currentPage === 1}
-            >
-              First
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </Button>
+          
+          {/* Mobile-first pagination */}
+          <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+            {/* Mobile: Simple Previous/Next with page info */}
+            <div className="flex items-center gap-2 sm:hidden">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                ← Previous
+              </Button>
+              <span className="text-sm text-neutral-500 px-2">
+                {currentPage} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+              >
+                Next →
+              </Button>
+            </div>
             
-            {/* Smart pagination logic */}
-            {(() => {
-              const pages = [];
-              const maxVisiblePages = 5;
+            {/* Desktop: Full pagination */}
+            <div className="hidden sm:flex items-center space-x-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+              >
+                First
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </Button>
               
-              let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-              let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-              
-              // Adjust start if we're near the end
-              if (endPage - startPage + 1 < maxVisiblePages) {
-                startPage = Math.max(1, endPage - maxVisiblePages + 1);
-              }
-              
-              // Show first page if there's a gap
-              if (startPage > 1) {
-                pages.push(
-                  <Button
-                    key={1}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(1)}
-                  >
-                    1
-                  </Button>
-                );
+              {/* Smart pagination logic for desktop */}
+              {(() => {
+                const pages = [];
+                const maxVisiblePages = 3; // Reduced for better mobile fit
                 
-                if (startPage > 2) {
-                  pages.push(
-                    <span key="start-ellipsis" className="px-2 text-sm text-neutral-500">
-                      ...
-                    </span>
-                  );
-                }
-              }
-              
-              // Show visible pages
-              for (let i = startPage; i <= endPage; i++) {
-                pages.push(
-                  <Button
-                    key={i}
-                    variant={currentPage === i ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setCurrentPage(i)}
-                  >
-                    {i}
-                  </Button>
-                );
-              }
-              
-              // Show last page if there's a gap
-              if (endPage < totalPages) {
-                if (endPage < totalPages - 1) {
-                  pages.push(
-                    <span key="end-ellipsis" className="px-2 text-sm text-neutral-500">
-                      ...
-                    </span>
-                  );
+                let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+                
+                // Adjust start if we're near the end
+                if (endPage - startPage + 1 < maxVisiblePages) {
+                  startPage = Math.max(1, endPage - maxVisiblePages + 1);
                 }
                 
-                pages.push(
-                  <Button
-                    key={totalPages}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(totalPages)}
-                  >
-                    {totalPages}
-                  </Button>
-                );
-              }
+                // Show first page if there's a gap
+                if (startPage > 1) {
+                  pages.push(
+                    <Button
+                      key={1}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(1)}
+                    >
+                      1
+                    </Button>
+                  );
+                  
+                  if (startPage > 2) {
+                    pages.push(
+                      <span key="start-ellipsis" className="px-1 text-sm text-neutral-500">
+                        ...
+                      </span>
+                    );
+                  }
+                }
+                
+                // Show visible pages
+                for (let i = startPage; i <= endPage; i++) {
+                  pages.push(
+                    <Button
+                      key={i}
+                      variant={currentPage === i ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(i)}
+                    >
+                      {i}
+                    </Button>
+                  );
+                }
+                
+                // Show last page if there's a gap
+                if (endPage < totalPages) {
+                  if (endPage < totalPages - 1) {
+                    pages.push(
+                      <span key="end-ellipsis" className="px-1 text-sm text-neutral-500">
+                        ...
+                      </span>
+                    );
+                  }
+                  
+                  pages.push(
+                    <Button
+                      key={totalPages}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(totalPages)}
+                    >
+                      {totalPages}
+                    </Button>
+                  );
+                }
+                
+                return pages;
+              })()}
               
-              return pages;
-            })()}
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(totalPages)}
-              disabled={currentPage === totalPages}
-            >
-              Last
-            </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+              >
+                Last
+              </Button>
+            </div>
           </div>
         </div>
       )}
