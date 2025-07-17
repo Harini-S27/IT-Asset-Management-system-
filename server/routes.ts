@@ -691,6 +691,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let discoveredDeviceCount = 0;
       if (discoveredDevices && Array.isArray(discoveredDevices)) {
         console.log(`[*] Processing ${discoveredDevices.length} discovered network devices...`);
+        console.log(`[*] Discovered devices:`, discoveredDevices.map(d => `${d.name} (${d.ipAddress})`));
         
         for (const discoveredDevice of discoveredDevices) {
           try {
@@ -710,8 +711,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 location: "Network-Discovered",
                 ipAddress: discoveredDevice.ipAddress,
                 macAddress: discoveredDevice.macAddress || "Unknown",
-                latitude: "37.7749",
-                longitude: "-122.4194"
+                latitude: "13.0827",  // Chennai coordinates
+                longitude: "80.2707"
               });
               
               discoveredDeviceCount++;
@@ -725,11 +726,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               console.log(`[+] Created network device: ${discoveredDevice.name} (${discoveredDevice.ipAddress})`);
             } else {
-              // Update existing network device's last seen time
-              await storage.updateDevice(existingNetworkDevice.id, {
-                status: "Active",
-                lastUpdated: new Date().toISOString()
-              });
+              // If existing device is Auto-Discovered, upgrade it to Network-Discovered
+              if (existingNetworkDevice.location === "Auto-Discovered") {
+                await storage.updateDevice(existingNetworkDevice.id, {
+                  location: "Network-Discovered",
+                  status: "Active",
+                  latitude: "13.0827",  // Chennai coordinates
+                  longitude: "80.2707",
+                  lastUpdated: new Date().toISOString()
+                });
+                console.log(`[↑] Upgraded auto-discovered device to network-discovered: ${existingNetworkDevice.name} (${existingNetworkDevice.ipAddress})`);
+              } else {
+                // Update existing network device's last seen time
+                await storage.updateDevice(existingNetworkDevice.id, {
+                  status: "Active",
+                  lastUpdated: new Date().toISOString()
+                });
+                console.log(`[=] Updated existing device: ${existingNetworkDevice.name} (${existingNetworkDevice.ipAddress}) - Location: ${existingNetworkDevice.location}`);
+              }
             }
           } catch (error) {
             console.error(`[!] Failed to process network device ${discoveredDevice.name}:`, error);
