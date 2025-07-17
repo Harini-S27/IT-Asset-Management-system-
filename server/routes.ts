@@ -474,6 +474,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all pending devices
+  app.get("/api/pending-devices", async (req: Request, res: Response) => {
+    try {
+      const pendingDevices = await storage.getPendingDevices();
+      res.json(pendingDevices);
+    } catch (error) {
+      console.error('Error fetching pending devices:', error);
+      res.status(500).json({ message: "Failed to fetch pending devices" });
+    }
+  });
+
   // Device approval endpoint
   app.post("/api/devices/approve/:id", async (req: Request, res: Response) => {
     try {
@@ -546,7 +557,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Device name and operating system are required" });
       }
 
-      // Check if device already exists by hostname
+      // Check if device already exists by hostname in main devices table
       const existingDevices = await storage.getDevices();
       const existingDevice = existingDevices.find(device => device.name === deviceName);
 
@@ -583,40 +594,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error(`Failed to create notification history for updated device ${deviceName}:`, error);
         }
       } else {
-        // Create new device
-        device = await storage.createDevice({
+        // Create new pending device for approval
+        const pendingDevice = await storage.createPendingDevice({
           name: deviceName,
           type: "Workstation",
           model: `${operatingSystem} Device`,
           status: "Active",
           location: "Agent-Reported",
           ipAddress: ipAddress || "Unknown",
+          macAddress: "Unknown",
           latitude: "37.7749",
-          longitude: "-122.4194"
+          longitude: "-122.4194",
+          discoveryMethod: "agent-reported",
+          discoveryData: JSON.stringify({
+            operatingSystem,
+            installedSoftware: installedSoftware || [],
+            agentVersion: agentVersion || "Unknown",
+            reportTime: reportTime || new Date().toISOString(),
+            systemUptime: systemUptime || "Unknown"
+          })
         });
+        
+        device = {
+          id: pendingDevice.id,
+          name: pendingDevice.name,
+          model: pendingDevice.model,
+          type: pendingDevice.type,
+          status: pendingDevice.status,
+          location: pendingDevice.location,
+          ipAddress: pendingDevice.ipAddress,
+          latitude: pendingDevice.latitude,
+          longitude: pendingDevice.longitude,
+          lastUpdated: pendingDevice.createdAt
+        };
         isNewDevice = true;
         
-        // Broadcast new device notification
+        // Broadcast new device notification for approval
         broadcastToClients({
           type: 'DEVICE_ADDED',
           data: device,
           timestamp: new Date().toISOString(),
-          isNewDevice: true
+          isNewDevice: true,
+          isPending: true
         });
 
-        // Create notification history record for new device
+        // Create notification history record for new pending device
         try {
           await storage.createNotificationHistory({
-            deviceId: device.id,
-            deviceName: device.name,
-            deviceModel: device.model,
-            deviceType: device.type,
-            deviceStatus: device.status,
-            deviceLocation: device.location || 'Unknown',
+            deviceId: pendingDevice.id,
+            deviceName: pendingDevice.name,
+            deviceModel: pendingDevice.model,
+            deviceType: pendingDevice.type,
+            deviceStatus: pendingDevice.status,
+            deviceLocation: pendingDevice.location || 'Unknown',
             notificationType: 'DEVICE_ADDED'
           });
         } catch (error) {
-          console.error(`Failed to create notification history for new device ${deviceName}:`, error);
+          console.error(`Failed to create notification history for new pending device ${deviceName}:`, error);
         }
       }
 
