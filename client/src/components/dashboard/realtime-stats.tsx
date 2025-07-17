@@ -170,7 +170,7 @@ export function RealtimeStats() {
         </motion.div>
       )}
 
-      {/* Device Types & Locations */}
+      {/* Device Types & Locations - Sequential Lists */}
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -180,16 +180,20 @@ export function RealtimeStats() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {Object.entries(deviceTypes).map(([type, count]) => (
-                <div key={type} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <span className="text-sm">{type}</span>
+            <div className="space-y-1">
+              {Object.entries(deviceTypes)
+                .sort(([,a], [,b]) => b - a)
+                .map(([type, count], index) => (
+                  <div key={type} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-6 h-6 rounded bg-blue-100 flex items-center justify-center">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      </div>
+                      <span className="text-sm font-medium text-gray-700">{type}</span>
+                    </div>
+                    <Badge variant="secondary" className="text-xs">{count}</Badge>
                   </div>
-                  <Badge variant="secondary">{count}</Badge>
-                </div>
-              ))}
+                ))}
               {Object.keys(deviceTypes).length === 0 && (
                 <p className="text-sm text-gray-500 text-center py-4">
                   No device types available
@@ -207,16 +211,20 @@ export function RealtimeStats() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {Object.entries(locations).map(([location, count]) => (
-                <div key={location} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-sm">{location}</span>
+            <div className="space-y-1">
+              {Object.entries(locations)
+                .sort(([,a], [,b]) => b - a)
+                .map(([location, count], index) => (
+                  <div key={location} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-6 h-6 rounded bg-green-100 flex items-center justify-center">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      </div>
+                      <span className="text-sm font-medium text-gray-700">{location}</span>
+                    </div>
+                    <Badge variant="secondary" className="text-xs">{count}</Badge>
                   </div>
-                  <Badge variant="secondary">{count}</Badge>
-                </div>
-              ))}
+                ))}
               {Object.keys(locations).length === 0 && (
                 <p className="text-sm text-gray-500 text-center py-4">
                   No locations available

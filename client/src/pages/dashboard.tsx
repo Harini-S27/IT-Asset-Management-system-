@@ -11,7 +11,9 @@ import {
   Shield,
   User,
   Settings,
-  Lock
+  Lock,
+  Smartphone,
+  Camera
 } from "lucide-react";
 import { Device } from "@shared/schema";
 import { Button } from "@/components/ui/button";
@@ -194,42 +196,58 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Device by Type */}
+        {/* Device by Type - Sequential List */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Device Types</CardTitle>
+            <CardTitle className="text-lg flex items-center">
+              <Monitor className="h-5 w-5 mr-2" />
+              Device Types
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {Object.entries(typeCounts).map(([type, count]) => (
-                <div key={type} className="flex items-center">
-                  <div className="w-16 flex-shrink-0">
-                    {type === "Workstation" ? (
-                      <Monitor className="h-6 w-6 text-blue-500" />
-                    ) : type === "Server" ? (
-                      <Server className="h-6 w-6 text-purple-500" />
-                    ) : (
-                      <Monitor className="h-6 w-6 text-gray-500" />
-                    )}
-                  </div>
-                  <div className="flex-grow">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium">{type}</span>
-                      <span className="text-sm font-medium">{count}</span>
+            <div className="space-y-2">
+              {Object.entries(typeCounts)
+                .sort(([,a], [,b]) => b - a)
+                .map(([type, count], index) => (
+                  <div key={type} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                        {type === "Workstation" ? (
+                          <Monitor className="h-4 w-4 text-blue-600" />
+                        ) : type === "Server" ? (
+                          <Server className="h-4 w-4 text-purple-600" />
+                        ) : type === "Laptop" ? (
+                          <Monitor className="h-4 w-4 text-green-600" />
+                        ) : type === "Mobile" ? (
+                          <Smartphone className="h-4 w-4 text-orange-600" />
+                        ) : type === "Security Camera" ? (
+                          <Camera className="h-4 w-4 text-red-600" />
+                        ) : (
+                          <Monitor className="h-4 w-4 text-gray-600" />
+                        )}
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-900">{type}</span>
+                        <div className="w-32 bg-gray-200 rounded-full h-1.5 mt-1">
+                          <div 
+                            className="bg-blue-500 h-1.5 rounded-full transition-all duration-300" 
+                            style={{ width: `${totalDevices > 0 ? Math.min((count / totalDevices) * 100, 100) : 0}%` }}
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-[#4299E1] h-2 rounded-full" 
-                        style={{ width: `${totalDevices > 0 ? (count / totalDevices) * 100 : 0}%` }}
-                      ></div>
+                    <div className="text-right">
+                      <div className="text-lg font-semibold text-gray-900">{count}</div>
+                      <div className="text-xs text-gray-500">
+                        {totalDevices > 0 ? Math.round((count / totalDevices) * 100) : 0}%
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
-            <div className="mt-6 text-right">
+            <div className="mt-4 pt-4 border-t">
               <Link href="/devices">
-                <Button variant="link" className="text-[#4299E1]">
+                <Button variant="link" className="text-[#4299E1] p-0 h-auto">
                   View all devices <ArrowRight className="ml-1 h-4 w-4" />
                 </Button>
               </Link>
@@ -237,36 +255,46 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Devices by Location */}
+        {/* Devices by Location - Sequential List */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Locations</CardTitle>
+            <CardTitle className="text-lg flex items-center">
+              <MapPin className="h-5 w-5 mr-2" />
+              Locations
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {Object.entries(locationCounts).map(([location, count]) => (
-                <div key={location} className="flex items-center">
-                  <div className="w-16 flex-shrink-0">
-                    <MapPin className="h-6 w-6 text-[#4299E1]" />
-                  </div>
-                  <div className="flex-grow">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium">{location}</span>
-                      <span className="text-sm font-medium">{count}</span>
+            <div className="space-y-2">
+              {Object.entries(locationCounts)
+                .sort(([,a], [,b]) => b - a)
+                .map(([location, count], index) => (
+                  <div key={location} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                        <MapPin className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-900">{location}</span>
+                        <div className="w-32 bg-gray-200 rounded-full h-1.5 mt-1">
+                          <div 
+                            className="bg-blue-500 h-1.5 rounded-full transition-all duration-300" 
+                            style={{ width: `${totalDevices > 0 ? Math.min((count / totalDevices) * 100, 100) : 0}%` }}
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-[#4299E1] h-2 rounded-full" 
-                        style={{ width: `${totalDevices > 0 ? (count / totalDevices) * 100 : 0}%` }}
-                      ></div>
+                    <div className="text-right">
+                      <div className="text-lg font-semibold text-gray-900">{count}</div>
+                      <div className="text-xs text-gray-500">
+                        {totalDevices > 0 ? Math.round((count / totalDevices) * 100) : 0}%
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
-            <div className="mt-6 text-right">
+            <div className="mt-4 pt-4 border-t">
               <Link href="/map">
-                <Button variant="link" className="text-[#4299E1]">
+                <Button variant="link" className="text-[#4299E1] p-0 h-auto">
                   View map <ArrowRight className="ml-1 h-4 w-4" />
                 </Button>
               </Link>

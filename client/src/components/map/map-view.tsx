@@ -776,19 +776,26 @@ const MapComponent = () => {
             </div>
           </div>
           
-          {/* Device Type Summary */}
+          {/* Device Type Summary - Sequential List */}
           <div className="bg-white rounded-md shadow-sm p-4">
             <h3 className="text-base font-semibold mb-3 flex items-center text-[#2D3748]">
               <List className="h-4 w-4 mr-2 text-[#4299E1]" />
               Device Types
             </h3>
-            <div className="space-y-3">
-              {Object.entries(typeStats).map(([type, count]) => (
-                <div key={type} className="flex items-center justify-between">
-                  <span className="text-sm">{type}</span>
-                  <span className="text-sm font-medium">{count} devices</span>
-                </div>
-              ))}
+            <div className="space-y-1">
+              {Object.entries(typeStats)
+                .sort(([,a], [,b]) => b - a)
+                .map(([type, count], index) => (
+                  <div key={type} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-5 h-5 rounded bg-blue-100 flex items-center justify-center">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      </div>
+                      <span className="text-sm font-medium text-gray-700">{type}</span>
+                    </div>
+                    <span className="text-sm font-semibold text-gray-900">{count}</span>
+                  </div>
+                ))}
             </div>
           </div>
         </div>
