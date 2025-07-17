@@ -219,6 +219,29 @@ export class ComprehensiveNetworkScanner {
     }
   }
 
+  private async updateDeviceDatabase(devices: NetworkDevice[]): Promise<void> {
+    console.log(`💾 Saving ${devices.length} discovered devices to database...`);
+    
+    for (const device of devices) {
+      await this.saveDiscoveredDeviceToDatabase(device);
+    }
+    
+    console.log('✅ Device database update completed');
+  }
+
+  public async saveDiscoveredDevicesToDatabase(): Promise<void> {
+    console.log('🔄 Manually saving all discovered devices to database...');
+    const devices = Array.from(this.discoveredDevices.values());
+    console.log(`📊 Found ${devices.length} devices in discoveredDevices map`);
+    
+    if (devices.length === 0) {
+      console.log('⚠️ No devices found in discoveredDevices map');
+      return;
+    }
+    
+    await this.updateDeviceDatabase(devices);
+  }
+
   private async activeNetworkScan(): Promise<NetworkDevice[]> {
     const devices: NetworkDevice[] = [];
 
@@ -510,6 +533,65 @@ export class ComprehensiveNetworkScanner {
     }
 
     return devices;
+  }
+
+  private async saveDiscoveredDeviceToDatabase(device: NetworkDevice): Promise<void> {
+    try {
+      console.log(`🔍 Processing device: ${device.hostname} (${device.ip})`);
+      
+      // Check if device already exists by IP address
+      const existingDevices = await storage.getDevices();
+      const existingDevice = existingDevices.find(d => d.ipAddress === device.ip);
+      
+      if (!existingDevice) {
+        // Map device type to valid database types
+        const mapDeviceType = (deviceType: string): 'Workstation' | 'Server' | 'Laptop' | 'Mobile Device' | 'Printer' | 'Network Equipment' => {
+          switch (deviceType) {
+            case 'Network Equipment':
+            case 'Access Point':
+              return 'Network Equipment';
+            case 'Security Camera':
+              return 'Network Equipment';
+            case 'Mobile Device':
+              return 'Mobile Device';
+            case 'Printer':
+              return 'Printer';
+            case 'Server':
+              return 'Server';
+            case 'Laptop':
+              return 'Laptop';
+            case 'Workstation':
+            default:
+              return 'Workstation';
+          }
+        };
+
+        // Add new device to database
+        const newDevice = {
+          name: device.hostname !== 'Unknown' ? device.hostname : device.ip,
+          model: `${device.vendor} ${device.osGuess}`,
+          type: mapDeviceType(device.deviceType),
+          status: device.isActive ? 'Active' : 'Inactive' as 'Active' | 'Inactive' | 'Maintenance',
+          location: device.location,
+          ipAddress: device.ip,
+          latitude: device.coordinates.latitude,
+          longitude: device.coordinates.longitude,
+          lastUpdated: new Date().toISOString()
+        };
+        
+        await storage.addDevice(newDevice);
+        console.log(`✅ Added discovered device to database: ${device.hostname} (${device.ip})`);
+      } else {
+        // Update existing device coordinates and status
+        await storage.updateDevice(existingDevice.id, {
+          status: device.isActive ? 'Active' : 'Inactive' as 'Active' | 'Inactive' | 'Maintenance',
+          lastUpdated: new Date().toISOString()
+        });
+        console.log(`🔄 Updated existing device: ${device.hostname} (${device.ip})`);
+      }
+    } catch (error) {
+      console.error(`❌ Failed to save device to database: ${device.hostname} (${device.ip})`, error);
+    }
   }
 
   private createNetworkDevice(ip: string, mac: string): NetworkDevice {

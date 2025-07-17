@@ -895,6 +895,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ message: "Comprehensive network scanner stopped" });
   });
 
+  // Force save discovered devices to database
+  app.post("/api/comprehensive-scanner/save-to-db", async (req: Request, res: Response) => {
+    try {
+      await comprehensiveScanner.saveDiscoveredDevicesToDatabase();
+      res.json({ message: "Discovered devices saved to database" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to save devices to database" });
+    }
+  });
+
   // Auto-enrollment endpoint for devices with API keys
   app.post("/api/auto-enroll", (req: Request, res: Response) => {
     const { apiKey, deviceInfo } = req.body;
