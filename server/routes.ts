@@ -702,11 +702,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
             );
             
             if (!existingNetworkDevice) {
+              // Determine device type based on discovered information
+              let deviceType = "Network Device";
+              let deviceModel = "Unknown Device";
+              
+              if (discoveredDevice.type === "Mobile") {
+                deviceType = "Mobile";
+                deviceModel = discoveredDevice.model || "Mobile Device";
+              } else if (discoveredDevice.type === "Workstation") {
+                deviceType = "Workstation";
+                deviceModel = discoveredDevice.model || "Workstation Device";
+              } else if (discoveredDevice.type === "Server") {
+                deviceType = "Server";
+                deviceModel = discoveredDevice.model || "Server Device";
+              } else if (discoveredDevice.type === "Network") {
+                deviceType = "Network Device";
+                deviceModel = discoveredDevice.model || "Network Device";
+              } else {
+                deviceType = "Network Device";
+                deviceModel = discoveredDevice.model || `${discoveredDevice.type || 'Unknown'} Device`;
+              }
+              
               // Create new network device entry
               const networkDevice = await storage.createDevice({
                 name: discoveredDevice.name || discoveredDevice.ipAddress,
-                type: "Network Device",
-                model: `${discoveredDevice.type || 'Unknown'} Device`,
+                type: deviceType,
+                model: deviceModel,
                 status: "Active",
                 location: "Network-Discovered",
                 ipAddress: discoveredDevice.ipAddress,
