@@ -41,7 +41,9 @@ const Dashboard = () => {
   }, {});
   
   const typeCounts = devices.reduce((acc: {[key: string]: number}, device) => {
-    acc[device.type] = (acc[device.type] || 0) + 1;
+    if (device.type !== 'Unknown') {
+      acc[device.type] = (acc[device.type] || 0) + 1;
+    }
     return acc;
   }, {});
 

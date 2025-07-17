@@ -45,8 +45,11 @@ const DeviceTable = ({
   const [deviceToBlock, setDeviceToBlock] = useState<Device | null>(null);
 
   // Define table columns
-  // Filter devices based on selected category
+  // Filter devices based on selected category (exclude Unknown devices)
   const filteredDevices = devices.filter(device => {
+    // Always exclude Unknown devices
+    if (device.type === 'Unknown') return false;
+    
     if (categoryFilter === "All") return true;
     if (categoryFilter === "Workstations") return device.type === "Workstation";
     if (categoryFilter === "Laptops") return device.type === "Laptop";

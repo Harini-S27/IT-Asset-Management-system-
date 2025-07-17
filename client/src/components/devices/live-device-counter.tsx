@@ -24,7 +24,10 @@ export function LiveDeviceCounter({ devices }: LiveDeviceCounterProps) {
   const getDeviceTypeStats = () => {
     const stats: Record<string, number> = {};
     devices.forEach(device => {
-      stats[device.type] = (stats[device.type] || 0) + 1;
+      // Filter out Unknown device types
+      if (device.type !== 'Unknown') {
+        stats[device.type] = (stats[device.type] || 0) + 1;
+      }
     });
     return stats;
   };

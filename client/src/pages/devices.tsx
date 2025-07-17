@@ -83,8 +83,9 @@ const Devices = () => {
     enabled: !devices || devices.length === 0,
   });
 
-  // Use fallback devices if realtime devices are not available
-  const displayDevices = devices && devices.length > 0 ? devices : fallbackDevices;
+  // Use fallback devices if realtime devices are not available (filter out Unknown devices)
+  const allDevices = devices && devices.length > 0 ? devices : fallbackDevices;
+  const displayDevices = allDevices.filter(device => device.type !== 'Unknown');
 
   // Fetch prohibited software summary for audit dashboard
   const { data: prohibitedSummary } = useQuery<ProhibitedSoftwareSummary>({

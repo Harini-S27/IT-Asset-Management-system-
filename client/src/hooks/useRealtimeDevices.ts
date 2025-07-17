@@ -63,9 +63,11 @@ export function useRealtimeDevices() {
     recentlyUpdated: recentlyUpdatedIds.length,
   };
 
-  // Device type breakdown
+  // Device type breakdown (filter out Unknown devices)
   const deviceTypes = devices.reduce((acc, device) => {
-    acc[device.type] = (acc[device.type] || 0) + 1;
+    if (device.type !== 'Unknown') {
+      acc[device.type] = (acc[device.type] || 0) + 1;
+    }
     return acc;
   }, {} as Record<string, number>);
 

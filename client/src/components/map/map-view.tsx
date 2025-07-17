@@ -581,8 +581,8 @@ const MapComponent = () => {
     }
   };
 
-  // Get unique device types for filter dropdown
-  const deviceTypes = Array.from(new Set(devices.map(device => device.type)));
+  // Get unique device types for filter dropdown (filter out Unknown devices)
+  const deviceTypes = Array.from(new Set(devices.filter(device => device.type !== 'Unknown').map(device => device.type)));
   
   // Loading state
   if (isLoading) {
@@ -605,7 +605,9 @@ const MapComponent = () => {
   }, {});
 
   const typeStats = devices.reduce((acc: Record<string, number>, device) => {
-    acc[device.type] = (acc[device.type] || 0) + 1;
+    if (device.type !== 'Unknown') {
+      acc[device.type] = (acc[device.type] || 0) + 1;
+    }
     return acc;
   }, {});
 
