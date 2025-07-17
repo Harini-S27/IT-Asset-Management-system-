@@ -135,24 +135,12 @@ const DeviceTable = ({
             onClick={(e) => {
               e.stopPropagation(); // Prevent row click from triggering
               
-              // Handle deactivation by changing status to "Inactive" if currently Active
-              if (device.status === "Active") {
-                // Clone the device and update its status
-                const updatedDevice = {...device, status: "Inactive"};
-                onEditDevice(updatedDevice);
-              } else if (device.status === "Inactive") {
-                // Reactivate if currently inactive
-                const updatedDevice = {...device, status: "Active"};
-                onEditDevice(updatedDevice);
-              }
+              // Remove device from dashboard (like deny button)
+              onDeleteDevice(device.id);
             }}
-            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-              device.status === "Active" 
-                ? "bg-red-100 hover:bg-red-200 text-red-700" 
-                : "bg-green-100 hover:bg-green-200 text-green-700"
-            }`}
+            className="px-3 py-1 rounded-md text-xs font-medium transition-colors bg-red-100 hover:bg-red-200 text-red-700"
           >
-            {device.status === "Active" ? "Deactivate" : "Activate"}
+            Deactivate
           </button>
           
           {/* Keep the dropdown for additional actions */}
