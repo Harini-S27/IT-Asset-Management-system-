@@ -91,61 +91,331 @@ export class NetworkScanner {
   }
 
   private async scanNetwork(network: string): Promise<DiscoveredDevice[]> {
-    console.log(`🔍 Scanning network: ${network}`);
+    console.log(`🔍 Comprehensive network scan: ${network}`);
+    const allDevices: DiscoveredDevice[] = [];
+
+    try {
+      // Method 1: Enhanced ARP scan with ping sweep
+      const arpDevices = await this.comprehensiveArpScan(network);
+      console.log(`📡 ARP scan found ${arpDevices.length} devices`);
+      allDevices.push(...arpDevices);
+
+      // Method 2: Nmap network discovery
+      const nmapDevices = await this.nmapNetworkScan(network);
+      console.log(`🗺️ Nmap scan found ${nmapDevices.length} devices`);
+      allDevices.push(...nmapDevices);
+
+      // Method 3: Port scanning common services
+      const serviceDevices = await this.serviceDiscoveryScan(network);
+      console.log(`🔌 Service discovery found ${serviceDevices.length} devices`);
+      allDevices.push(...serviceDevices);
+
+      // Method 4: Historical IP tracking (for inactive devices)
+      const historicalDevices = await this.historicalDeviceDiscovery(network);
+      console.log(`📚 Historical tracking found ${historicalDevices.length} devices`);
+      allDevices.push(...historicalDevices);
+
+      // Method 5: Geographic coordinate-based detection
+      const geoDevices = await this.geographicDeviceDiscovery();
+      console.log(`🗺️ Geographic discovery found ${geoDevices.length} devices`);
+      allDevices.push(...geoDevices);
+
+      // Merge and deduplicate devices
+      const uniqueDevices = this.deduplicateDevices(allDevices);
+      console.log(`✅ Total unique devices discovered: ${uniqueDevices.length}`);
+      
+      return uniqueDevices;
+
+    } catch (error) {
+      console.error('Network scan failed:', error);
+      return [];
+    }
+  }
+
+  private async comprehensiveArpScan(network: string): Promise<DiscoveredDevice[]> {
+    const devices: DiscoveredDevice[] = [];
+    const baseIP = network.split('/')[0].split('.').slice(0, 3).join('.');
+    
+    try {
+      // Aggressive ping sweep to populate ARP table
+      console.log(`🔄 Enhanced ping sweep for ${network}`);
+      const pingPromises = [];
+      
+      // Scan full range for comprehensive discovery
+      for (let i = 1; i <= 254; i++) {
+        const ip = `${baseIP}.${i}`;
+        pingPromises.push(this.advancedPing(ip));
+      }
+      
+      await Promise.allSettled(pingPromises);
+      
+      // Multiple ARP table reads for consistency
+      const arpDevices1 = await this.readArpTable();
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+      const arpDevices2 = await this.readArpTable();
+      
+      // Combine results
+      const allArpDevices = [...arpDevices1, ...arpDevices2];
+      console.log(`📋 Combined ARP table scan found ${allArpDevices.length} devices`);
+      
+      return this.deduplicateDevices(allArpDevices);
+
+    } catch (error) {
+      console.error('Enhanced ARP scan failed:', error);
+      return [];
+    }
+  }
+
+  private async nmapNetworkScan(network: string): Promise<DiscoveredDevice[]> {
     const devices: DiscoveredDevice[] = [];
 
     try {
-      // Try ARP scan first (works better in most networks)
-      const arpDevices = await this.arpScan(network);
-      if (arpDevices.length > 0) {
-        console.log(`📡 ARP scan found ${arpDevices.length} devices`);
-        return arpDevices;
+      // Try multiple nmap scanning techniques
+      const nmapCommands = [
+        `nmap -sn ${network}`,                    // Ping scan
+        `nmap -sS -O ${network}`,                 // SYN scan with OS detection
+        `nmap -sU -p 53,67,68,161 ${network}`,   // UDP scan for common services
+        `nmap -PS80,443,22,21,23,25,53,110,143,993,995 ${network}` // TCP SYN ping
+      ];
+
+      for (const command of nmapCommands) {
+        try {
+          const { stdout } = await execAsync(command);
+          const nmapDevices = await this.parseNmapOutput(stdout);
+          devices.push(...nmapDevices);
+        } catch (error) {
+          console.log(`Nmap command failed: ${command}`);
+        }
       }
 
-      // Fallback to nmap if available
-      const nmapCommand = `nmap -sn ${network} | grep -E "(Nmap scan report|MAC Address)"`;
-      const { stdout } = await execAsync(nmapCommand);
-      
-      const lines = stdout.split('\n');
-      let currentDevice: Partial<DiscoveredDevice> = {};
+      return this.deduplicateDevices(devices);
 
-      for (const line of lines) {
-        if (line.includes('Nmap scan report')) {
-          if (currentDevice.ip) {
-            devices.push(currentDevice as DiscoveredDevice);
-          }
-          
-          const ipMatch = line.match(/(\d+\.\d+\.\d+\.\d+)/);
-          const hostnameMatch = line.match(/for (.+) \(/);
-          
-          currentDevice = {
-            ip: ipMatch ? ipMatch[1] : '',
-            hostname: hostnameMatch ? hostnameMatch[1] : 'Unknown',
-            mac: '',
-            vendor: '',
-            ports: [],
-            osGuess: 'Unknown',
-            responseTime: 0,
-            lastSeen: new Date().toISOString()
-          };
-        } else if (line.includes('MAC Address')) {
-          const macMatch = line.match(/MAC Address: ([A-Fa-f0-9:]{17})/);
-          const vendorMatch = line.match(/\((.+)\)/);
-          
-          if (macMatch) {
-            currentDevice.mac = macMatch[1];
-            currentDevice.vendor = vendorMatch ? vendorMatch[1] : 'Unknown';
+    } catch (error) {
+      console.error('Nmap scan failed:', error);
+      return [];
+    }
+  }
+
+  private async serviceDiscoveryScan(network: string): Promise<DiscoveredDevice[]> {
+    const devices: DiscoveredDevice[] = [];
+    const baseIP = network.split('/')[0].split('.').slice(0, 3).join('.');
+    
+    // Common service ports to scan
+    const commonPorts = [22, 23, 25, 53, 80, 110, 143, 443, 993, 995, 8080, 8443];
+    
+    try {
+      console.log(`🔌 Scanning common services on ${network}`);
+      
+      for (let i = 1; i <= 254; i++) {
+        const ip = `${baseIP}.${i}`;
+        
+        // Quick port scan for each IP
+        for (const port of commonPorts) {
+          try {
+            const isOpen = await this.checkPort(ip, port);
+            if (isOpen) {
+              devices.push({
+                ip: ip,
+                mac: await this.getMacFromIP(ip),
+                hostname: await this.getHostname(ip),
+                vendor: 'Service Discovery',
+                ports: [port],
+                osGuess: await this.detectOSFromPort(ip, port),
+                responseTime: 0,
+                lastSeen: new Date().toISOString()
+              });
+              break; // Found a service, move to next IP
+            }
+          } catch (error) {
+            // Continue to next port
           }
         }
       }
 
-      if (currentDevice.ip) {
-        devices.push(currentDevice as DiscoveredDevice);
-      }
+      return this.deduplicateDevices(devices);
 
     } catch (error) {
-      console.error(`Error scanning network ${network}:`, error);
-      return this.fallbackPingScan(network);
+      console.error('Service discovery scan failed:', error);
+      return [];
+    }
+  }
+
+  private async historicalDeviceDiscovery(network: string): Promise<DiscoveredDevice[]> {
+    const devices: DiscoveredDevice[] = [];
+    
+    try {
+      console.log(`📚 Checking historical device data for ${network}`);
+      
+      // Get all previously seen devices from database
+      const knownDevices = await storage.getDevices();
+      
+      for (const device of knownDevices) {
+        if (device.ipAddress && this.isInNetwork(device.ipAddress, network)) {
+          // Check if device is still reachable
+          const isReachable = await this.advancedPing(device.ipAddress);
+          
+          devices.push({
+            ip: device.ipAddress,
+            mac: device.macAddress || 'Unknown',
+            hostname: device.name,
+            vendor: device.model || 'Historical Record',
+            ports: [],
+            osGuess: device.model || 'Unknown',
+            responseTime: 0,
+            lastSeen: isReachable ? new Date().toISOString() : device.lastUpdated.toISOString()
+          });
+        }
+      }
+
+      return devices;
+
+    } catch (error) {
+      console.error('Historical device discovery failed:', error);
+      return [];
+    }
+  }
+
+  private async geographicDeviceDiscovery(): Promise<DiscoveredDevice[]> {
+    const devices: DiscoveredDevice[] = [];
+    
+    try {
+      console.log(`🗺️ Geographic coordinate-based device discovery`);
+      
+      // Get all devices with coordinates from database
+      const allDevices = await storage.getDevices();
+      
+      for (const device of allDevices) {
+        if (device.latitude && device.longitude) {
+          // Check if device is within expected geographic boundaries
+          if (this.isWithinGeographicBounds(device.latitude, device.longitude)) {
+            
+            // Try to ping the device even if it was last seen long ago
+            const isCurrentlyActive = device.ipAddress ? await this.advancedPing(device.ipAddress) : false;
+            
+            devices.push({
+              ip: device.ipAddress || `geo-${device.id}`,
+              mac: device.macAddress || 'Unknown',
+              hostname: device.name,
+              vendor: 'Geographic Discovery',
+              ports: [],
+              osGuess: device.model || 'Unknown',
+              responseTime: 0,
+              lastSeen: isCurrentlyActive ? new Date().toISOString() : device.lastUpdated.toISOString()
+            });
+          }
+        }
+      }
+
+      return devices;
+
+    } catch (error) {
+      console.error('Geographic device discovery failed:', error);
+      return [];
+    }
+  }
+
+  private async advancedPing(ip: string): Promise<boolean> {
+    try {
+      // Try multiple ping methods for better detection
+      const pingMethods = [
+        process.platform === 'win32' ? `ping -n 1 -w 1000 ${ip}` : `ping -c 1 -W 1 ${ip}`,
+        process.platform === 'win32' ? `ping -n 3 -w 2000 ${ip}` : `ping -c 3 -W 2 ${ip}`,
+        `nping -c 1 --icmp ${ip}` // If nping is available
+      ];
+
+      for (const method of pingMethods) {
+        try {
+          await execAsync(method);
+          return true;
+        } catch (error) {
+          continue;
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  private async checkPort(ip: string, port: number): Promise<boolean> {
+    try {
+      const command = `timeout 2 bash -c "</dev/tcp/${ip}/${port}"`;
+      await execAsync(command);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  private async getMacFromIP(ip: string): Promise<string> {
+    try {
+      const command = process.platform === 'win32' ? `arp -a ${ip}` : `arp -n ${ip}`;
+      const { stdout } = await execAsync(command);
+      
+      const macMatch = stdout.match(/([a-fA-F0-9:]{17}|[a-fA-F0-9-]{17})/);
+      return macMatch ? macMatch[1].replace(/-/g, ':').toLowerCase() : 'Unknown';
+    } catch (error) {
+      return 'Unknown';
+    }
+  }
+
+  private async detectOSFromPort(ip: string, port: number): Promise<string> {
+    const osGuesses: { [key: number]: string } = {
+      22: 'Linux/Unix',
+      23: 'Network Device',
+      25: 'Mail Server',
+      53: 'DNS Server',
+      80: 'Web Server',
+      110: 'Mail Server',
+      143: 'Mail Server',
+      443: 'Web Server',
+      993: 'Mail Server',
+      995: 'Mail Server',
+      8080: 'Web Server',
+      8443: 'Web Server'
+    };
+    
+    return osGuesses[port] || 'Unknown';
+  }
+
+  private async parseNmapOutput(output: string): Promise<DiscoveredDevice[]> {
+    const devices: DiscoveredDevice[] = [];
+    const lines = output.split('\n');
+    let currentDevice: Partial<DiscoveredDevice> = {};
+
+    for (const line of lines) {
+      if (line.includes('Nmap scan report')) {
+        if (currentDevice.ip) {
+          devices.push(currentDevice as DiscoveredDevice);
+        }
+        
+        const ipMatch = line.match(/(\d+\.\d+\.\d+\.\d+)/);
+        const hostnameMatch = line.match(/for (.+) \(/);
+        
+        currentDevice = {
+          ip: ipMatch ? ipMatch[1] : '',
+          hostname: hostnameMatch ? hostnameMatch[1] : 'Unknown',
+          mac: '',
+          vendor: '',
+          ports: [],
+          osGuess: 'Unknown',
+          responseTime: 0,
+          lastSeen: new Date().toISOString()
+        };
+      } else if (line.includes('MAC Address')) {
+        const macMatch = line.match(/MAC Address: ([A-Fa-f0-9:]{17})/);
+        const vendorMatch = line.match(/\((.+)\)/);
+        
+        if (macMatch) {
+          currentDevice.mac = macMatch[1];
+          currentDevice.vendor = vendorMatch ? vendorMatch[1] : 'Unknown';
+        }
+      }
+    }
+
+    if (currentDevice.ip) {
+      devices.push(currentDevice as DiscoveredDevice);
     }
 
     return devices;
@@ -213,6 +483,68 @@ export class NetworkScanner {
     }
     
     return devices;
+  }
+
+  private deduplicateDevices(devices: DiscoveredDevice[]): DiscoveredDevice[] {
+    const uniqueDevices = new Map<string, DiscoveredDevice>();
+    
+    for (const device of devices) {
+      const key = device.ip || device.mac || device.hostname;
+      if (key && key !== 'Unknown') {
+        // Keep the most recent or most detailed device info
+        const existing = uniqueDevices.get(key);
+        if (!existing || device.lastSeen > existing.lastSeen || device.ports.length > existing.ports.length) {
+          uniqueDevices.set(key, device);
+        }
+      }
+    }
+    
+    return Array.from(uniqueDevices.values());
+  }
+
+  private isInNetwork(ip: string, network: string): boolean {
+    const [networkIP, cidr] = network.split('/');
+    const networkParts = networkIP.split('.').map(Number);
+    const ipParts = ip.split('.').map(Number);
+    const cidrNum = parseInt(cidr);
+    
+    // Simple subnet check for /24 networks
+    if (cidrNum === 24) {
+      return networkParts[0] === ipParts[0] && 
+             networkParts[1] === ipParts[1] && 
+             networkParts[2] === ipParts[2];
+    }
+    
+    return false;
+  }
+
+  private isWithinGeographicBounds(latitude: string, longitude: string): boolean {
+    const lat = parseFloat(latitude);
+    const lon = parseFloat(longitude);
+    
+    // Check if coordinates are within Chennai area bounds
+    const chennaiBounds = {
+      north: 13.2,
+      south: 12.8,
+      east: 80.3,
+      west: 80.1
+    };
+    
+    // Also check if coordinates are within reasonable office bounds
+    const officeBounds = {
+      north: 37.85,
+      south: 37.70,
+      east: -122.35,
+      west: -122.50
+    };
+    
+    const inChennai = lat >= chennaiBounds.south && lat <= chennaiBounds.north &&
+                      lon >= chennaiBounds.west && lon <= chennaiBounds.east;
+    
+    const inOffice = lat >= officeBounds.south && lat <= officeBounds.north &&
+                     lon >= officeBounds.west && lon <= officeBounds.east;
+    
+    return inChennai || inOffice;
   }
 
   private async quickPing(ip: string): Promise<boolean> {

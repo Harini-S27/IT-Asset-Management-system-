@@ -7,6 +7,7 @@ import { storage } from "./storage";
 import { routerManager } from "./router-manager";
 import { emailService } from "./email-service";
 import { networkScanner } from "./network-scanner";
+import { ComprehensiveNetworkScanner } from "./comprehensive-network-scanner";
 import { 
   insertDeviceSchema, 
   insertProhibitedSoftwareSchema,
@@ -18,6 +19,9 @@ import { z } from "zod";
 
 // WebSocket connection management
 const connectedClients = new Set<WebSocket>();
+
+// Initialize comprehensive network scanner
+const comprehensiveScanner = new ComprehensiveNetworkScanner();
 
 function broadcastToClients(message: any) {
   const messageString = JSON.stringify(message);
@@ -871,6 +875,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Comprehensive Network Scanner API endpoints
+  app.get("/api/comprehensive-scanner/status", (req: Request, res: Response) => {
+    res.json(comprehensiveScanner.getStatus());
+  });
+
+  app.get("/api/comprehensive-scanner/discovered-devices", (req: Request, res: Response) => {
+    res.json(comprehensiveScanner.getDiscoveredDevices());
+  });
+
+  app.post("/api/comprehensive-scanner/start", (req: Request, res: Response) => {
+    const { intervalMinutes } = req.body;
+    comprehensiveScanner.startComprehensiveScanning(intervalMinutes || 5);
+    res.json({ message: "Comprehensive network scanner started", intervalMinutes: intervalMinutes || 5 });
+  });
+
+  app.post("/api/comprehensive-scanner/stop", (req: Request, res: Response) => {
+    comprehensiveScanner.stopScanning();
+    res.json({ message: "Comprehensive network scanner stopped" });
+  });
+
   // Auto-enrollment endpoint for devices with API keys
   app.post("/api/auto-enroll", (req: Request, res: Response) => {
     const { apiKey, deviceInfo } = req.body;
@@ -973,9 +997,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Start network scanner when server starts
+  // Start network scanners when server starts
   console.log('🚀 Starting Finecons network scanner...');
   networkScanner.startScanning(5); // Scan every 5 minutes
+  
+  console.log('🚀 Starting comprehensive network scanner...');
+  comprehensiveScanner.startComprehensiveScanning(5); // Comprehensive scan every 5 minutes
 
   return httpServer;
 }
