@@ -109,7 +109,7 @@ export function AnimatedDeviceList({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-h-96 overflow-y-auto">
       <AnimatePresence mode="popLayout">
         {devices.map((device) => {
           const isHighlighted = highlightedDevices.has(device.id);
