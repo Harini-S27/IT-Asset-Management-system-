@@ -48,6 +48,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       connectedClients.delete(ws);
     });
   });
+
+  // Set up network scanner broadcast callback
+  networkScanner.setBroadcastCallback(broadcastToClients);
   // Get all devices
   app.get("/api/devices", async (req: Request, res: Response) => {
     try {
@@ -325,7 +328,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Test endpoint to simulate new device detection
+  // Test endpoint to simulate new device detection (Agent-Reported)
   app.post("/api/test-new-device", async (req: Request, res: Response) => {
     try {
       // Generate a random device name for testing
@@ -346,7 +349,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: "Workstation",
         model: "Test Device - Windows 11",
         status: "Active",
-        location: "Network-Discovered",
+        location: "Agent-Reported",
         ipAddress: `192.168.1.${Math.floor(Math.random() * 254) + 1}`,
         latitude: "37.7749",
         longitude: "-122.4194"
@@ -384,6 +387,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Test device creation error:', error);
       res.status(500).json({ message: "Failed to create test device" });
+    }
+  });
+
+  // Test endpoint to simulate auto-discovered device
+  app.post("/api/test-auto-discovered-device", async (req: Request, res: Response) => {
+    try {
+      // Generate a random auto-discovered device
+      const autoDeviceNames = [
+        "192.168.1.101",
+        "192.168.1.102", 
+        "192.168.1.103",
+        "192.168.1.104",
+        "192.168.1.105"
+      ];
+      
+      const randomIP = autoDeviceNames[Math.floor(Math.random() * autoDeviceNames.length)];
+      const deviceName = `Device-${randomIP.split('.').pop()}`;
+      
+      // Create a new auto-discovered device
+      const device = await storage.createDevice({
+        name: deviceName,
+        type: "Workstation",
+        model: "Unknown Vendor Device",
+        status: "Active",
+        location: "Auto-Discovered",
+        ipAddress: randomIP,
+        latitude: "37.7749",
+        longitude: "-122.4194"
+      });
+      
+      // Broadcast new device notification to trigger popup
+      broadcastToClients({
+        type: 'DEVICE_ADDED',
+        data: device,
+        timestamp: new Date().toISOString(),
+        isNewDevice: true
+      });
+
+      // Create notification history record
+      try {
+        await storage.createNotificationHistory({
+          deviceId: device.id,
+          deviceName: device.name,
+          deviceModel: device.model,
+          deviceType: device.type,
+          deviceStatus: device.status,
+          deviceLocation: device.location || 'Unknown',
+          notificationType: 'DEVICE_ADDED'
+        });
+      } catch (error) {
+        console.error(`Failed to create notification history for auto-discovered device ${deviceName}:`, error);
+      }
+
+      res.json({
+        success: true,
+        message: `Auto-discovered device ${deviceName} created successfully`,
+        device: device
+      });
+
+    } catch (error) {
+      console.error('Auto-discovered device creation error:', error);
+      res.status(500).json({ message: "Failed to create auto-discovered device" });
     }
   });
 

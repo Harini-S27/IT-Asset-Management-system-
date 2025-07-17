@@ -37,6 +37,7 @@ export class NetworkScanner {
   private deviceApiKeys: Map<string, DeviceApiKey> = new Map();
   private apiKeysPath: string;
   private scanNetworks: string[];
+  private broadcastCallback: ((message: any) => void) | null = null;
 
   constructor() {
     this.apiKeysPath = path.join(process.cwd(), 'device_api_keys.json');
@@ -375,7 +376,7 @@ export class NetworkScanner {
     const deviceName = device.hostname !== 'Unknown' ? device.hostname : `Device-${device.ip.split('.').pop()}`;
     const apiKey = this.generateApiKey();
 
-    // Create device in database
+    // Create device in database (for approval notification)
     const dbDevice = await storage.createDevice({
       name: deviceName,
       type: this.guessDeviceType(device),
@@ -385,6 +386,14 @@ export class NetworkScanner {
       ipAddress: device.ip,
       latitude: '37.7749',  // Default to San Francisco
       longitude: '-122.4194'
+    });
+
+    // Broadcast device added notification for approval popup
+    this.broadcastDeviceNotification({
+      type: 'DEVICE_ADDED',
+      data: dbDevice,
+      timestamp: new Date().toISOString(),
+      isNewDevice: true
     });
 
     // Create API key record
@@ -528,6 +537,16 @@ export class NetworkScanner {
 
   public isValidApiKey(apiKey: string): DeviceApiKey | undefined {
     return Array.from(this.deviceApiKeys.values()).find(key => key.apiKey === apiKey);
+  }
+
+  public setBroadcastCallback(callback: (message: any) => void): void {
+    this.broadcastCallback = callback;
+  }
+
+  private broadcastDeviceNotification(message: any): void {
+    if (this.broadcastCallback) {
+      this.broadcastCallback(message);
+    }
   }
 
   public getStatus(): {
