@@ -205,7 +205,7 @@ const Dashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-80 overflow-y-auto">
               {Object.entries(typeCounts)
                 .sort(([,a], [,b]) => b - a)
                 .map(([type, count], index) => (
@@ -255,7 +255,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Devices by Location - Sequential List */}
+        {/* Devices by Location - Sequential List with See More */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center">
@@ -264,7 +264,7 @@ const Dashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-80 overflow-y-auto">
               {Object.entries(locationCounts)
                 .sort(([,a], [,b]) => b - a)
                 .map(([location, count], index) => (

@@ -180,7 +180,7 @@ export function RealtimeStats() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-1">
+            <div className="space-y-1 max-h-64 overflow-y-auto">
               {Object.entries(deviceTypes)
                 .sort(([,a], [,b]) => b - a)
                 .map(([type, count], index) => (
@@ -211,7 +211,7 @@ export function RealtimeStats() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-1">
+            <div className="space-y-1 max-h-64 overflow-y-auto">
               {Object.entries(locations)
                 .sort(([,a], [,b]) => b - a)
                 .map(([location, count], index) => (
