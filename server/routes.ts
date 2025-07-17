@@ -555,7 +555,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Device update endpoint for Python agents
   app.post("/api/device-update", async (req: Request, res: Response) => {
     try {
-      const { deviceName, operatingSystem, installedSoftware, ipAddress, location, agentVersion, reportTime, systemUptime } = req.body;
+      const { deviceName, operatingSystem, installedSoftware, ipAddress, location, agentVersion, reportTime, systemUptime, networkDevices, discoveredDevices } = req.body;
 
       if (!deviceName || !operatingSystem) {
         return res.status(400).json({ message: "Device name and operating system are required" });
@@ -687,11 +687,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Process discovered network devices
+      let discoveredDeviceCount = 0;
+      if (discoveredDevices && Array.isArray(discoveredDevices)) {
+        console.log(`[*] Processing ${discoveredDevices.length} discovered network devices...`);
+        
+        for (const discoveredDevice of discoveredDevices) {
+          try {
+            // Check if this network device already exists
+            const existingNetworkDevice = existingDevices.find(d => 
+              d.ipAddress === discoveredDevice.ipAddress || 
+              d.name === discoveredDevice.name
+            );
+            
+            if (!existingNetworkDevice) {
+              // Create new network device entry
+              const networkDevice = await storage.createDevice({
+                name: discoveredDevice.name || discoveredDevice.ipAddress,
+                type: "Network Device",
+                model: `${discoveredDevice.type || 'Unknown'} Device`,
+                status: "Active",
+                location: "Network-Discovered",
+                ipAddress: discoveredDevice.ipAddress,
+                macAddress: discoveredDevice.macAddress || "Unknown",
+                latitude: "37.7749",
+                longitude: "-122.4194"
+              });
+              
+              discoveredDeviceCount++;
+              
+              // Broadcast new device notification
+              broadcastToClients({
+                type: 'DEVICE_ADDED',
+                data: networkDevice,
+                timestamp: new Date().toISOString()
+              });
+              
+              console.log(`[+] Created network device: ${discoveredDevice.name} (${discoveredDevice.ipAddress})`);
+            } else {
+              // Update existing network device's last seen time
+              await storage.updateDevice(existingNetworkDevice.id, {
+                status: "Active",
+                lastUpdated: new Date().toISOString()
+              });
+            }
+          } catch (error) {
+            console.error(`[!] Failed to process network device ${discoveredDevice.name}:`, error);
+          }
+        }
+      }
+
       res.json({
         success: true,
         message: `Device ${deviceName} updated successfully`,
         deviceId: device?.id,
         detectedThreats,
+        discoveredDeviceCount,
         agentVersion: agentVersion || "unknown",
         lastUpdate: new Date().toISOString()
       });
