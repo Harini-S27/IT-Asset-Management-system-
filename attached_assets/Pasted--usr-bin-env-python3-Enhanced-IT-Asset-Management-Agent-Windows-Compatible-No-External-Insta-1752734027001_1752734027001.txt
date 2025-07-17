@@ -1,0 +1,138 @@
+#!/usr/bin/env python3
+"""
+Enhanced IT Asset Management Agent (Windows Compatible, No External Installs)
+- Collects system info
+- Simulates ARP scan
+- Sends real-time data to dashboard
+- Can be compiled into a single .exe using PyInstaller
+"""
+
+import subprocess
+import socket
+import platform
+import json
+import requests
+import time
+import re
+from datetime import datetime
+
+# Dashboard API Endpoint
+DASHBOARD_URL = "https://4d454db1-bf57-45a3-8c22-f54b8eab2982-00-3tktq9yl62ggy.riker.replit.dev/api/device-update"
+AGENT_VERSION = "2.0.0"
+REPORT_INTERVAL = 60  # seconds
+
+# ================== System Info Collection ==================
+
+def get_hostname():
+    return socket.gethostname()
+
+def get_operating_system():
+    return f"{platform.system()} {platform.release()}"
+
+def get_ip_address():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except:
+        return "Unknown"
+
+def get_system_uptime():
+    try:
+        if platform.system() == "Windows":
+            import ctypes
+            uptime_ms = ctypes.windll.kernel32.GetTickCount64()
+            return f"{uptime_ms // (1000 * 60 * 60)} hours"
+    except:
+        return "Unknown"
+
+def get_installed_software():
+    software_list = []
+    try:
+        import winreg
+        paths = [
+            r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
+            r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall"
+        ]
+        for path in paths:
+            try:
+                key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path)
+                for i in range(0, winreg.QueryInfoKey(key)[0]):
+                    try:
+                        subkey = winreg.OpenKey(key, winreg.EnumKey(key, i))
+                        name, _ = winreg.QueryValueEx(subkey, "DisplayName")
+                        software_list.append(name)
+                    except:
+                        continue
+            except:
+                continue
+    except:
+        software_list = ["Microsoft Office", "Chrome"]
+    return software_list[:30]  # limit for dashboard
+
+# ================== ARP Scan Simulation ==================
+
+def get_arp_devices():
+    print("[*] Scanning local subnet for devices...")
+    subnet_prefix = get_ip_address().rsplit('.', 1)[0]
+    try:
+        subprocess.run(f"for /L %i in (1,1,254) do @ping -n 1 -w 10 {subnet_prefix}.%i > nul", shell=True)
+    except:
+        pass
+
+    try:
+        output = subprocess.check_output("arp -a", shell=True).decode()
+        devices = []
+        for line in output.splitlines():
+            match = re.match(r"(\d+\.\d+\.\d+\.\d+)\s+([\w-]+)\s+([\w]+)", line.strip())
+            if match:
+                ip, mac, type_ = match.groups()
+                devices.append({"ip": ip, "mac": mac, "type": type_})
+        return devices
+    except Exception as e:
+        print(f"[!] Failed to read ARP table: {e}")
+        return []
+
+# ================== Reporting ==================
+
+def send_report(data):
+    try:
+        headers = {'Content-Type': 'application/json'}
+        response = requests.post(DASHBOARD_URL, json=data, headers=headers, timeout=10)
+        if response.status_code == 200:
+            print(f"[✓] Report sent at {data['reportTime']}")
+        else:
+            print(f"[✗] Report failed: {response.status_code}")
+    except Exception as e:
+        print(f"[!] Error sending report: {e}")
+
+# ================== Main ==================
+
+def main():
+    print(f"\nITAM Agent v{AGENT_VERSION} Starting...\n")
+    while True:
+        try:
+            system_info = {
+                "deviceName": get_hostname(),
+                "operatingSystem": get_operating_system(),
+                "ipAddress": get_ip_address(),
+                "systemUptime": get_system_uptime(),
+                "installedSoftware": get_installed_software(),
+                "reportTime": datetime.now().isoformat(),
+                "agentVersion": AGENT_VERSION,
+                "location": "ARP-based scan",
+                "networkDevices": get_arp_devices()
+            }
+            send_report(system_info)
+            time.sleep(REPORT_INTERVAL)
+        except KeyboardInterrupt:
+            print("\n[!] Agent stopped.")
+            break
+        except Exception as e:
+            print(f"[!] Runtime error: {e}")
+            time.sleep(30)
+
+if _name_ == "_main_":
+    main()
