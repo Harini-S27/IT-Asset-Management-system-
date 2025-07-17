@@ -325,6 +325,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test endpoint to simulate new device detection
+  app.post("/api/test-new-device", async (req: Request, res: Response) => {
+    try {
+      // Generate a random device name for testing
+      const deviceNames = [
+        "TestDevice-001",
+        "NewLaptop-Marketing",
+        "SecureWorkstation-HR",
+        "TechDevice-IT",
+        "MobileDevice-Sales",
+        "TestMachine-QA"
+      ];
+      
+      const randomName = deviceNames[Math.floor(Math.random() * deviceNames.length)] + "-" + Date.now();
+      
+      // Create a new test device
+      const device = await storage.createDevice({
+        name: randomName,
+        type: "Workstation",
+        model: "Test Device - Windows 11",
+        status: "Active",
+        location: "Network-Discovered",
+        ipAddress: `192.168.1.${Math.floor(Math.random() * 254) + 1}`,
+        latitude: "37.7749",
+        longitude: "-122.4194"
+      });
+      
+      // Broadcast new device notification to trigger popup
+      broadcastToClients({
+        type: 'DEVICE_ADDED',
+        data: device,
+        timestamp: new Date().toISOString(),
+        isNewDevice: true
+      });
+
+      // Create notification history record
+      try {
+        await storage.createNotificationHistory({
+          deviceId: device.id,
+          deviceName: device.name,
+          deviceModel: device.model,
+          deviceType: device.type,
+          deviceStatus: device.status,
+          deviceLocation: device.location || 'Unknown',
+          notificationType: 'DEVICE_ADDED'
+        });
+      } catch (error) {
+        console.error(`Failed to create notification history for test device ${randomName}:`, error);
+      }
+
+      res.json({
+        success: true,
+        message: `Test device ${randomName} created successfully`,
+        device: device
+      });
+
+    } catch (error) {
+      console.error('Test device creation error:', error);
+      res.status(500).json({ message: "Failed to create test device" });
+    }
+  });
+
   // Device update endpoint for Python agents
   app.post("/api/device-update", async (req: Request, res: Response) => {
     try {
