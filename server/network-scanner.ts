@@ -403,6 +403,22 @@ export class NetworkScanner {
 
     console.log(`🔑 Generated API key for ${deviceName} (${device.ip}): ${apiKey.substring(0, 16)}...`);
     
+    // Create notification history record for the new device
+    try {
+      await storage.createNotificationHistory({
+        deviceId: dbDevice.id,
+        deviceName: dbDevice.name,
+        deviceModel: dbDevice.model,
+        deviceType: dbDevice.type,
+        deviceStatus: dbDevice.status,
+        deviceLocation: dbDevice.location,
+        notificationType: 'DEVICE_ADDED'
+      });
+      console.log(`📱 Notification history created for new device: ${deviceName}`);
+    } catch (error) {
+      console.error(`Failed to create notification history for ${deviceName}:`, error);
+    }
+    
     return apiKeyRecord;
   }
 

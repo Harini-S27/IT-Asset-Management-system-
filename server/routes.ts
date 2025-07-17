@@ -355,6 +355,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           data: device,
           timestamp: new Date().toISOString()
         });
+
+        // Create notification history record for device update
+        try {
+          await storage.createNotificationHistory({
+            deviceId: device.id,
+            deviceName: device.name,
+            deviceModel: device.model,
+            deviceType: device.type,
+            deviceStatus: device.status,
+            deviceLocation: device.location || 'Unknown',
+            notificationType: 'DEVICE_UPDATED'
+          });
+        } catch (error) {
+          console.error(`Failed to create notification history for updated device ${deviceName}:`, error);
+        }
       } else {
         // Create new device
         device = await storage.createDevice({
@@ -376,6 +391,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           timestamp: new Date().toISOString(),
           isNewDevice: true
         });
+
+        // Create notification history record for new device
+        try {
+          await storage.createNotificationHistory({
+            deviceId: device.id,
+            deviceName: device.name,
+            deviceModel: device.model,
+            deviceType: device.type,
+            deviceStatus: device.status,
+            deviceLocation: device.location || 'Unknown',
+            notificationType: 'DEVICE_ADDED'
+          });
+        } catch (error) {
+          console.error(`Failed to create notification history for new device ${deviceName}:`, error);
+        }
       }
 
       // Check for prohibited software if installed software is provided
@@ -620,6 +650,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       deviceName: deviceKey.deviceName,
       enrollmentTime: new Date().toISOString()
     });
+  });
+
+  // Notification History endpoints
+  app.get("/api/notifications/history", async (req: Request, res: Response) => {
+    try {
+      const notifications = await storage.getNotificationHistory();
+      res.json(notifications);
+    } catch (error) {
+      console.error('Error fetching notification history:', error);
+      res.status(500).json({ message: "Failed to fetch notification history" });
+    }
+  });
+
+  app.post("/api/notifications/history", async (req: Request, res: Response) => {
+    try {
+      const notificationData = req.body;
+      const notification = await storage.createNotificationHistory(notificationData);
+      res.json(notification);
+    } catch (error) {
+      console.error('Error creating notification history:', error);
+      res.status(500).json({ message: "Failed to create notification history" });
+    }
+  });
+
+  app.patch("/api/notifications/history/:id/action", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { action } = req.body;
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid notification ID" });
+      }
+      
+      const notification = await storage.updateNotificationAction(id, action);
+      res.json(notification);
+    } catch (error) {
+      console.error('Error updating notification action:', error);
+      res.status(500).json({ message: "Failed to update notification action" });
+    }
   });
 
   // Start network scanner when server starts

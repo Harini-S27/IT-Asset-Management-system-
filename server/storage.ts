@@ -31,7 +31,10 @@ import {
   type InsertBlockingHistory,
   tickets,
   type Ticket,
-  type InsertTicket
+  type InsertTicket,
+  notificationHistory,
+  type NotificationHistory,
+  type InsertNotificationHistory
 } from "@shared/schema";
 import { db } from "./db";
 import { emailService } from "./email-service";
@@ -116,6 +119,11 @@ export interface IStorage {
   
   // Auto-ticket generation
   generateAutoTicket(deviceId: number, triggerEvent: string, oldStatus?: string, newStatus?: string): Promise<Ticket | undefined>;
+
+  // Notification History operations
+  getNotificationHistory(): Promise<NotificationHistory[]>;
+  createNotificationHistory(notification: InsertNotificationHistory): Promise<NotificationHistory>;
+  updateNotificationAction(id: number, action: string): Promise<NotificationHistory | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -998,6 +1006,31 @@ export class DatabaseStorage implements IStorage {
     }
 
     return createdTicket;
+  }
+
+  // Notification History operations
+  async getNotificationHistory(): Promise<NotificationHistory[]> {
+    return await db.select().from(notificationHistory).orderBy(desc(notificationHistory.timestamp));
+  }
+
+  async createNotificationHistory(notification: InsertNotificationHistory): Promise<NotificationHistory> {
+    const [created] = await db
+      .insert(notificationHistory)
+      .values(notification)
+      .returning();
+    return created;
+  }
+
+  async updateNotificationAction(id: number, action: string): Promise<NotificationHistory | undefined> {
+    const [updated] = await db
+      .update(notificationHistory)
+      .set({ 
+        action, 
+        actionTimestamp: new Date() 
+      })
+      .where(eq(notificationHistory.id, id))
+      .returning();
+    return updated;
   }
 }
 
