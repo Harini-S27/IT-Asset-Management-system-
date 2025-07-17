@@ -937,6 +937,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update device coordinates endpoint
+  app.post("/api/update-device-coordinates", async (req: Request, res: Response) => {
+    try {
+      const devices = await storage.getDevices();
+      let updatedCount = 0;
+      
+      for (const device of devices) {
+        // Check if device has default coordinates or coordinates that need updating
+        if (device.latitude === '37.7749' && device.longitude === '-122.4194') {
+          // Use the public method to assign realistic coordinates
+          const coordinates = storage.assignRealisticCoordinates(
+            device.type,
+            device.location || 'Agent-Reported',
+            device.name
+          );
+          
+          await storage.updateDevice(device.id, {
+            latitude: coordinates.latitude,
+            longitude: coordinates.longitude
+          });
+          
+          updatedCount++;
+        }
+      }
+      
+      res.json({ 
+        success: true, 
+        message: `Updated coordinates for ${updatedCount} devices`,
+        updatedCount 
+      });
+    } catch (error) {
+      console.error("Error updating device coordinates:", error);
+      res.status(500).json({ message: "Failed to update device coordinates" });
+    }
+  });
+
   // Start network scanner when server starts
   console.log('🚀 Starting Finecons network scanner...');
   networkScanner.startScanning(5); // Scan every 5 minutes

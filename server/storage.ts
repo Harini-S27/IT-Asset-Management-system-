@@ -168,6 +168,18 @@ export class DatabaseStorage implements IStorage {
 
   async createDevice(insertDevice: InsertDevice): Promise<Device> {
     const now = new Date();
+    
+    // If coordinates are default/generic, assign better ones
+    if (insertDevice.latitude === '37.7749' && insertDevice.longitude === '-122.4194') {
+      const coordinates = this.assignRealisticCoordinates(
+        insertDevice.type,
+        insertDevice.location || 'Agent-Reported',
+        insertDevice.name
+      );
+      insertDevice.latitude = coordinates.latitude;
+      insertDevice.longitude = coordinates.longitude;
+    }
+    
     const [device] = await db
       .insert(devices)
       .values({ ...insertDevice, lastUpdated: now })
@@ -1065,6 +1077,13 @@ export class DatabaseStorage implements IStorage {
     const pendingDevice = await this.getPendingDevice(id);
     if (!pendingDevice) return undefined;
 
+    // Assign better geographic coordinates based on device type and location
+    const coordinates = this.assignRealisticCoordinates(
+      pendingDevice.type,
+      pendingDevice.location,
+      pendingDevice.name
+    );
+
     // Create actual device from pending device
     const deviceData: InsertDevice = {
       name: pendingDevice.name,
@@ -1073,8 +1092,8 @@ export class DatabaseStorage implements IStorage {
       status: pendingDevice.status,
       location: pendingDevice.location,
       ipAddress: pendingDevice.ipAddress,
-      latitude: pendingDevice.latitude,
-      longitude: pendingDevice.longitude
+      latitude: coordinates.latitude,
+      longitude: coordinates.longitude
     };
 
     const createdDevice = await this.createDevice(deviceData);
@@ -1102,6 +1121,95 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return result.length > 0;
+  }
+
+  // Assign realistic coordinates based on device type and location
+  public assignRealisticCoordinates(
+    deviceType: string,
+    location: string,
+    deviceName: string
+  ): { latitude: string; longitude: string } {
+    // Define location clusters for different types of devices
+    const locationClusters = {
+      // Chennai office locations
+      'Agent-Reported': {
+        'Workstation': [
+          { lat: 13.0470, lng: 80.2574, name: 'Office Floor 1' },
+          { lat: 13.0475, lng: 80.2580, name: 'Office Floor 2' },
+          { lat: 13.0480, lng: 80.2585, name: 'Office Floor 3' },
+          { lat: 13.0485, lng: 80.2590, name: 'Development Wing' },
+          { lat: 13.0490, lng: 80.2595, name: 'Admin Wing' }
+        ],
+        'Server': [
+          { lat: 13.0465, lng: 80.2570, name: 'Data Center' },
+          { lat: 13.0467, lng: 80.2572, name: 'Server Room' },
+          { lat: 13.0469, lng: 80.2574, name: 'Backup Center' }
+        ],
+        'Mobile Device': [
+          { lat: 13.0475, lng: 80.2580, name: 'Mobile Devices' },
+          { lat: 13.0480, lng: 80.2585, name: 'Executive Area' },
+          { lat: 13.0485, lng: 80.2590, name: 'Meeting Rooms' }
+        ]
+      },
+      // Auto-discovered network devices
+      'Auto-Discovered': {
+        'Workstation': [
+          { lat: 13.0500, lng: 80.2600, name: 'Parking Area' },
+          { lat: 13.0505, lng: 80.2605, name: 'Reception Area' },
+          { lat: 13.0510, lng: 80.2610, name: 'Warehouse Entry' },
+          { lat: 13.0515, lng: 80.2615, name: 'Loading Dock' },
+          { lat: 13.0520, lng: 80.2620, name: 'Security Office' }
+        ],
+        'Network Device': [
+          { lat: 13.0525, lng: 80.2625, name: 'Network Closet 1' },
+          { lat: 13.0530, lng: 80.2630, name: 'Network Closet 2' },
+          { lat: 13.0535, lng: 80.2635, name: 'Main Switch Room' }
+        ],
+        'Security Camera': [
+          { lat: 13.0540, lng: 80.2640, name: 'Entrance Camera' },
+          { lat: 13.0545, lng: 80.2645, name: 'Lobby Camera' },
+          { lat: 13.0550, lng: 80.2650, name: 'Parking Camera' }
+        ]
+      }
+    };
+
+    // Get appropriate cluster based on location and device type
+    const locationCluster = locationClusters[location as keyof typeof locationClusters];
+    if (!locationCluster) {
+      // Default to Chennai center if no cluster found
+      return {
+        latitude: '13.0827',
+        longitude: '80.2707'
+      };
+    }
+
+    // Determine device category for clustering
+    let deviceCategory = 'Workstation';
+    if (deviceType.toLowerCase().includes('server')) {
+      deviceCategory = 'Server';
+    } else if (deviceType.toLowerCase().includes('mobile') || deviceType.toLowerCase().includes('phone')) {
+      deviceCategory = 'Mobile Device';
+    } else if (deviceType.toLowerCase().includes('network') || deviceType.toLowerCase().includes('router') || deviceType.toLowerCase().includes('switch')) {
+      deviceCategory = 'Network Device';
+    } else if (deviceType.toLowerCase().includes('camera')) {
+      deviceCategory = 'Security Camera';
+    }
+
+    // Get locations for this device category
+    const locations = locationCluster[deviceCategory as keyof typeof locationCluster] || locationCluster['Workstation'];
+    
+    // Use device name to consistently assign the same location
+    const locationIndex = Math.abs(deviceName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) % locations.length;
+    const selectedLocation = locations[locationIndex];
+
+    // Add small random offset to avoid exact overlap
+    const latOffset = (Math.random() - 0.5) * 0.002; // ~200m radius
+    const lngOffset = (Math.random() - 0.5) * 0.002;
+
+    return {
+      latitude: (selectedLocation.lat + latOffset).toFixed(6),
+      longitude: (selectedLocation.lng + lngOffset).toFixed(6)
+    };
   }
 }
 
