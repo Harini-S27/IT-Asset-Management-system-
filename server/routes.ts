@@ -1487,6 +1487,166 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== WARRANTY MANAGEMENT ENDPOINTS =====
+
+  // Update device warranty information
+  app.patch("/api/devices/:id/warranty", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const warrantyData = req.body;
+
+      // Convert string dates to Date objects and filter out undefined values
+      const processedData: any = {};
+      
+      // Copy non-date fields
+      Object.keys(warrantyData).forEach(key => {
+        if (!['purchaseDate', 'warrantyStartDate', 'warrantyEndDate', 'endOfLifeDate', 'nextMaintenanceDate', 'lastMaintenanceDate'].includes(key)) {
+          processedData[key] = warrantyData[key];
+        }
+      });
+      
+      // Process date fields using string format
+      if (warrantyData.purchaseDate) {
+        processedData.purchaseDate = warrantyData.purchaseDate;
+      }
+      if (warrantyData.warrantyStartDate) {
+        processedData.warrantyStartDate = warrantyData.warrantyStartDate;
+      }
+      if (warrantyData.warrantyEndDate) {
+        processedData.warrantyEndDate = warrantyData.warrantyEndDate;
+      }
+      if (warrantyData.endOfLifeDate) {
+        processedData.endOfLifeDate = warrantyData.endOfLifeDate;
+      }
+      if (warrantyData.nextMaintenanceDate) {
+        processedData.nextMaintenanceDate = warrantyData.nextMaintenanceDate;
+      }
+      if (warrantyData.lastMaintenanceDate) {
+        processedData.lastMaintenanceDate = warrantyData.lastMaintenanceDate;
+      }
+      
+      // Note: warrantyLastChecked timestamp will be handled by the database
+
+      const device = await storage.updateDevice(parseInt(id), processedData);
+      if (!device) {
+        return res.status(404).json({ message: "Device not found" });
+      }
+
+      res.json(device);
+    } catch (error) {
+      console.error('Error updating device warranty:', error);
+      res.status(500).json({ message: "Failed to update warranty information" });
+    }
+  });
+
+  // Bulk warranty import endpoint
+  app.post("/api/warranty/bulk-import", async (req: Request, res: Response) => {
+    try {
+      const { csvData } = req.body;
+      
+      if (!csvData || !Array.isArray(csvData)) {
+        return res.status(400).json({ message: "Invalid CSV data format" });
+      }
+
+      const results = { success: 0, failed: 0, errors: [] };
+      
+      for (const row of csvData) {
+        try {
+          const device = await storage.getDeviceByName(row.deviceName);
+          if (!device) {
+            results.errors.push(`Device not found: ${row.deviceName}`);
+            results.failed++;
+            continue;
+          }
+
+          const warrantyData = {
+            serialNumber: row.serialNumber,
+            assetTag: row.assetTag,
+            manufacturer: row.manufacturer,
+            purchaseDate: row.purchaseDate ? new Date(row.purchaseDate) : undefined,
+            warrantyStartDate: row.warrantyStartDate ? new Date(row.warrantyStartDate) : undefined,
+            warrantyEndDate: row.warrantyEndDate ? new Date(row.warrantyEndDate) : undefined,
+            warrantyType: row.warrantyType,
+            warrantyProvider: row.warrantyProvider,
+            cost: row.cost,
+            supplier: row.supplier,
+            owner: row.owner,
+            department: row.department,
+            endOfLifeDate: row.endOfLifeDate ? new Date(row.endOfLifeDate) : undefined,
+            nextMaintenanceDate: row.nextMaintenanceDate ? new Date(row.nextMaintenanceDate) : undefined,
+            warrantyAutoDetected: false,
+            warrantyLastChecked: new Date()
+          };
+
+          await storage.updateDeviceWarranty(device.id, warrantyData);
+          results.success++;
+        } catch (error) {
+          results.errors.push(`Error processing ${row.deviceName}: ${error}`);
+          results.failed++;
+        }
+      }
+
+      res.json(results);
+    } catch (error) {
+      console.error('Error bulk importing warranty data:', error);
+      res.status(500).json({ message: "Failed to import warranty data" });
+    }
+  });
+
+  // Auto-detect warranty information for a device
+  app.post("/api/devices/:id/warranty/auto-detect", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const device = await storage.getDevice(parseInt(id));
+      
+      if (!device) {
+        return res.status(404).json({ message: "Device not found" });
+      }
+
+      // Import warranty service
+      const { WarrantyService } = await import('./warranty-service');
+      const warrantyInfo = await WarrantyService.detectWarrantyInfo(device);
+      
+      if (warrantyInfo.autoDetected) {
+        const updatedDevice = await storage.updateDeviceWarranty(parseInt(id), {
+          warrantyEndDate: warrantyInfo.warrantyEndDate,
+          warrantyType: warrantyInfo.warrantyType,
+          warrantyProvider: warrantyInfo.warrantyProvider,
+          manufacturer: warrantyInfo.manufacturer,
+          warrantyAutoDetected: true,
+          warrantyLastChecked: new Date()
+        });
+        
+        res.json({ 
+          message: "Warranty information auto-detected successfully",
+          device: updatedDevice,
+          warrantyInfo 
+        });
+      } else {
+        res.json({ 
+          message: "Could not auto-detect warranty information",
+          device,
+          warrantyInfo 
+        });
+      }
+    } catch (error) {
+      console.error('Error auto-detecting warranty:', error);
+      res.status(500).json({ message: "Failed to auto-detect warranty information" });
+    }
+  });
+
+  // Check warranty expiration for all devices
+  app.post("/api/warranty/check-expirations", async (req: Request, res: Response) => {
+    try {
+      const { WarrantyService } = await import('./warranty-service');
+      await WarrantyService.checkWarrantyExpirations();
+      res.json({ message: "Warranty expiration check completed" });
+    } catch (error) {
+      console.error('Error checking warranty expirations:', error);
+      res.status(500).json({ message: "Failed to check warranty expirations" });
+    }
+  });
+
   // Start network scanners when server starts
   console.log('🚀 Starting Finecons network scanner...');
   networkScanner.startScanning(5); // Scan every 5 minutes

@@ -73,9 +73,11 @@ export interface IStorage {
   // Device operations
   getDevices(): Promise<Device[]>;
   getDevice(id: number): Promise<Device | undefined>;
+  getDeviceByName(name: string): Promise<Device | undefined>;
   createDevice(device: InsertDevice): Promise<Device>;
   updateDevice(id: number, device: Partial<InsertDevice>): Promise<Device | undefined>;
   deleteDevice(id: number): Promise<boolean>;
+  updateDeviceWarranty(id: number, warrantyData: Partial<InsertDevice>): Promise<Device | undefined>;
   
   // Prohibited Software operations
   getProhibitedSoftware(): Promise<ProhibitedSoftware[]>;
@@ -287,6 +289,22 @@ export class DatabaseStorage implements IStorage {
       .returning({ id: devices.id });
     
     return result.length > 0;
+  }
+
+  async getDeviceByName(name: string): Promise<Device | undefined> {
+    const [device] = await db.select().from(devices).where(eq(devices.name, name));
+    return device;
+  }
+
+  async updateDeviceWarranty(id: number, warrantyData: Partial<InsertDevice>): Promise<Device | undefined> {
+    const now = new Date();
+    const [device] = await db
+      .update(devices)
+      .set({ ...warrantyData, lastUpdated: now })
+      .where(eq(devices.id, id))
+      .returning();
+    
+    return device;
   }
 
   // Method to initialize the database with sample data

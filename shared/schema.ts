@@ -51,6 +51,24 @@ export const devices = pgTable("devices", {
   latitude: text("latitude"),
   longitude: text("longitude"),
   lastUpdated: timestamp("last_updated").defaultNow(),
+  // Warranty and asset tracking fields
+  serialNumber: text("serial_number"),
+  assetTag: text("asset_tag"),
+  manufacturer: text("manufacturer"),
+  purchaseDate: timestamp("purchase_date"),
+  warrantyStartDate: timestamp("warranty_start_date"),
+  warrantyEndDate: timestamp("warranty_end_date"),
+  warrantyType: text("warranty_type"), // "Standard", "Extended", "On-Site", "Next Business Day"
+  warrantyProvider: text("warranty_provider"), // "Manufacturer", "Third Party", "Internal"
+  cost: text("cost"),
+  supplier: text("supplier"),
+  owner: text("owner"),
+  department: text("department"),
+  endOfLifeDate: timestamp("end_of_life_date"),
+  nextMaintenanceDate: timestamp("next_maintenance_date"),
+  lastMaintenanceDate: timestamp("last_maintenance_date"),
+  warrantyAutoDetected: boolean("warranty_auto_detected").notNull().default(false),
+  warrantyLastChecked: timestamp("warranty_last_checked"),
 });
 
 // Prohibited Software schema

@@ -27,6 +27,7 @@ import { Device } from "@shared/schema";
 import DeviceTable from "@/components/devices/device-table";
 import AddDeviceDialog from "@/components/devices/add-device-dialog";
 import EditDeviceDialog from "@/components/devices/edit-device-dialog";
+import { WarrantyManagementDialog } from "@/components/devices/warranty-management-dialog";
 import NetworkDiscoveryTable from "@/components/network/network-discovery-table";
 import { AnimatedDeviceList } from "@/components/devices/animated-device-list";
 import { useRealtimeDevices } from "@/hooks/useRealtimeDevices";
@@ -976,6 +977,48 @@ const Devices = () => {
                   <h4 className="text-sm font-medium text-gray-500">Longitude</h4>
                   <p>{selectedDevice.longitude || "N/A"}</p>
                 </div>
+              </div>
+
+              {/* Warranty Information */}
+              <div className="border-t pt-4 mt-4">
+                <h4 className="text-sm font-medium text-gray-500 mb-3">Warranty Information</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h5 className="text-xs font-medium text-gray-400">Warranty End Date</h5>
+                    <p className="text-sm">{selectedDevice.warrantyEndDate ? new Date(selectedDevice.warrantyEndDate).toLocaleDateString() : "Not set"}</p>
+                  </div>
+                  <div>
+                    <h5 className="text-xs font-medium text-gray-400">Warranty Type</h5>
+                    <p className="text-sm">{selectedDevice.warrantyType || "Not set"}</p>
+                  </div>
+                </div>
+                <div className="mt-2">
+                  <h5 className="text-xs font-medium text-gray-400">Manufacturer</h5>
+                  <p className="text-sm">{selectedDevice.manufacturer || "Not set"}</p>
+                </div>
+              </div>
+
+              {/* Device Actions */}
+              <div className="flex justify-end space-x-2 pt-4 mt-4 border-t">
+                <WarrantyManagementDialog 
+                  device={selectedDevice}
+                  trigger={
+                    <Button variant="outline" size="sm">
+                      <Shield className="h-4 w-4 mr-2" />
+                      Manage Warranty
+                    </Button>
+                  }
+                />
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    handleEditDevice(selectedDevice);
+                    setIsDetailsDialogOpen(false);
+                  }}
+                >
+                  Edit Device
+                </Button>
               </div>
               
               <div>
