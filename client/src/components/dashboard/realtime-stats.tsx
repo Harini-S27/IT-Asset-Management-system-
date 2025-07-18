@@ -170,6 +170,38 @@ export function RealtimeStats() {
         </motion.div>
       )}
 
+      {/* Connection Status Details */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center">
+            <Wifi className="h-5 w-5 mr-2" />
+            Connection Status
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className={cn(
+                "w-3 h-3 rounded-full",
+                isConnected ? "bg-green-500" : "bg-red-500"
+              )}></div>
+              <span className="text-sm">
+                WebSocket: {connectionStatus}
+              </span>
+            </div>
+            <Badge variant={isConnected ? "default" : "destructive"}>
+              {isConnected ? "Connected" : "Disconnected"}
+            </Badge>
+          </div>
+          <p className="text-xs text-gray-500 mt-2">
+            {isConnected 
+              ? "Real-time updates are active. New devices will appear automatically."
+              : "Connection lost. Attempting to reconnect..."
+            }
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Device Types & Locations - Sequential Lists */}
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
@@ -234,38 +266,6 @@ export function RealtimeStats() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Connection Status Details */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center">
-            <Wifi className="h-5 w-5 mr-2" />
-            Connection Status
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <div className={cn(
-                "w-3 h-3 rounded-full",
-                isConnected ? "bg-green-500" : "bg-red-500"
-              )}></div>
-              <span className="text-sm">
-                WebSocket: {connectionStatus}
-              </span>
-            </div>
-            <Badge variant={isConnected ? "default" : "destructive"}>
-              {isConnected ? "Connected" : "Disconnected"}
-            </Badge>
-          </div>
-          <p className="text-xs text-gray-500 mt-2">
-            {isConnected 
-              ? "Real-time updates are active. New devices will appear automatically."
-              : "Connection lost. Attempting to reconnect..."
-            }
-          </p>
-        </CardContent>
-      </Card>
     </div>
   );
 }
