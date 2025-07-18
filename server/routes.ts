@@ -1161,6 +1161,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test endpoint to manually add network device
+  app.post("/api/network-devices-test", async (req: Request, res: Response) => {
+    try {
+      const device = await storage.createNetworkDevice(req.body);
+      res.json(device);
+    } catch (error) {
+      console.error('Network device creation error:', error);
+      res.status(500).json({ message: "Failed to create network device", error: error.message });
+    }
+  });
+
   app.get("/api/network-devices/:id/history", async (req: Request, res: Response) => {
     try {
       const deviceId = parseInt(req.params.id);

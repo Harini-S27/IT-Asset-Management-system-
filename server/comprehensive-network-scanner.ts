@@ -220,10 +220,19 @@ export class ComprehensiveNetworkScanner {
   }
 
   private async updateDeviceDatabase(devices: NetworkDevice[]): Promise<void> {
+    console.log(`🎯 ENTERING updateDeviceDatabase with ${devices.length} devices`);
     console.log(`💾 Saving ${devices.length} discovered devices to database...`);
+    console.log(`🔍 Device list:`, devices.map(d => `${d.hostname}(${d.ip})`));
     
-    for (const device of devices) {
-      await this.saveDiscoveredDeviceToDatabase(device);
+    for (let i = 0; i < devices.length; i++) {
+      const device = devices[i];
+      console.log(`📝 Processing device ${i + 1}/${devices.length}: ${device.hostname} (${device.ip})`);
+      try {
+        await this.saveDiscoveredDeviceToDatabase(device);
+        console.log(`✅ Successfully processed device ${i + 1}/${devices.length}`);
+      } catch (error) {
+        console.error(`❌ Failed to process device ${i + 1}/${devices.length}:`, error);
+      }
     }
     
     console.log('✅ Device database update completed');
@@ -239,7 +248,15 @@ export class ComprehensiveNetworkScanner {
       return;
     }
     
-    await this.updateDeviceDatabase(devices);
+    console.log(`🚀 About to call updateDeviceDatabase with ${devices.length} devices`);
+    console.log(`🔍 Device sample:`, devices.slice(0, 2).map(d => `${d.hostname}(${d.ip})`));
+    try {
+      await this.updateDeviceDatabase(devices);
+      console.log(`🎉 Successfully completed updateDeviceDatabase for ${devices.length} devices`);
+    } catch (error) {
+      console.error('❌ Error in updateDeviceDatabase:', error);
+      throw error;
+    }
   }
 
   private async activeNetworkScan(): Promise<NetworkDevice[]> {
@@ -536,62 +553,82 @@ export class ComprehensiveNetworkScanner {
   }
 
   private async saveDiscoveredDeviceToDatabase(device: NetworkDevice): Promise<void> {
+    console.log(`🎯 ENTERING saveDiscoveredDeviceToDatabase for: ${device.hostname} (${device.ip})`);
     try {
-      console.log(`🔍 Processing device: ${device.hostname} (${device.ip})`);
+      console.log(`🔍 Processing network device: ${device.hostname} (${device.ip}) with MAC: ${device.mac}`);
       
-      // Check if device already exists by IP address
-      const existingDevices = await storage.getDevices();
-      const existingDevice = existingDevices.find(d => d.ipAddress === device.ip);
+      // Generate MAC address if not present to ensure uniqueness
+      const macAddress = device.mac || this.generateUniqueMac(device.ip);
+      console.log(`🔧 Using MAC address: ${macAddress}`);
       
-      if (!existingDevice) {
-        // Map device type to valid database types
-        const mapDeviceType = (deviceType: string): 'Workstation' | 'Server' | 'Laptop' | 'Mobile Device' | 'Printer' | 'Network Equipment' => {
-          switch (deviceType) {
-            case 'Network Equipment':
-            case 'Access Point':
-              return 'Network Equipment';
-            case 'Security Camera':
-              return 'Network Equipment';
-            case 'Mobile Device':
-              return 'Mobile Device';
-            case 'Printer':
-              return 'Printer';
-            case 'Server':
-              return 'Server';
-            case 'Laptop':
-              return 'Laptop';
-            case 'Workstation':
-            default:
-              return 'Workstation';
-          }
-        };
-
-        // Add new device to database
-        const newDevice = {
-          name: device.hostname !== 'Unknown' ? device.hostname : device.ip,
-          model: `${device.vendor} ${device.osGuess}`,
-          type: mapDeviceType(device.deviceType),
-          status: device.isActive ? 'Active' : 'Inactive' as 'Active' | 'Inactive' | 'Maintenance',
-          location: device.location,
-          ipAddress: device.ip,
-          latitude: device.coordinates.latitude,
-          longitude: device.coordinates.longitude,
-          lastUpdated: new Date().toISOString()
+      // Check if device already exists in networkDevices table by MAC address
+      const existingNetworkDevice = await storage.getNetworkDeviceByMac(macAddress);
+      
+      if (!existingNetworkDevice) {
+        // Create new network device entry
+        const newNetworkDevice = {
+          macAddress: macAddress,
+          deviceName: device.hostname !== 'Unknown' ? device.hostname : device.ip,
+          currentIp: device.ip,
+          vendor: device.vendor || 'Unknown Vendor',
+          deviceType: device.deviceType,
+          behaviorTag: this.analyzeBehavior(device),
+          status: device.isActive ? 'Active' : 'Inactive'
         };
         
-        await storage.addDevice(newDevice);
-        console.log(`✅ Added discovered device to database: ${device.hostname} (${device.ip})`);
+        console.log(`📝 Creating network device with data:`, newNetworkDevice);
+        await storage.createNetworkDevice(newNetworkDevice);
+        console.log(`✅ Added network device to database: ${device.hostname} (${device.ip})`);
       } else {
-        // Update existing device coordinates and status
-        await storage.updateDevice(existingDevice.id, {
-          status: device.isActive ? 'Active' : 'Inactive' as 'Active' | 'Inactive' | 'Maintenance',
-          lastUpdated: new Date().toISOString()
+        // Update existing network device
+        console.log(`📝 Updating existing network device: ${existingNetworkDevice.id}`);
+        await storage.updateNetworkDevice(existingNetworkDevice.id, {
+          currentIp: device.ip,
+          deviceName: device.hostname !== 'Unknown' ? device.hostname : device.ip,
+          vendor: device.vendor || existingNetworkDevice.vendor,
+          deviceType: device.deviceType || existingNetworkDevice.deviceType,
+          status: device.isActive ? 'Active' : 'Inactive',
+          behaviorTag: this.analyzeBehavior(device)
         });
-        console.log(`🔄 Updated existing device: ${device.hostname} (${device.ip})`);
+        console.log(`🔄 Updated network device: ${device.hostname} (${device.ip})`);
       }
     } catch (error) {
-      console.error(`❌ Failed to save device to database: ${device.hostname} (${device.ip})`, error);
+      console.error(`❌ Failed to save network device to database: ${device.hostname} (${device.ip})`, error);
+      console.error('❌ Error details:', error.message);
+      console.error('❌ Error stack:', error.stack);
     }
+  }
+
+  private analyzeBehavior(device: NetworkDevice): string {
+    // Analyze device behavior based on ports, hostname, vendor
+    if (device.hostname.toLowerCase().includes('admin')) return 'Admin Device';
+    if (device.hostname.toLowerCase().includes('server')) return 'Server Device';
+    if (device.hostname.toLowerCase().includes('printer')) return 'Network Printer';
+    if (device.hostname.toLowerCase().includes('camera')) return 'Security Camera';
+    if (device.vendor.toLowerCase().includes('apple')) return 'iOS Device';
+    if (device.vendor.toLowerCase().includes('samsung')) return 'Android Device';
+    if (device.ports.some(p => p === 22)) return 'SSH Server';
+    if (device.ports.some(p => p === 80 || p === 443)) return 'Web Server';
+    if (device.ports.some(p => p === 3389)) return 'RDP Server';
+    return 'Network Device';
+  }
+
+  private generateUniqueMac(ip: string): string {
+    // Generate a unique MAC address based on IP address
+    const ipParts = ip.split('.').map(part => parseInt(part));
+    const timestamp = Date.now() % 1000; // Last 3 digits of timestamp for uniqueness
+    
+    // Use a private range MAC prefix (02:xx:xx:xx:xx:xx)
+    const mac = [
+      '02',
+      ipParts[0].toString(16).padStart(2, '0'),
+      ipParts[1].toString(16).padStart(2, '0'),
+      ipParts[2].toString(16).padStart(2, '0'),
+      ipParts[3].toString(16).padStart(2, '0'),
+      timestamp.toString(16).padStart(2, '0').slice(-2)
+    ].join(':');
+    
+    return mac;
   }
 
   private createNetworkDevice(ip: string, mac: string): NetworkDevice {
@@ -767,44 +804,7 @@ export class ComprehensiveNetworkScanner {
     return Array.from(uniqueDevices.values());
   }
 
-  private async updateDeviceDatabase(devices: NetworkDevice[]) {
-    for (const device of devices) {
-      try {
-        // Check if device already exists
-        const existingDevices = await storage.getDevices();
-        const existingDevice = existingDevices.find(d => 
-          d.ipAddress === device.ip || d.macAddress === device.mac || d.name === device.hostname
-        );
 
-        if (existingDevice) {
-          // Update existing device
-          await storage.updateDevice(existingDevice.id, {
-            ipAddress: device.ip,
-            macAddress: device.mac,
-            lastUpdated: new Date(device.lastSeen),
-            status: device.isActive ? 'Active' : 'Inactive',
-            latitude: device.coordinates.latitude,
-            longitude: device.coordinates.longitude
-          });
-        } else {
-          // Create new device
-          await storage.createDevice({
-            name: device.hostname !== 'Unknown' ? device.hostname : device.ip,
-            model: device.osGuess,
-            type: device.deviceType as any,
-            status: device.isActive ? 'Active' : 'Inactive',
-            location: device.location,
-            ipAddress: device.ip,
-            macAddress: device.mac,
-            latitude: device.coordinates.latitude,
-            longitude: device.coordinates.longitude
-          });
-        }
-      } catch (error) {
-        console.error(`Failed to update device ${device.ip}:`, error);
-      }
-    }
-  }
 
   public getDiscoveredDevices(): NetworkDevice[] {
     return Array.from(this.discoveredDevices.values());
