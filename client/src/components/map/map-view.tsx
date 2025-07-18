@@ -515,21 +515,90 @@ const MapComponent = () => {
   // Create HTML content for popup for a single device
   const createDevicePopup = (device: Device) => {
     const statusClass = 
-      device.status === 'Active' ? 'bg-green-100 text-green-800' : 
-      device.status === 'Inactive' ? 'bg-red-100 text-red-800' : 
-      'bg-yellow-100 text-yellow-800';
+      device.status === 'Active' ? 'background-color: #D1FAE5; color: #065F46; border: 1px solid #A7F3D0;' : 
+      device.status === 'Inactive' ? 'background-color: #FEE2E2; color: #991B1B; border: 1px solid #FECACA;' : 
+      'background-color: #FEF3C7; color: #92400E; border: 1px solid #FDE68A;';
+    
+    const statusIcon = 
+      device.status === 'Active' ? '🟢' : 
+      device.status === 'Inactive' ? '🔴' : 
+      '🟡';
     
     return `
-      <div class="map-device-popup">
-        <h3 class="text-lg font-semibold mb-1">${device.name}</h3>
-        <div class="text-sm mb-2">${device.model}</div>
-        <div class="flex items-center mb-2">
-          <span class="${statusClass} text-xs px-2 py-0.5 rounded-full font-medium">${device.status}</span>
+      <div style="
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        padding: 16px;
+        min-width: 280px;
+        max-width: 320px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        border: 1px solid #e5e7eb;
+      ">
+        <!-- Header -->
+        <div style="border-bottom: 1px solid #f3f4f6; padding-bottom: 12px; margin-bottom: 12px;">
+          <h3 style="
+            margin: 0 0 4px 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            line-height: 1.25;
+          ">${device.name}</h3>
+          <div style="
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 8px;
+          ">${device.model}</div>
+          <span style="
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 4px 8px;
+            border-radius: 6px;
+            ${statusClass}
+          ">
+            ${statusIcon} ${device.status}
+          </span>
         </div>
-        <div class="text-sm text-gray-600 mb-1"><strong>Type:</strong> ${device.type}</div>
-        <div class="text-sm text-gray-600 mb-1"><strong>Location:</strong> ${device.location}</div>
-        <div class="text-sm text-gray-600"><strong>IP:</strong> ${device.ipAddress || 'N/A'}</div>
-        <div class="mt-3 text-xs text-right text-gray-500">Click for more details</div>
+        
+        <!-- Details -->
+        <div style="space-y: 8px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span style="font-size: 13px; font-weight: 500; color: #6b7280;">Type:</span>
+            <span style="font-size: 13px; color: #1f2937;">${device.type}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span style="font-size: 13px; font-weight: 500; color: #6b7280;">Location:</span>
+            <span style="font-size: 13px; color: #1f2937;">${device.location}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span style="font-size: 13px; font-weight: 500; color: #6b7280;">IP Address:</span>
+            <span style="
+              font-size: 13px; 
+              color: #1f2937;
+              font-family: 'Courier New', monospace;
+              background: #f9fafb;
+              padding: 2px 4px;
+              border-radius: 3px;
+            ">${device.ipAddress || 'N/A'}</span>
+          </div>
+        </div>
+        
+        <!-- Footer -->
+        <div style="
+          margin-top: 12px;
+          padding-top: 12px;
+          border-top: 1px solid #f3f4f6;
+          text-align: center;
+        ">
+          <div style="
+            font-size: 11px;
+            color: #9ca3af;
+            cursor: pointer;
+          ">📍 Click marker for detailed view</div>
+        </div>
       </div>
     `;
   };
@@ -539,29 +608,92 @@ const MapComponent = () => {
     const locationName = devices[0]?.location || 'Unknown';
     
     const html = `
-      <div class="map-popup">
-        <h3 class="text-base font-semibold mb-2">${locationName}</h3>
-        <p class="text-sm mb-2">${devices.length} device${devices.length !== 1 ? 's' : ''}</p>
-        <ul class="text-xs max-h-48 overflow-y-auto">
+      <div style="
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        padding: 16px;
+        min-width: 300px;
+        max-width: 360px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        border: 1px solid #e5e7eb;
+      ">
+        <!-- Header -->
+        <div style="border-bottom: 1px solid #f3f4f6; padding-bottom: 12px; margin-bottom: 12px;">
+          <h3 style="
+            margin: 0 0 4px 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            line-height: 1.25;
+          ">📍 ${locationName}</h3>
+          <p style="
+            margin: 0;
+            font-size: 13px;
+            color: #6b7280;
+          ">${devices.length} device${devices.length !== 1 ? 's' : ''} at this location</p>
+        </div>
+        
+        <!-- Device List -->
+        <div style="max-height: 200px; overflow-y: auto;">
           ${devices.map(device => {
-            const statusClass = 
-              device.status === 'Active' ? 'bg-green-100 text-green-800' : 
-              device.status === 'Inactive' ? 'bg-red-100 text-red-800' : 
-              'bg-yellow-100 text-yellow-800';
+            const statusStyle = 
+              device.status === 'Active' ? 'background-color: #D1FAE5; color: #065F46; border: 1px solid #A7F3D0;' : 
+              device.status === 'Inactive' ? 'background-color: #FEE2E2; color: #991B1B; border: 1px solid #FECACA;' : 
+              'background-color: #FEF3C7; color: #92400E; border: 1px solid #FDE68A;';
+            
+            const statusIcon = 
+              device.status === 'Active' ? '🟢' : 
+              device.status === 'Inactive' ? '🔴' : 
+              '🟡';
             
             return `
-              <li class="py-2 border-b border-gray-100">
-                <div class="font-medium mb-1">${device.name}</div>
-                <div class="flex items-center justify-between">
-                  <div class="text-gray-500">${device.type}</div>
-                  <span class="${statusClass} text-xs px-2 py-0.5 rounded-full font-medium">${device.status}</span>
+              <div style="
+                padding: 8px 0;
+                border-bottom: 1px solid #f3f4f6;
+                margin-bottom: 8px;
+              ">
+                <div style="
+                  font-size: 14px;
+                  font-weight: 500;
+                  color: #1f2937;
+                  margin-bottom: 4px;
+                ">${device.name}</div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div style="
+                    font-size: 12px;
+                    color: #6b7280;
+                  ">${device.type}</div>
+                  <span style="
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 2px;
+                    font-size: 11px;
+                    font-weight: 500;
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                    ${statusStyle}
+                  ">
+                    ${statusIcon} ${device.status}
+                  </span>
                 </div>
-              </li>
+              </div>
             `;
           }).join('')}
-        </ul>
-        <div class="mt-2 text-xs text-center">
-          <span class="text-blue-500 cursor-pointer">Click a device for details</span>
+        </div>
+        
+        <!-- Footer -->
+        <div style="
+          margin-top: 12px;
+          padding-top: 12px;
+          border-top: 1px solid #f3f4f6;
+          text-align: center;
+        ">
+          <div style="
+            font-size: 11px;
+            color: #3b82f6;
+            cursor: pointer;
+          ">🔍 Click any device for detailed information</div>
         </div>
       </div>
     `;
