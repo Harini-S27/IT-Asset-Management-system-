@@ -378,8 +378,14 @@ const MapComponent = () => {
             icon: createMarkerIcon(device) 
           });
           
-          // Add popup and tooltip
-          marker.bindPopup(createDevicePopup(device))
+          // Add popup and tooltip with custom options
+          marker.bindPopup(createDevicePopup(device), {
+                  maxWidth: 350,
+                  minWidth: 280,
+                  className: 'custom-device-popup',
+                  closeButton: true,
+                  autoPan: true
+                })
                 .on('click', () => {
                   setSelectedDevice(device);
                   
@@ -431,7 +437,13 @@ const MapComponent = () => {
               icon: createMarkerIcon(device) 
             });
             
-            marker.bindPopup(createDevicePopup(device))
+            marker.bindPopup(createDevicePopup(device), {
+                    maxWidth: 350,
+                    minWidth: 280,
+                    className: 'custom-device-popup',
+                    closeButton: true,
+                    autoPan: true
+                  })
                   .on('click', () => {
                     setSelectedDevice(device);
                   });
@@ -479,7 +491,13 @@ const MapComponent = () => {
                 createMarkerIcon(representativeDevice)
             });
             
-            clusterMarker.bindPopup(createPopupContent(devices))
+            clusterMarker.bindPopup(createPopupContent(devices), {
+                           maxWidth: 400,
+                           minWidth: 320,
+                           className: 'custom-cluster-popup',
+                           closeButton: true,
+                           autoPan: true
+                         })
                          .on('click', () => {
                            setSelectedDevice(devices[0]);
                          });
@@ -832,6 +850,36 @@ const MapComponent = () => {
           </div>
         </div>
       </div>
+      
+      {/* Custom CSS for popup styling */}
+      <style>{`
+        .custom-device-popup .leaflet-popup-content-wrapper {
+          background: transparent !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+          padding: 0 !important;
+        }
+        .custom-device-popup .leaflet-popup-content {
+          margin: 0 !important;
+          padding: 0 !important;
+          width: auto !important;
+        }
+        .custom-cluster-popup .leaflet-popup-content-wrapper {
+          background: transparent !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+          padding: 0 !important;
+        }
+        .custom-cluster-popup .leaflet-popup-content {
+          margin: 0 !important;
+          padding: 0 !important;
+          width: auto !important;
+        }
+        .leaflet-popup-tip {
+          background: white !important;
+          border: 1px solid #e5e7eb !important;
+        }
+      `}</style>
       
       <div className="grid grid-cols-4 gap-4">
         {/* Main Map View */}
