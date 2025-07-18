@@ -13,7 +13,11 @@ import {
   insertProhibitedSoftwareSchema,
   insertSoftwareDetectionLogSchema,
   insertSoftwareScanResultsSchema,
-  insertTicketSchema
+  insertTicketSchema,
+  insertCmdbConfigurationItemSchema,
+  insertCmdbChangeRecordSchema,
+  insertCmdbRelationshipSchema,
+  insertCmdbComplianceRuleSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -1090,6 +1094,217 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating device coordinates:", error);
       res.status(500).json({ message: "Failed to update device coordinates" });
+    }
+  });
+
+  // CMDB Configuration Items API
+  app.get("/api/cmdb/configuration-items", async (req: Request, res: Response) => {
+    try {
+      const items = await storage.getCmdbConfigurationItems();
+      res.json(items);
+    } catch (error) {
+      console.error('Error fetching CMDB configuration items:', error);
+      res.status(500).json({ message: "Failed to fetch CMDB configuration items" });
+    }
+  });
+
+  app.get("/api/cmdb/configuration-items/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid configuration item ID" });
+      }
+
+      const item = await storage.getCmdbConfigurationItem(id);
+      if (!item) {
+        return res.status(404).json({ message: "Configuration item not found" });
+      }
+
+      res.json(item);
+    } catch (error) {
+      console.error('Error fetching CMDB configuration item:', error);
+      res.status(500).json({ message: "Failed to fetch CMDB configuration item" });
+    }
+  });
+
+  app.get("/api/cmdb/configuration-items/device/:deviceId", async (req: Request, res: Response) => {
+    try {
+      const deviceId = parseInt(req.params.deviceId);
+      if (isNaN(deviceId)) {
+        return res.status(400).json({ message: "Invalid device ID" });
+      }
+
+      const items = await storage.getCmdbConfigurationItemsByDevice(deviceId);
+      res.json(items);
+    } catch (error) {
+      console.error('Error fetching CMDB configuration items by device:', error);
+      res.status(500).json({ message: "Failed to fetch CMDB configuration items for device" });
+    }
+  });
+
+  app.post("/api/cmdb/configuration-items", async (req: Request, res: Response) => {
+    try {
+      const result = insertCmdbConfigurationItemSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid configuration item data", errors: result.error.errors });
+      }
+
+      const item = await storage.createCmdbConfigurationItem(result.data);
+      res.json(item);
+    } catch (error) {
+      console.error('Error creating CMDB configuration item:', error);
+      res.status(500).json({ message: "Failed to create CMDB configuration item" });
+    }
+  });
+
+  app.put("/api/cmdb/configuration-items/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid configuration item ID" });
+      }
+
+      const result = insertCmdbConfigurationItemSchema.partial().safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid configuration item data", errors: result.error.errors });
+      }
+
+      const item = await storage.updateCmdbConfigurationItem(id, result.data);
+      if (!item) {
+        return res.status(404).json({ message: "Configuration item not found" });
+      }
+
+      res.json(item);
+    } catch (error) {
+      console.error('Error updating CMDB configuration item:', error);
+      res.status(500).json({ message: "Failed to update CMDB configuration item" });
+    }
+  });
+
+  app.delete("/api/cmdb/configuration-items/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid configuration item ID" });
+      }
+
+      const deleted = await storage.deleteCmdbConfigurationItem(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Configuration item not found" });
+      }
+
+      res.json({ message: "Configuration item deleted successfully" });
+    } catch (error) {
+      console.error('Error deleting CMDB configuration item:', error);
+      res.status(500).json({ message: "Failed to delete CMDB configuration item" });
+    }
+  });
+
+  // CMDB Change Records API
+  app.get("/api/cmdb/change-records", async (req: Request, res: Response) => {
+    try {
+      const records = await storage.getCmdbChangeRecords();
+      res.json(records);
+    } catch (error) {
+      console.error('Error fetching CMDB change records:', error);
+      res.status(500).json({ message: "Failed to fetch CMDB change records" });
+    }
+  });
+
+  app.get("/api/cmdb/change-records/configuration-item/:configurationItemId", async (req: Request, res: Response) => {
+    try {
+      const configurationItemId = parseInt(req.params.configurationItemId);
+      if (isNaN(configurationItemId)) {
+        return res.status(400).json({ message: "Invalid configuration item ID" });
+      }
+
+      const records = await storage.getCmdbChangeRecordsByConfigurationItem(configurationItemId);
+      res.json(records);
+    } catch (error) {
+      console.error('Error fetching CMDB change records by configuration item:', error);
+      res.status(500).json({ message: "Failed to fetch CMDB change records for configuration item" });
+    }
+  });
+
+  app.post("/api/cmdb/change-records", async (req: Request, res: Response) => {
+    try {
+      const result = insertCmdbChangeRecordSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid change record data", errors: result.error.errors });
+      }
+
+      const record = await storage.createCmdbChangeRecord(result.data);
+      res.json(record);
+    } catch (error) {
+      console.error('Error creating CMDB change record:', error);
+      res.status(500).json({ message: "Failed to create CMDB change record" });
+    }
+  });
+
+  // CMDB Relationships API
+  app.get("/api/cmdb/relationships", async (req: Request, res: Response) => {
+    try {
+      const relationships = await storage.getCmdbRelationships();
+      res.json(relationships);
+    } catch (error) {
+      console.error('Error fetching CMDB relationships:', error);
+      res.status(500).json({ message: "Failed to fetch CMDB relationships" });
+    }
+  });
+
+  app.get("/api/cmdb/relationships/configuration-item/:configurationItemId", async (req: Request, res: Response) => {
+    try {
+      const configurationItemId = parseInt(req.params.configurationItemId);
+      if (isNaN(configurationItemId)) {
+        return res.status(400).json({ message: "Invalid configuration item ID" });
+      }
+
+      const relationships = await storage.getCmdbRelationshipsByConfigurationItem(configurationItemId);
+      res.json(relationships);
+    } catch (error) {
+      console.error('Error fetching CMDB relationships by configuration item:', error);
+      res.status(500).json({ message: "Failed to fetch CMDB relationships for configuration item" });
+    }
+  });
+
+  app.post("/api/cmdb/relationships", async (req: Request, res: Response) => {
+    try {
+      const result = insertCmdbRelationshipSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid relationship data", errors: result.error.errors });
+      }
+
+      const relationship = await storage.createCmdbRelationship(result.data);
+      res.json(relationship);
+    } catch (error) {
+      console.error('Error creating CMDB relationship:', error);
+      res.status(500).json({ message: "Failed to create CMDB relationship" });
+    }
+  });
+
+  // CMDB Compliance Rules API
+  app.get("/api/cmdb/compliance-rules", async (req: Request, res: Response) => {
+    try {
+      const rules = await storage.getCmdbComplianceRules();
+      res.json(rules);
+    } catch (error) {
+      console.error('Error fetching CMDB compliance rules:', error);
+      res.status(500).json({ message: "Failed to fetch CMDB compliance rules" });
+    }
+  });
+
+  app.post("/api/cmdb/compliance-rules", async (req: Request, res: Response) => {
+    try {
+      const result = insertCmdbComplianceRuleSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid compliance rule data", errors: result.error.errors });
+      }
+
+      const rule = await storage.createCmdbComplianceRule(result.data);
+      res.json(rule);
+    } catch (error) {
+      console.error('Error creating CMDB compliance rule:', error);
+      res.status(500).json({ message: "Failed to create CMDB compliance rule" });
     }
   });
 

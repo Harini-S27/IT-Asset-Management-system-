@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -90,6 +90,95 @@ export const softwareScanResults = pgTable("software_scan_results", {
   scanDuration: integer("scan_duration_seconds"),
 });
 
+// CMDB Configuration Items schema
+export const cmdbConfigurationItems = pgTable("cmdb_configuration_items", {
+  id: serial("id").primaryKey(),
+  deviceId: integer("device_id").notNull(),
+  ciType: text("ci_type").notNull().default("Hardware"), // "Hardware", "Software", "Network", "Service"
+  ciName: text("ci_name").notNull(),
+  ciDescription: text("ci_description"),
+  category: text("category").notNull(), // "Server", "Workstation", "Network Device", etc.
+  subCategory: text("sub_category"), // "Physical Server", "Virtual Machine", "Router", etc.
+  manufacturer: text("manufacturer"),
+  model: text("model"),
+  serialNumber: text("serial_number"),
+  assetTag: text("asset_tag"),
+  purchaseDate: timestamp("purchase_date"),
+  warrantyEndDate: timestamp("warranty_end_date"),
+  cost: text("cost"),
+  supplier: text("supplier"),
+  owner: text("owner"),
+  custodian: text("custodian"),
+  businessService: text("business_service"),
+  environment: text("environment").notNull().default("Production"), // "Production", "Development", "Testing", "Staging"
+  operatingSystem: text("operating_system"),
+  osVersion: text("os_version"),
+  configuration: json("configuration"), // JSON object for flexible configuration data
+  relationships: json("relationships"), // JSON array for CI relationships
+  changeHistory: json("change_history"), // JSON array for change tracking
+  complianceStatus: text("compliance_status").notNull().default("Compliant"), // "Compliant", "Non-Compliant", "Unknown"
+  riskLevel: text("risk_level").notNull().default("Low"), // "Low", "Medium", "High", "Critical"
+  lifecycleStatus: text("lifecycle_status").notNull().default("Active"), // "Planning", "Active", "Retiring", "Retired"
+  maintenanceSchedule: text("maintenance_schedule"),
+  backupSchedule: text("backup_schedule"),
+  monitoringEnabled: boolean("monitoring_enabled").notNull().default(true),
+  automatedManagement: boolean("automated_management").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// CMDB Change Records schema
+export const cmdbChangeRecords = pgTable("cmdb_change_records", {
+  id: serial("id").primaryKey(),
+  configurationItemId: integer("configuration_item_id").notNull(),
+  changeType: text("change_type").notNull(), // "Create", "Update", "Delete", "Move", "Backup", "Restore"
+  changeDescription: text("change_description").notNull(),
+  changeReason: text("change_reason"),
+  requestedBy: text("requested_by"),
+  implementedBy: text("implemented_by"),
+  changeDate: timestamp("change_date").defaultNow(),
+  plannedDate: timestamp("planned_date"),
+  previousValue: json("previous_value"),
+  newValue: json("new_value"),
+  approvalStatus: text("approval_status").notNull().default("Pending"), // "Pending", "Approved", "Rejected"
+  implementationStatus: text("implementation_status").notNull().default("Planned"), // "Planned", "In Progress", "Completed", "Failed", "Rolled Back"
+  riskAssessment: text("risk_assessment"),
+  rollbackPlan: text("rollback_plan"),
+  testingResults: text("testing_results"),
+  businessImpact: text("business_impact"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// CMDB Relationships schema
+export const cmdbRelationships = pgTable("cmdb_relationships", {
+  id: serial("id").primaryKey(),
+  sourceConfigurationItemId: integer("source_configuration_item_id").notNull(),
+  targetConfigurationItemId: integer("target_configuration_item_id").notNull(),
+  relationshipType: text("relationship_type").notNull(), // "Depends On", "Used By", "Connects To", "Installed On", "Hosts"
+  relationshipDescription: text("relationship_description"),
+  strength: text("strength").notNull().default("Strong"), // "Strong", "Weak", "Critical"
+  direction: text("direction").notNull().default("Bidirectional"), // "Unidirectional", "Bidirectional"
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// CMDB Compliance Rules schema
+export const cmdbComplianceRules = pgTable("cmdb_compliance_rules", {
+  id: serial("id").primaryKey(),
+  ruleName: text("rule_name").notNull(),
+  ruleDescription: text("rule_description"),
+  category: text("category").notNull(), // "Security", "Performance", "Availability", "Configuration"
+  ruleType: text("rule_type").notNull(), // "Mandatory", "Recommended", "Optional"
+  applicableCITypes: json("applicable_ci_types"), // JSON array of CI types this rule applies to
+  complianceCheck: text("compliance_check").notNull(), // SQL or JSON query to check compliance
+  remediation: text("remediation"), // Steps to remediate non-compliance
+  severity: text("severity").notNull().default("Medium"), // "Low", "Medium", "High", "Critical"
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -123,6 +212,43 @@ export const insertSoftwareDetectionLogSchema = createInsertSchema(softwareDetec
     status: z.enum(["Active", "Resolved", "Ignored"]).default("Active"),
   });
 
+export const insertCmdbConfigurationItemSchema = createInsertSchema(cmdbConfigurationItems)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    ciType: z.enum(["Hardware", "Software", "Network", "Service"]).default("Hardware"),
+    environment: z.enum(["Production", "Development", "Testing", "Staging"]).default("Production"),
+    complianceStatus: z.enum(["Compliant", "Non-Compliant", "Unknown"]).default("Compliant"),
+    riskLevel: z.enum(["Low", "Medium", "High", "Critical"]).default("Low"),
+    lifecycleStatus: z.enum(["Planning", "Active", "Retiring", "Retired"]).default("Active"),
+    monitoringEnabled: z.boolean().default(true),
+    automatedManagement: z.boolean().default(false),
+  });
+
+export const insertCmdbChangeRecordSchema = createInsertSchema(cmdbChangeRecords)
+  .omit({ id: true, createdAt: true, updatedAt: true, changeDate: true })
+  .extend({
+    changeType: z.enum(["Create", "Update", "Delete", "Move", "Backup", "Restore"]),
+    approvalStatus: z.enum(["Pending", "Approved", "Rejected"]).default("Pending"),
+    implementationStatus: z.enum(["Planned", "In Progress", "Completed", "Failed", "Rolled Back"]).default("Planned"),
+  });
+
+export const insertCmdbRelationshipSchema = createInsertSchema(cmdbRelationships)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    relationshipType: z.enum(["Depends On", "Used By", "Connects To", "Installed On", "Hosts"]),
+    strength: z.enum(["Strong", "Weak", "Critical"]).default("Strong"),
+    direction: z.enum(["Unidirectional", "Bidirectional"]).default("Bidirectional"),
+  });
+
+export const insertCmdbComplianceRuleSchema = createInsertSchema(cmdbComplianceRules)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    category: z.enum(["Security", "Performance", "Availability", "Configuration"]),
+    ruleType: z.enum(["Mandatory", "Recommended", "Optional"]),
+    severity: z.enum(["Low", "Medium", "High", "Critical"]).default("Medium"),
+    isActive: z.boolean().default(true),
+  });
+
 export const insertSoftwareScanResultsSchema = createInsertSchema(softwareScanResults)
   .omit({ id: true, scanDate: true })
   .extend({
@@ -147,6 +273,18 @@ export type SoftwareDetectionLog = typeof softwareDetectionLog.$inferSelect;
 
 export type InsertSoftwareScanResults = z.infer<typeof insertSoftwareScanResultsSchema>;
 export type SoftwareScanResults = typeof softwareScanResults.$inferSelect;
+
+export type InsertCmdbConfigurationItem = z.infer<typeof insertCmdbConfigurationItemSchema>;
+export type CmdbConfigurationItem = typeof cmdbConfigurationItems.$inferSelect;
+
+export type InsertCmdbChangeRecord = z.infer<typeof insertCmdbChangeRecordSchema>;
+export type CmdbChangeRecord = typeof cmdbChangeRecords.$inferSelect;
+
+export type InsertCmdbRelationship = z.infer<typeof insertCmdbRelationshipSchema>;
+export type CmdbRelationship = typeof cmdbRelationships.$inferSelect;
+
+export type InsertCmdbComplianceRule = z.infer<typeof insertCmdbComplianceRuleSchema>;
+export type CmdbComplianceRule = typeof cmdbComplianceRules.$inferSelect;
 
 // Network Discovery Tables
 export const networkDevices = pgTable("network_devices", {

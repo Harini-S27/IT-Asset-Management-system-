@@ -37,7 +37,19 @@ import {
   type InsertNotificationHistory,
   pendingDevices,
   type PendingDevice,
-  type InsertPendingDevice
+  type InsertPendingDevice,
+  cmdbConfigurationItems,
+  type CmdbConfigurationItem,
+  type InsertCmdbConfigurationItem,
+  cmdbChangeRecords,
+  type CmdbChangeRecord,
+  type InsertCmdbChangeRecord,
+  cmdbRelationships,
+  type CmdbRelationship,
+  type InsertCmdbRelationship,
+  cmdbComplianceRules,
+  type CmdbComplianceRule,
+  type InsertCmdbComplianceRule
 } from "@shared/schema";
 import { db } from "./db";
 import { emailService } from "./email-service";
@@ -134,6 +146,33 @@ export interface IStorage {
   createPendingDevice(device: InsertPendingDevice): Promise<PendingDevice>;
   approvePendingDevice(id: number): Promise<Device | undefined>;
   rejectPendingDevice(id: number): Promise<boolean>;
+
+  // CMDB Configuration Item operations
+  getCmdbConfigurationItems(): Promise<CmdbConfigurationItem[]>;
+  getCmdbConfigurationItem(id: number): Promise<CmdbConfigurationItem | undefined>;
+  getCmdbConfigurationItemsByDevice(deviceId: number): Promise<CmdbConfigurationItem[]>;
+  createCmdbConfigurationItem(item: InsertCmdbConfigurationItem): Promise<CmdbConfigurationItem>;
+  updateCmdbConfigurationItem(id: number, item: Partial<InsertCmdbConfigurationItem>): Promise<CmdbConfigurationItem | undefined>;
+  deleteCmdbConfigurationItem(id: number): Promise<boolean>;
+
+  // CMDB Change Record operations
+  getCmdbChangeRecords(): Promise<CmdbChangeRecord[]>;
+  getCmdbChangeRecordsByConfigurationItem(configurationItemId: number): Promise<CmdbChangeRecord[]>;
+  createCmdbChangeRecord(record: InsertCmdbChangeRecord): Promise<CmdbChangeRecord>;
+  updateCmdbChangeRecord(id: number, record: Partial<InsertCmdbChangeRecord>): Promise<CmdbChangeRecord | undefined>;
+
+  // CMDB Relationship operations
+  getCmdbRelationships(): Promise<CmdbRelationship[]>;
+  getCmdbRelationshipsByConfigurationItem(configurationItemId: number): Promise<CmdbRelationship[]>;
+  createCmdbRelationship(relationship: InsertCmdbRelationship): Promise<CmdbRelationship>;
+  deleteCmdbRelationship(id: number): Promise<boolean>;
+
+  // CMDB Compliance Rule operations
+  getCmdbComplianceRules(): Promise<CmdbComplianceRule[]>;
+  getCmdbComplianceRule(id: number): Promise<CmdbComplianceRule | undefined>;
+  createCmdbComplianceRule(rule: InsertCmdbComplianceRule): Promise<CmdbComplianceRule>;
+  updateCmdbComplianceRule(id: number, rule: Partial<InsertCmdbComplianceRule>): Promise<CmdbComplianceRule | undefined>;
+  deleteCmdbComplianceRule(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1210,6 +1249,113 @@ export class DatabaseStorage implements IStorage {
       latitude: (selectedLocation.lat + latOffset).toFixed(6),
       longitude: (selectedLocation.lng + lngOffset).toFixed(6)
     };
+  }
+
+  // CMDB Configuration Item operations
+  async getCmdbConfigurationItems(): Promise<CmdbConfigurationItem[]> {
+    return await db.select().from(cmdbConfigurationItems).orderBy(desc(cmdbConfigurationItems.createdAt));
+  }
+
+  async getCmdbConfigurationItem(id: number): Promise<CmdbConfigurationItem | undefined> {
+    const [item] = await db.select().from(cmdbConfigurationItems).where(eq(cmdbConfigurationItems.id, id));
+    return item;
+  }
+
+  async getCmdbConfigurationItemsByDevice(deviceId: number): Promise<CmdbConfigurationItem[]> {
+    return await db.select().from(cmdbConfigurationItems).where(eq(cmdbConfigurationItems.deviceId, deviceId));
+  }
+
+  async createCmdbConfigurationItem(item: InsertCmdbConfigurationItem): Promise<CmdbConfigurationItem> {
+    const [newItem] = await db.insert(cmdbConfigurationItems).values(item).returning();
+    return newItem;
+  }
+
+  async updateCmdbConfigurationItem(id: number, item: Partial<InsertCmdbConfigurationItem>): Promise<CmdbConfigurationItem | undefined> {
+    const [updatedItem] = await db.update(cmdbConfigurationItems)
+      .set({ ...item, updatedAt: new Date() })
+      .where(eq(cmdbConfigurationItems.id, id))
+      .returning();
+    return updatedItem;
+  }
+
+  async deleteCmdbConfigurationItem(id: number): Promise<boolean> {
+    const result = await db.delete(cmdbConfigurationItems).where(eq(cmdbConfigurationItems.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // CMDB Change Record operations
+  async getCmdbChangeRecords(): Promise<CmdbChangeRecord[]> {
+    return await db.select().from(cmdbChangeRecords).orderBy(desc(cmdbChangeRecords.createdAt));
+  }
+
+  async getCmdbChangeRecordsByConfigurationItem(configurationItemId: number): Promise<CmdbChangeRecord[]> {
+    return await db.select().from(cmdbChangeRecords)
+      .where(eq(cmdbChangeRecords.configurationItemId, configurationItemId))
+      .orderBy(desc(cmdbChangeRecords.createdAt));
+  }
+
+  async createCmdbChangeRecord(record: InsertCmdbChangeRecord): Promise<CmdbChangeRecord> {
+    const [newRecord] = await db.insert(cmdbChangeRecords).values(record).returning();
+    return newRecord;
+  }
+
+  async updateCmdbChangeRecord(id: number, record: Partial<InsertCmdbChangeRecord>): Promise<CmdbChangeRecord | undefined> {
+    const [updatedRecord] = await db.update(cmdbChangeRecords)
+      .set({ ...record, updatedAt: new Date() })
+      .where(eq(cmdbChangeRecords.id, id))
+      .returning();
+    return updatedRecord;
+  }
+
+  // CMDB Relationship operations
+  async getCmdbRelationships(): Promise<CmdbRelationship[]> {
+    return await db.select().from(cmdbRelationships).orderBy(desc(cmdbRelationships.createdAt));
+  }
+
+  async getCmdbRelationshipsByConfigurationItem(configurationItemId: number): Promise<CmdbRelationship[]> {
+    return await db.select().from(cmdbRelationships)
+      .where(
+        sql`${cmdbRelationships.sourceConfigurationItemId} = ${configurationItemId} OR ${cmdbRelationships.targetConfigurationItemId} = ${configurationItemId}`
+      )
+      .orderBy(desc(cmdbRelationships.createdAt));
+  }
+
+  async createCmdbRelationship(relationship: InsertCmdbRelationship): Promise<CmdbRelationship> {
+    const [newRelationship] = await db.insert(cmdbRelationships).values(relationship).returning();
+    return newRelationship;
+  }
+
+  async deleteCmdbRelationship(id: number): Promise<boolean> {
+    const result = await db.delete(cmdbRelationships).where(eq(cmdbRelationships.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // CMDB Compliance Rule operations
+  async getCmdbComplianceRules(): Promise<CmdbComplianceRule[]> {
+    return await db.select().from(cmdbComplianceRules).orderBy(desc(cmdbComplianceRules.createdAt));
+  }
+
+  async getCmdbComplianceRule(id: number): Promise<CmdbComplianceRule | undefined> {
+    const [rule] = await db.select().from(cmdbComplianceRules).where(eq(cmdbComplianceRules.id, id));
+    return rule;
+  }
+
+  async createCmdbComplianceRule(rule: InsertCmdbComplianceRule): Promise<CmdbComplianceRule> {
+    const [newRule] = await db.insert(cmdbComplianceRules).values(rule).returning();
+    return newRule;
+  }
+
+  async updateCmdbComplianceRule(id: number, rule: Partial<InsertCmdbComplianceRule>): Promise<CmdbComplianceRule | undefined> {
+    const [updatedRule] = await db.update(cmdbComplianceRules)
+      .set({ ...rule, updatedAt: new Date() })
+      .where(eq(cmdbComplianceRules.id, id))
+      .returning();
+    return updatedRule;
+  }
+
+  async deleteCmdbComplianceRule(id: number): Promise<boolean> {
+    const result = await db.delete(cmdbComplianceRules).where(eq(cmdbComplianceRules.id, id));
+    return (result.rowCount || 0) > 0;
   }
 }
 

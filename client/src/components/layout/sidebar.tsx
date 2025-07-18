@@ -13,7 +13,8 @@ import {
   Globe,
   Ticket,
   Mail,
-  Bell
+  Bell,
+  Database
 } from "lucide-react";
 import { UserMenu } from "./user-menu";
 import { useAuth } from "@/contexts/auth-context";
@@ -74,6 +75,11 @@ const Sidebar = () => {
       name: "Notifications",
       href: "/notifications",
       icon: Bell,
+    },
+    {
+      name: "CMDB",
+      href: "/cmdb",
+      icon: Database,
     },
     {
       name: "Reports",
