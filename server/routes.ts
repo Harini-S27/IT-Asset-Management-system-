@@ -607,6 +607,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+
+
   // Device update endpoint for Python agents
   app.post("/api/device-update", async (req: Request, res: Response) => {
     try {
@@ -631,8 +633,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (geolocation && geolocation.lat && geolocation.lon) {
         latitude = geolocation.lat.toString();
         longitude = geolocation.lon.toString();
-        if (geolocation.city && geolocation.region) {
+        
+        // Try multiple combinations for location string
+        if (geolocation.city && geolocation.region && geolocation.country) {
+          deviceLocation = `${geolocation.city}, ${geolocation.region}, ${geolocation.country}`;
+        } else if (geolocation.city && geolocation.region) {
           deviceLocation = `${geolocation.city}, ${geolocation.region}`;
+        } else if (geolocation.city && geolocation.country) {
+          deviceLocation = `${geolocation.city}, ${geolocation.country}`;
+        } else if (geolocation.city) {
+          deviceLocation = geolocation.city;
+        } else if (geolocation.region) {
+          deviceLocation = geolocation.region;
         }
       }
       

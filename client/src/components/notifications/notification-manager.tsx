@@ -21,13 +21,7 @@ export function NotificationManager() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const createNotificationHistoryMutation = useMutation({
-    mutationFn: (notificationData: any) => 
-      apiRequest('/api/notifications/history', {
-        method: "POST",
-        body: notificationData
-      }),
-  });
+  // Notification history is now handled server-side
 
   useEffect(() => {
     if (lastMessage) {
@@ -42,49 +36,20 @@ export function NotificationManager() {
         if (type === 'DEVICE_ADDED' && !notifiedDevices.has(data.id)) {
           console.log('Creating notification for new device:', data.name);
           console.log('Notified devices:', notifiedDevices);
-          // Create notification history record first
-          createNotificationHistoryMutation.mutate({
-            deviceId: data.id,
-            deviceName: data.name,
-            deviceModel: data.model,
-            deviceType: data.type,
-            deviceStatus: data.status,
-            deviceLocation: data.location || 'Unknown',
-            notificationType: 'DEVICE_ADDED'
-          }, {
-            onSuccess: (historyRecord: any) => {
-              console.log('Notification history created:', historyRecord);
-              const newNotification: NotificationItem = {
-                id: `${data.id}-${timestamp}`,
-                device: data,
-                type,
-                timestamp,
-                notificationHistoryId: historyRecord.id
-              };
-              
-              setNotifications(prev => [...prev, newNotification]);
-              console.log('Notification added to state:', newNotification);
-              
-              // Mark device as notified
-              setNotifiedDevices(prev => new Set([...prev, data.id]));
-            },
-            onError: (error: any) => {
-              console.error('Failed to create notification history:', error);
-              // Still show notification even if history creation fails
-              const newNotification: NotificationItem = {
-                id: `${data.id}-${timestamp}`,
-                device: data,
-                type,
-                timestamp
-              };
-              
-              setNotifications(prev => [...prev, newNotification]);
-              console.log('Notification added to state (without history):', newNotification);
-              
-              // Mark device as notified
-              setNotifiedDevices(prev => new Set([...prev, data.id]));
-            }
-          });
+          
+          // Create notification directly (history is handled server-side)
+          const newNotification: NotificationItem = {
+            id: `${data.id}-${timestamp}`,
+            device: data,
+            type,
+            timestamp
+          };
+          
+          setNotifications(prev => [...prev, newNotification]);
+          console.log('Notification added to state (without history):', newNotification);
+          
+          // Mark device as notified
+          setNotifiedDevices(prev => new Set([...prev, data.id]));
         }
         
         // For device updates, just record in history (no toast notification)
