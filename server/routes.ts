@@ -1647,12 +1647,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Manual trigger for alert scheduler
+  app.post("/api/alerts/trigger-check", async (req: Request, res: Response) => {
+    try {
+      const { AlertScheduler } = await import('./alert-scheduler');
+      await AlertScheduler.triggerManualCheck();
+      res.json({ message: "Alert check triggered successfully" });
+    } catch (error) {
+      console.error('Error triggering alert check:', error);
+      res.status(500).json({ message: "Failed to trigger alert check" });
+    }
+  });
+
   // Start network scanners when server starts
   console.log('🚀 Starting Finecons network scanner...');
   networkScanner.startScanning(5); // Scan every 5 minutes
   
   console.log('🚀 Starting comprehensive network scanner...');
   comprehensiveScanner.startComprehensiveScanning(5); // Comprehensive scan every 5 minutes
+
+  // Start alert scheduler
+  console.log('🚨 Starting Alert Scheduler...');
+  const { AlertScheduler } = await import('./alert-scheduler');
+  AlertScheduler.startScheduler();
 
   return httpServer;
 }
