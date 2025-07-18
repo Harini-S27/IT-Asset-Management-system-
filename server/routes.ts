@@ -43,9 +43,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup WebSocket server
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
   
-  wss.on('connection', (ws) => {
+  wss.on('connection', async (ws) => {
     console.log('Client connected to WebSocket');
     connectedClients.add(ws);
+    
+    // Send pending devices as notifications to new clients
+    try {
+      const pendingDevices = await storage.getPendingDevices();
+      const activePendingDevices = pendingDevices.filter(device => !device.isApproved && !device.isRejected);
+      
+      console.log(`📱 Sending ${activePendingDevices.length} pending devices as notifications to new client`);
+      
+      for (const pendingDevice of activePendingDevices) {
+        const deviceData = {
+          id: pendingDevice.id,
+          name: pendingDevice.name,
+          model: pendingDevice.model,
+          type: pendingDevice.type,
+          status: pendingDevice.status,
+          location: pendingDevice.location,
+          ipAddress: pendingDevice.ipAddress,
+          latitude: pendingDevice.latitude,
+          longitude: pendingDevice.longitude,
+          lastUpdated: pendingDevice.createdAt
+        };
+        
+        const notification = {
+          type: 'DEVICE_ADDED',
+          data: deviceData,
+          timestamp: new Date().toISOString(),
+          isNewDevice: true,
+          isPending: true
+        };
+        
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify(notification));
+          console.log(`📱 Sent notification for pending device: ${pendingDevice.name}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error sending pending devices to new client:', error);
+    }
     
     ws.on('close', () => {
       console.log('Client disconnected from WebSocket');
@@ -554,6 +592,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Device rejection error:', error);
       res.status(500).json({ message: "Failed to reject device" });
+    }
+  });
+
+  // Get pending devices endpoint
+  app.get("/api/pending-devices", async (req: Request, res: Response) => {
+    try {
+      const pendingDevices = await storage.getPendingDevices();
+      const activePendingDevices = pendingDevices.filter(device => !device.isApproved && !device.isRejected);
+      res.json(activePendingDevices);
+    } catch (error) {
+      console.error('Error fetching pending devices:', error);
+      res.status(500).json({ message: "Failed to fetch pending devices" });
     }
   });
 
