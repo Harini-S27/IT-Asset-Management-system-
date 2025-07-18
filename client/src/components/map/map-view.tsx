@@ -18,7 +18,9 @@ import {
   Router,
   HardDrive,
   Monitor,
-  Camera
+  Camera,
+  Activity,
+  Globe
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -193,14 +195,35 @@ const MapComponent = () => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
   const markerGroupRef = useRef<L.LayerGroup | null>(null);
+  const markerClusterGroupRef = useRef<L.FeatureGroup | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [mapMode, setMapMode] = useState<string>('streets');
+  const [clusterMode] = useState<boolean>(false);
+  const [userLocation, setUserLocation] = useState<{lat: number; lng: number} | null>(null);
+  let timer: NodeJS.Timeout;
   
   const { data: devices = [], isLoading } = useQuery<Device[]>({
     queryKey: ['/api/devices'],
   });
+
+  // Get user's location
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.log('Geolocation error:', error);
+        }
+      );
+    }
+  }, []);
 
   // Simple function to get map preferences
   const getMapPreferences = () => {
@@ -688,10 +711,50 @@ const MapComponent = () => {
         
         {/* Side Stats Panel */}
         <div className="col-span-1 space-y-4">
+          {/* Your Location */}
+          <div className="bg-white rounded-md shadow-sm p-4">
+            <h3 className="text-base font-semibold mb-3 flex items-center text-[#2D3748]">
+              <MapPin className="h-4 w-4 mr-2 text-[#4299E1]" />
+              Your Location
+            </h3>
+            <div className="space-y-2">
+              {userLocation ? (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-green-600">● Location detected</span>
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    <div>Latitude: {userLocation.lat.toFixed(6)}</div>
+                    <div>Longitude: {userLocation.lng.toFixed(6)}</div>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full mt-2"
+                    onClick={() => {
+                      if (mapRef.current && userLocation) {
+                        mapRef.current.setView([userLocation.lat, userLocation.lng], 15);
+                      }
+                    }}
+                  >
+                    Locate Me
+                  </Button>
+                </>
+              ) : (
+                <div className="text-sm text-gray-500">
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500 mr-2"></div>
+                    Detecting location...
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Selected Device Details */}
           {selectedDevice && (
             <div className="bg-white rounded-md shadow-sm p-4 border-l-4 border-[#4299E1]">
-              <h3 className="text-base font-semibold mb-2 text-[#2D3748]">Selected Device</h3>
+              <h3 className="text-base font-semibold mb-3 text-[#2D3748]">Selected Device</h3>
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-sm font-medium text-gray-500">Name:</span>
@@ -708,7 +771,7 @@ const MapComponent = () => {
                 <div className="flex justify-between">
                   <span className="text-sm font-medium text-gray-500">Status:</span>
                   <span className={cn(
-                    "text-sm px-2 py-0.5 rounded-full",
+                    "text-sm px-2 py-0.5 rounded-full font-medium",
                     selectedDevice.status === "Active" ? "bg-green-100 text-green-800" :
                     selectedDevice.status === "Inactive" ? "bg-red-100 text-red-800" :
                     "bg-yellow-100 text-yellow-800"
@@ -722,7 +785,7 @@ const MapComponent = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm font-medium text-gray-500">IP Address:</span>
-                  <span className="text-sm">{selectedDevice.ipAddress || 'N/A'}</span>
+                  <span className="text-sm font-mono">{selectedDevice.ipAddress || 'N/A'}</span>
                 </div>
               </div>
               <Button 
@@ -735,6 +798,32 @@ const MapComponent = () => {
               </Button>
             </div>
           )}
+          {/* Active Devices */}
+          <div className="bg-white rounded-md shadow-sm p-4">
+            <h3 className="text-base font-semibold mb-3 flex items-center text-[#2D3748]">
+              <Activity className="h-4 w-4 mr-2 text-[#4299E1]" />
+              Active Devices
+            </h3>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {devices
+                .filter(device => device.status === 'Active')
+                .slice(0, 5)
+                .map((device, index) => (
+                <div key={device.id} className="flex items-center justify-between py-1">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm">{device.name}</span>
+                  </div>
+                  <span className="text-xs text-gray-500">{device.type}</span>
+                </div>
+              ))}
+              {devices.filter(device => device.status === 'Active').length === 0 && (
+                <div className="text-sm text-gray-500 text-center py-2">
+                  No active devices
+                </div>
+              )}
+            </div>
+          </div>
         
           {/* Status Summary */}
           <div className="bg-white rounded-md shadow-sm p-4">
@@ -763,14 +852,19 @@ const MapComponent = () => {
           {/* Location Summary */}
           <div className="bg-white rounded-md shadow-sm p-4">
             <h3 className="text-base font-semibold mb-3 flex items-center text-[#2D3748]">
-              <MapPin className="h-4 w-4 mr-2 text-[#4299E1]" />
+              <Globe className="h-4 w-4 mr-2 text-[#4299E1]" />
               Locations
             </h3>
-            <div className="space-y-3">
-              {Object.entries(locationStats).map(([location, count]) => (
-                <div key={location} className="flex items-center justify-between">
-                  <span className="text-sm">{location}</span>
-                  <span className="text-sm font-medium">{count} devices</span>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {Object.entries(locationStats)
+                .sort(([,a], [,b]) => b - a)
+                .map(([location, count]) => (
+                <div key={location} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <span className="text-sm">{location}</span>
+                  </div>
+                  <span className="text-sm font-medium">{count}</span>
                 </div>
               ))}
             </div>
