@@ -55,9 +55,9 @@ const ROLE_PERMISSIONS = {
 
 // Pages accessible by role
 const ROLE_PAGES = {
-  Admin: ['/', '/devices', '/map', '/prohibited-software', '/tickets', '/email-logs', '/router-setup', '/global-blocking', '/network-discovery', '/notifications', '/cmdb', '/settings', '/reports'],
-  Manager: ['/', '/devices', '/map', '/prohibited-software', '/tickets', '/email-logs', '/router-setup', '/global-blocking', '/network-discovery', '/notifications', '/cmdb', '/reports'],
-  Viewer: ['/', '/devices', '/map', '/prohibited-software', '/tickets', '/email-logs', '/network-discovery', '/notifications', '/cmdb', '/reports']
+  Admin: ['/', '/devices', '/map', '/prohibited-software', '/tickets', '/email-logs', '/router-setup', '/global-blocking', '/network-discovery', '/notifications', '/cmdb', '/alerts', '/settings', '/reports'],
+  Manager: ['/', '/devices', '/map', '/prohibited-software', '/tickets', '/email-logs', '/router-setup', '/global-blocking', '/network-discovery', '/notifications', '/cmdb', '/alerts', '/reports'],
+  Viewer: ['/', '/devices', '/map', '/prohibited-software', '/tickets', '/email-logs', '/network-discovery', '/notifications', '/cmdb', '/alerts', '/reports']
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
