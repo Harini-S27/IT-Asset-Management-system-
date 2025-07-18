@@ -384,7 +384,7 @@ export function SimpleDeviceManagement({ device }: SimpleDeviceManagementProps) 
               ) : (
                 <WifiOff className="mr-2 h-4 w-4" />
               )}
-              Disconnect
+              Remove
             </DropdownMenuItem>
           )}
         </DropdownMenuContent>

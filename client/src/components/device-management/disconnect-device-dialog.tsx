@@ -36,7 +36,7 @@ export function DisconnectDeviceDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onDisconnect(reason.trim() || 'Device disconnected by administrator');
+    onDisconnect(reason.trim() || 'Device removed by administrator');
   };
 
   return (
@@ -45,7 +45,7 @@ export function DisconnectDeviceDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <WifiOff className="h-5 w-5" />
-            Disconnect {device.name}
+            Remove {device.name}
           </DialogTitle>
         </DialogHeader>
         
@@ -72,10 +72,10 @@ export function DisconnectDeviceDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="reason">Reason for Disconnection</Label>
+            <Label htmlFor="reason">Reason for Removal</Label>
             <Textarea
               id="reason"
-              placeholder="Enter reason for disconnecting this device..."
+              placeholder="Enter reason for removing this device..."
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               disabled={isLoading}
@@ -100,12 +100,12 @@ export function DisconnectDeviceDialog({
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Disconnecting...
+                  Removing...
                 </>
               ) : (
                 <>
                   <WifiOff className="mr-2 h-4 w-4" />
-                  Disconnect Device
+                  Remove Device
                 </>
               )}
             </Button>

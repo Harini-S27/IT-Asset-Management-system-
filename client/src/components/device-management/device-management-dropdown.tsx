@@ -246,7 +246,7 @@ export function DeviceManagementDropdown({ device }: DeviceManagementDropdownPro
                   ) : (
                     <WifiOff className="mr-2 h-4 w-4" />
                   )}
-                  Quick Disconnect
+                  Quick Remove
                 </DropdownMenuItem>
                 
                 <DropdownMenuItem
@@ -254,7 +254,7 @@ export function DeviceManagementDropdown({ device }: DeviceManagementDropdownPro
                   className="cursor-pointer text-red-600"
                 >
                   <AlertTriangle className="mr-2 h-4 w-4" />
-                  Disconnect with Reason
+                  Remove with Reason
                 </DropdownMenuItem>
               </>
             )}

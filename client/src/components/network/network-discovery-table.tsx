@@ -158,7 +158,7 @@ function DeviceManagement({ device }: { device: NetworkDevice }) {
           className="text-red-600"
         >
           <WifiOff className="mr-2 h-4 w-4" />
-          Disconnect Device
+          Remove Device
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
