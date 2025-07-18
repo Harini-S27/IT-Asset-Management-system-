@@ -607,7 +607,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Helper function to classify device type based on characteristics
+  function classifyDeviceType(deviceName: string, operatingSystem: string, installedSoftware: string[] = []): string {
+    const hostname = deviceName.toLowerCase();
+    const os = operatingSystem.toLowerCase();
+    
+    // Check for mobile devices first
+    if (hostname.includes('iphone') || hostname.includes('ipad') || hostname.includes('android') || 
+        hostname.includes('mobile') || os.includes('android') || os.includes('ios')) {
+      return "Mobile";
+    }
+    
+    // Check for tablets
+    if (hostname.includes('ipad') || hostname.includes('tablet')) {
+      return "Tablet";
+    }
+    
+    // Check for laptops/notebooks
+    if (hostname.includes('laptop') || hostname.includes('notebook') || hostname.includes('macbook') ||
+        hostname.includes('thinkpad') || hostname.includes('dell-laptop') || hostname.includes('hp-laptop') ||
+        (os.includes('darwin') && hostname.includes('macbook'))) {
+      return "Laptop";
+    }
+    
+    // Check for servers
+    if (hostname.includes('server') || hostname.includes('srv') || hostname.includes('db') ||
+        hostname.includes('web') || hostname.includes('mail') || hostname.includes('dns') ||
+        os.includes('server') || os.includes('centos') || os.includes('ubuntu server') ||
+        hostname.includes('host.docker.internal')) {
+      return "Server";
+    }
+    
+    // Check for network devices
+    if (hostname.includes('router') || hostname.includes('switch') || hostname.includes('gateway') ||
+        hostname.includes('access-point') || hostname.includes('ap-') || hostname.includes('wifi')) {
+      return "Network Device";
+    }
+    
+    // Check for printers
+    if (hostname.includes('printer') || hostname.includes('print') || hostname.includes('hp-') ||
+        hostname.includes('canon') || hostname.includes('epson') || hostname.includes('brother')) {
+      return "Printer";
+    }
+    
+    // Check for security cameras
+    if (hostname.includes('cam') || hostname.includes('camera') || hostname.includes('cctv') ||
+        hostname.includes('security') || hostname.includes('surveillance')) {
+      return "Security Camera";
+    }
+    
+    // Check for IoT devices
+    if (hostname.includes('iot') || hostname.includes('sensor') || hostname.includes('smart') ||
+        hostname.includes('alexa') || hostname.includes('nest')) {
+      return "IoT Device";
+    }
+    
+    // Default based on OS
+    if (os.includes('windows') || os.includes('linux') || os.includes('ubuntu')) {
+      return "Workstation";
+    }
+    
+    if (os.includes('darwin') || os.includes('macos')) {
+      // Could be laptop or workstation, default to workstation if not identified as MacBook
+      return "Workstation";
+    }
+    
+    // Default fallback
+    return "Workstation";
+  }
 
+  // Endpoint to reclassify existing devices
+  app.post("/api/devices/reclassify", async (req: Request, res: Response) => {
+    try {
+      const devices = await storage.getDevices();
+      let reclassifiedCount = 0;
+      
+      for (const device of devices) {
+        // Extract OS info from model field if available
+        const modelParts = device.model?.split(' ') || ['Unknown'];
+        const osInfo = modelParts.length > 0 ? modelParts.join(' ') : 'Unknown';
+        
+        // Get new classification
+        const newDeviceType = classifyDeviceType(device.name, osInfo, []);
+        
+        // Only update if classification has changed
+        if (device.type !== newDeviceType) {
+          await storage.updateDevice(device.id, {
+            type: newDeviceType
+          });
+          console.log(`[RECLASSIFY] ${device.name}: ${device.type} → ${newDeviceType}`);
+          reclassifiedCount++;
+        }
+      }
+      
+      res.json({
+        success: true,
+        message: `Reclassified ${reclassifiedCount} devices`,
+        reclassifiedCount
+      });
+      
+    } catch (error) {
+      console.error('Device reclassification error:', error);
+      res.status(500).json({ message: "Failed to reclassify devices" });
+    }
+  });
 
   // Device update endpoint for Python agents
   app.post("/api/device-update", async (req: Request, res: Response) => {
@@ -683,9 +786,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } else {
         // Create new pending device for approval with geolocation
+        const deviceType = classifyDeviceType(deviceName, operatingSystem, installedSoftware);
         const pendingDevice = await storage.createPendingDevice({
           name: deviceName,
-          type: "Workstation",
+          type: deviceType,
           model: `${operatingSystem} Device`,
           status: "Active",
           location: deviceLocation,
@@ -788,26 +892,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             );
             
             if (!existingNetworkDevice) {
-              // Determine device type based on discovered information
-              let deviceType = "Network Device";
-              let deviceModel = "Unknown Device";
-              
-              if (discoveredDevice.type === "Mobile") {
-                deviceType = "Mobile";
-                deviceModel = discoveredDevice.model || "Mobile Device";
-              } else if (discoveredDevice.type === "Workstation") {
-                deviceType = "Workstation";
-                deviceModel = discoveredDevice.model || "Workstation Device";
-              } else if (discoveredDevice.type === "Server") {
-                deviceType = "Server";
-                deviceModel = discoveredDevice.model || "Server Device";
-              } else if (discoveredDevice.type === "Network") {
-                deviceType = "Network Device";
-                deviceModel = discoveredDevice.model || "Network Device";
-              } else {
-                deviceType = "Network Device";
-                deviceModel = discoveredDevice.model || `${discoveredDevice.type || 'Unknown'} Device`;
-              }
+              // Use classification function to determine device type
+              const deviceName = discoveredDevice.name || discoveredDevice.ipAddress;
+              const deviceType = classifyDeviceType(deviceName, discoveredDevice.type || "Unknown", []);
+              const deviceModel = discoveredDevice.model || `${deviceType} Device`;
               
               // Create new network device entry
               const networkDevice = await storage.createDevice({
@@ -872,26 +960,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             );
             
             if (!existingNetworkDevice) {
-              // Determine device type based on vendor/hostname
-              let deviceType = "Network Device";
-              let deviceModel = `${networkDevice.vendor || 'Unknown'} Device`;
-              
-              if (networkDevice.vendor) {
-                const vendor = networkDevice.vendor.toLowerCase();
-                if (vendor.includes('apple') || vendor.includes('iphone') || vendor.includes('ipad')) {
-                  deviceType = "Mobile";
-                  deviceModel = "Apple Device";
-                } else if (vendor.includes('samsung') || vendor.includes('android')) {
-                  deviceType = "Mobile";
-                  deviceModel = "Android Device";
-                } else if (vendor.includes('cisco') || vendor.includes('netgear') || vendor.includes('linksys')) {
-                  deviceType = "Network";
-                  deviceModel = `${networkDevice.vendor} Router/Switch`;
-                } else if (vendor.includes('hp') || vendor.includes('canon') || vendor.includes('epson')) {
-                  deviceType = "Printer";
-                  deviceModel = `${networkDevice.vendor} Printer`;
-                }
-              }
+              // Use classification function with vendor information
+              const deviceName = networkDevice.hostname || networkDevice.ip;
+              const vendorInfo = networkDevice.vendor || "Unknown";
+              const deviceType = classifyDeviceType(deviceName, vendorInfo, []);
+              const deviceModel = `${vendorInfo} ${deviceType}`;
               
               // Create new network device entry
               const newNetworkDevice = await storage.createDevice({
