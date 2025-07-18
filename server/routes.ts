@@ -1150,6 +1150,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Network Discovery API endpoints
+  app.get("/api/network-devices", async (req: Request, res: Response) => {
+    try {
+      const devices = await storage.getNetworkDevices();
+      res.json(devices);
+    } catch (error) {
+      console.error('Network devices fetch error:', error);
+      res.status(500).json({ message: "Failed to fetch network devices" });
+    }
+  });
+
+  app.get("/api/network-devices/:id/history", async (req: Request, res: Response) => {
+    try {
+      const deviceId = parseInt(req.params.id);
+      if (isNaN(deviceId)) {
+        return res.status(400).json({ message: "Invalid device ID" });
+      }
+      
+      const history = await storage.getIpHistoryByDevice(deviceId);
+      res.json(history);
+    } catch (error) {
+      console.error('Network device history fetch error:', error);
+      res.status(500).json({ message: "Failed to fetch network device history" });
+    }
+  });
+
   // Network Scanner API endpoints
   app.get("/api/network-scanner/status", (req: Request, res: Response) => {
     res.json(networkScanner.getStatus());
