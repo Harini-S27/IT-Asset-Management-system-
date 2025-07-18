@@ -10,8 +10,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Database, Server, Network, Laptop, HardDrive, Shield, Settings, Plus, Edit, Trash2, Eye, Clock, Link } from "lucide-react";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 import type { Device, CmdbConfigurationItem, CmdbChangeRecord, CmdbRelationship } from "@shared/schema";
 
 interface CmdbPageProps {}
@@ -41,7 +44,26 @@ export default function CmdbPage({}: CmdbPageProps) {
   const [selectedConfigurationItem, setSelectedConfigurationItem] = useState<CmdbConfigurationItem | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [formData, setFormData] = useState({
+    ciName: '',
+    ciDescription: '',
+    ciType: 'Hardware',
+    category: 'Computer',
+    environment: 'Production',
+    lifecycleStatus: 'Active',
+    riskLevel: 'Low',
+    complianceStatus: 'Unknown',
+    owner: '',
+    manufacturer: '',
+    model: '',
+    serialNumber: '',
+    assetTag: '',
+    operatingSystem: '',
+    osVersion: '',
+    monitoringEnabled: false
+  });
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // Fetch devices
   const { data: devices = [], isLoading: devicesLoading } = useQuery({
@@ -98,6 +120,76 @@ export default function CmdbPage({}: CmdbPageProps) {
     },
     enabled: !!selectedConfigurationItem?.id
   });
+
+  // Create configuration item mutation
+  const createConfigurationItem = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await fetch('/api/cmdb/configuration-items', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error('Failed to create configuration item');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/cmdb/configuration-items'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/cmdb/configuration-items/device', selectedDevice?.id] });
+      toast({
+        title: "Success",
+        description: "Configuration item created successfully",
+      });
+      setShowAddDialog(false);
+      resetForm();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to create configuration item",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const resetForm = () => {
+    setFormData({
+      ciName: '',
+      ciDescription: '',
+      ciType: 'Hardware',
+      category: 'Computer',
+      environment: 'Production',
+      lifecycleStatus: 'Active',
+      riskLevel: 'Low',
+      complianceStatus: 'Unknown',
+      owner: '',
+      manufacturer: '',
+      model: '',
+      serialNumber: '',
+      assetTag: '',
+      operatingSystem: '',
+      osVersion: '',
+      monitoringEnabled: false
+    });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedDevice) {
+      toast({
+        title: "Error",
+        description: "Please select a device first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createConfigurationItem.mutate({
+      ...formData,
+      deviceId: selectedDevice.id
+    });
+  };
 
   // Get approved devices (devices that are not in pending state)
   const approvedDevices = devices.filter(device => device.status !== 'Pending');
@@ -662,6 +754,224 @@ export default function CmdbPage({}: CmdbPageProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Add Configuration Item Dialog */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add Configuration Item</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="ciName">Configuration Item Name*</Label>
+                <Input
+                  id="ciName"
+                  value={formData.ciName}
+                  onChange={(e) => setFormData({...formData, ciName: e.target.value})}
+                  placeholder="e.g., Dell OptiPlex 7090"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="ciType">CI Type*</Label>
+                <Select value={formData.ciType} onValueChange={(value) => setFormData({...formData, ciType: value})}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Hardware">Hardware</SelectItem>
+                    <SelectItem value="Software">Software</SelectItem>
+                    <SelectItem value="Network">Network</SelectItem>
+                    <SelectItem value="Service">Service</SelectItem>
+                    <SelectItem value="Database">Database</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="ciDescription">Description</Label>
+              <Textarea
+                id="ciDescription"
+                value={formData.ciDescription}
+                onChange={(e) => setFormData({...formData, ciDescription: e.target.value})}
+                placeholder="Describe the configuration item..."
+                rows={2}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="category">Category</Label>
+                <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Computer">Computer</SelectItem>
+                    <SelectItem value="Server">Server</SelectItem>
+                    <SelectItem value="Network Device">Network Device</SelectItem>
+                    <SelectItem value="Storage">Storage</SelectItem>
+                    <SelectItem value="Peripheral">Peripheral</SelectItem>
+                    <SelectItem value="Software License">Software License</SelectItem>
+                    <SelectItem value="Application">Application</SelectItem>
+                    <SelectItem value="Operating System">Operating System</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="environment">Environment</Label>
+                <Select value={formData.environment} onValueChange={(value) => setFormData({...formData, environment: value})}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Production">Production</SelectItem>
+                    <SelectItem value="Development">Development</SelectItem>
+                    <SelectItem value="Testing">Testing</SelectItem>
+                    <SelectItem value="Staging">Staging</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="lifecycleStatus">Lifecycle Status</Label>
+                <Select value={formData.lifecycleStatus} onValueChange={(value) => setFormData({...formData, lifecycleStatus: value})}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Planning">Planning</SelectItem>
+                    <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="Retiring">Retiring</SelectItem>
+                    <SelectItem value="Retired">Retired</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="riskLevel">Risk Level</Label>
+                <Select value={formData.riskLevel} onValueChange={(value) => setFormData({...formData, riskLevel: value})}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Low">Low</SelectItem>
+                    <SelectItem value="Medium">Medium</SelectItem>
+                    <SelectItem value="High">High</SelectItem>
+                    <SelectItem value="Critical">Critical</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="complianceStatus">Compliance Status</Label>
+                <Select value={formData.complianceStatus} onValueChange={(value) => setFormData({...formData, complianceStatus: value})}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Compliant">Compliant</SelectItem>
+                    <SelectItem value="Non-Compliant">Non-Compliant</SelectItem>
+                    <SelectItem value="Unknown">Unknown</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="owner">Owner</Label>
+                <Input
+                  id="owner"
+                  value={formData.owner}
+                  onChange={(e) => setFormData({...formData, owner: e.target.value})}
+                  placeholder="e.g., IT Department"
+                />
+              </div>
+              <div>
+                <Label htmlFor="manufacturer">Manufacturer</Label>
+                <Input
+                  id="manufacturer"
+                  value={formData.manufacturer}
+                  onChange={(e) => setFormData({...formData, manufacturer: e.target.value})}
+                  placeholder="e.g., Dell, HP, Lenovo"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="model">Model</Label>
+                <Input
+                  id="model"
+                  value={formData.model}
+                  onChange={(e) => setFormData({...formData, model: e.target.value})}
+                  placeholder="e.g., OptiPlex 7090"
+                />
+              </div>
+              <div>
+                <Label htmlFor="serialNumber">Serial Number</Label>
+                <Input
+                  id="serialNumber"
+                  value={formData.serialNumber}
+                  onChange={(e) => setFormData({...formData, serialNumber: e.target.value})}
+                  placeholder="e.g., ABC123456"
+                />
+              </div>
+              <div>
+                <Label htmlFor="assetTag">Asset Tag</Label>
+                <Input
+                  id="assetTag"
+                  value={formData.assetTag}
+                  onChange={(e) => setFormData({...formData, assetTag: e.target.value})}
+                  placeholder="e.g., ASSET001"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="operatingSystem">Operating System</Label>
+                <Input
+                  id="operatingSystem"
+                  value={formData.operatingSystem}
+                  onChange={(e) => setFormData({...formData, operatingSystem: e.target.value})}
+                  placeholder="e.g., Windows 11, Ubuntu 22.04"
+                />
+              </div>
+              <div>
+                <Label htmlFor="osVersion">OS Version</Label>
+                <Input
+                  id="osVersion"
+                  value={formData.osVersion}
+                  onChange={(e) => setFormData({...formData, osVersion: e.target.value})}
+                  placeholder="e.g., 22H2, 22.04.3"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="monitoringEnabled"
+                checked={formData.monitoringEnabled}
+                onCheckedChange={(checked) => setFormData({...formData, monitoringEnabled: checked})}
+              />
+              <Label htmlFor="monitoringEnabled">Enable Monitoring</Label>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button type="button" variant="outline" onClick={() => setShowAddDialog(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={createConfigurationItem.isPending}>
+                {createConfigurationItem.isPending ? 'Creating...' : 'Create Configuration Item'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
