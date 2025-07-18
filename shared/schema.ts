@@ -549,7 +549,24 @@ export const alertHistoryRelations = relations(alertHistory, ({ one }) => ({
 }));
 
 // Export insert and select schemas for alerts
-export const insertAlertSchema = createInsertSchema(alerts);
+export const insertAlertSchema = createInsertSchema(alerts)
+  .omit({ id: true, createdAt: true, updatedAt: true, acknowledgedAt: true, resolvedAt: true })
+  .extend({
+    alertType: z.enum(['warranty_expiration', 'end_of_life', 'compliance_violation', 'security_risk', 'maintenance_due']),
+    severity: z.enum(['Low', 'Medium', 'High', 'Critical']),
+    status: z.enum(['Active', 'Acknowledged', 'Resolved', 'Dismissed']).default('Active'),
+    alertDate: z.union([z.string(), z.date()]).transform((val) => typeof val === 'string' ? new Date(val) : val),
+    expirationDate: z.union([z.string(), z.date()]).optional().transform((val) => val ? (typeof val === 'string' ? new Date(val) : val) : undefined),
+    warrantyExpirationDate: z.union([z.string(), z.date()]).optional().transform((val) => val ? (typeof val === 'string' ? new Date(val) : val) : undefined),
+    endOfLifeDate: z.union([z.string(), z.date()]).optional().transform((val) => val ? (typeof val === 'string' ? new Date(val) : val) : undefined),
+    maintenanceDueDate: z.union([z.string(), z.date()]).optional().transform((val) => val ? (typeof val === 'string' ? new Date(val) : val) : undefined),
+    nextAlertDate: z.union([z.string(), z.date()]).optional().transform((val) => val ? (typeof val === 'string' ? new Date(val) : val) : undefined),
+    isRecurring: z.boolean().default(false),
+    emailNotificationSent: z.boolean().default(false),
+    escalationLevel: z.number().default(1),
+    tags: z.array(z.string()).default([])
+  });
+
 export const selectAlertSchema = createSelectSchema(alerts);
 export type InsertAlert = z.infer<typeof insertAlertSchema>;
 export type Alert = typeof alerts.$inferSelect;
