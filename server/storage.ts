@@ -49,7 +49,16 @@ import {
   type InsertCmdbRelationship,
   cmdbComplianceRules,
   type CmdbComplianceRule,
-  type InsertCmdbComplianceRule
+  type InsertCmdbComplianceRule,
+  alerts,
+  type Alert,
+  type InsertAlert,
+  alertHistory,
+  type AlertHistory,
+  type InsertAlertHistory,
+  alertTemplates,
+  type AlertTemplate,
+  type InsertAlertTemplate
 } from "@shared/schema";
 import { db } from "./db";
 import { emailService } from "./email-service";
@@ -173,6 +182,26 @@ export interface IStorage {
   createCmdbComplianceRule(rule: InsertCmdbComplianceRule): Promise<CmdbComplianceRule>;
   updateCmdbComplianceRule(id: number, rule: Partial<InsertCmdbComplianceRule>): Promise<CmdbComplianceRule | undefined>;
   deleteCmdbComplianceRule(id: number): Promise<boolean>;
+
+  // Alert Management operations
+  getAlerts(): Promise<Alert[]>;
+  getAlert(id: number): Promise<Alert | undefined>;
+  getAlertsByDevice(deviceId: number): Promise<Alert[]>;
+  createAlert(alert: InsertAlert): Promise<Alert>;
+  updateAlert(id: number, alert: Partial<InsertAlert>): Promise<Alert | undefined>;
+  updateAlertStatus(id: number, status: string, actionBy: string, notes?: string): Promise<Alert | undefined>;
+  deleteAlert(id: number): Promise<boolean>;
+
+  // Alert History operations
+  getAlertHistory(alertId: number): Promise<AlertHistory[]>;
+  createAlertHistory(history: InsertAlertHistory): Promise<AlertHistory>;
+
+  // Alert Template operations
+  getAlertTemplates(): Promise<AlertTemplate[]>;
+  getAlertTemplate(id: number): Promise<AlertTemplate | undefined>;
+  createAlertTemplate(template: InsertAlertTemplate): Promise<AlertTemplate>;
+  updateAlertTemplate(id: number, template: Partial<InsertAlertTemplate>): Promise<AlertTemplate | undefined>;
+  deleteAlertTemplate(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1355,6 +1384,121 @@ export class DatabaseStorage implements IStorage {
 
   async deleteCmdbComplianceRule(id: number): Promise<boolean> {
     const result = await db.delete(cmdbComplianceRules).where(eq(cmdbComplianceRules.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // Alert Management operations
+  async getAlerts(): Promise<Alert[]> {
+    return await db.select().from(alerts).orderBy(desc(alerts.alertDate));
+  }
+
+  async getAlert(id: number): Promise<Alert | undefined> {
+    const [alert] = await db.select().from(alerts).where(eq(alerts.id, id));
+    return alert;
+  }
+
+  async getAlertsByDevice(deviceId: number): Promise<Alert[]> {
+    return await db.select().from(alerts)
+      .where(eq(alerts.deviceId, deviceId))
+      .orderBy(desc(alerts.alertDate));
+  }
+
+  async createAlert(alert: InsertAlert): Promise<Alert> {
+    const [newAlert] = await db.insert(alerts).values(alert).returning();
+    
+    // Create alert history entry
+    await this.createAlertHistory({
+      alertId: newAlert.id,
+      action: 'created',
+      actionBy: 'system',
+      notes: `Alert created: ${newAlert.alertTitle}`
+    });
+    
+    return newAlert;
+  }
+
+  async updateAlert(id: number, alert: Partial<InsertAlert>): Promise<Alert | undefined> {
+    const [updatedAlert] = await db.update(alerts)
+      .set({ ...alert, updatedAt: new Date() })
+      .where(eq(alerts.id, id))
+      .returning();
+    return updatedAlert;
+  }
+
+  async updateAlertStatus(id: number, status: string, actionBy: string, notes?: string): Promise<Alert | undefined> {
+    const now = new Date();
+    const updateData: any = { status, updatedAt: now };
+    
+    if (status === 'Acknowledged') {
+      updateData.acknowledgedBy = actionBy;
+      updateData.acknowledgedAt = now;
+    } else if (status === 'Resolved') {
+      updateData.resolvedBy = actionBy;
+      updateData.resolvedAt = now;
+    }
+    
+    const [updatedAlert] = await db.update(alerts)
+      .set(updateData)
+      .where(eq(alerts.id, id))
+      .returning();
+    
+    if (updatedAlert) {
+      // Create alert history entry
+      await this.createAlertHistory({
+        alertId: id,
+        action: status.toLowerCase(),
+        actionBy,
+        notes: notes || `Alert ${status.toLowerCase()}`
+      });
+    }
+    
+    return updatedAlert;
+  }
+
+  async deleteAlert(id: number): Promise<boolean> {
+    const result = await db.delete(alerts).where(eq(alerts.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // Alert History operations
+  async getAlertHistory(alertId: number): Promise<AlertHistory[]> {
+    return await db.select().from(alertHistory)
+      .where(eq(alertHistory.alertId, alertId))
+      .orderBy(desc(alertHistory.actionDate));
+  }
+
+  async createAlertHistory(history: InsertAlertHistory): Promise<AlertHistory> {
+    const [newHistory] = await db.insert(alertHistory).values(history).returning();
+    return newHistory;
+  }
+
+  // Alert Template operations
+  async getAlertTemplates(): Promise<AlertTemplate[]> {
+    return await db.select().from(alertTemplates)
+      .where(eq(alertTemplates.isActive, true))
+      .orderBy(desc(alertTemplates.createdAt));
+  }
+
+  async getAlertTemplate(id: number): Promise<AlertTemplate | undefined> {
+    const [template] = await db.select().from(alertTemplates).where(eq(alertTemplates.id, id));
+    return template;
+  }
+
+  async createAlertTemplate(template: InsertAlertTemplate): Promise<AlertTemplate> {
+    const [newTemplate] = await db.insert(alertTemplates).values(template).returning();
+    return newTemplate;
+  }
+
+  async updateAlertTemplate(id: number, template: Partial<InsertAlertTemplate>): Promise<AlertTemplate | undefined> {
+    const [updatedTemplate] = await db.update(alertTemplates)
+      .set({ ...template, updatedAt: new Date() })
+      .where(eq(alertTemplates.id, id))
+      .returning();
+    return updatedTemplate;
+  }
+
+  async deleteAlertTemplate(id: number): Promise<boolean> {
+    const result = await db.delete(alertTemplates).where(eq(alertTemplates.id, id));
     return (result.rowCount || 0) > 0;
   }
 }

@@ -1,5 +1,6 @@
-import { pgTable, text, serial, integer, boolean, timestamp, json } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
+import { pgTable, text, serial, integer, boolean, timestamp, json, jsonb } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Device types
@@ -455,3 +456,92 @@ export const insertTicketSchema = createInsertSchema(tickets)
 
 export type InsertTicket = z.infer<typeof insertTicketSchema>;
 export type Ticket = typeof tickets.$inferSelect;
+
+// Alert Management System
+export const alerts = pgTable('alerts', {
+  id: serial('id').primaryKey(),
+  deviceId: integer('device_id').references(() => devices.id),
+  alertType: text('alert_type').notNull(), // 'warranty_expiration', 'end_of_life', 'compliance_violation', 'security_risk', 'maintenance_due'
+  alertTitle: text('alert_title').notNull(),
+  alertDescription: text('alert_description'),
+  severity: text('severity').notNull(), // 'Low', 'Medium', 'High', 'Critical'
+  alertDate: timestamp('alert_date').notNull(),
+  expirationDate: timestamp('expiration_date'),
+  warrantyExpirationDate: timestamp('warranty_expiration_date'),
+  endOfLifeDate: timestamp('end_of_life_date'),
+  maintenanceDueDate: timestamp('maintenance_due_date'),
+  status: text('status').notNull().default('Active'), // 'Active', 'Acknowledged', 'Resolved', 'Dismissed'
+  acknowledgedBy: text('acknowledged_by'),
+  acknowledgedAt: timestamp('acknowledged_at'),
+  resolvedBy: text('resolved_by'),
+  resolvedAt: timestamp('resolved_at'),
+  isRecurring: boolean('is_recurring').default(false),
+  recurringInterval: integer('recurring_interval'), // days
+  nextAlertDate: timestamp('next_alert_date'),
+  emailNotificationSent: boolean('email_notification_sent').default(false),
+  escalationLevel: integer('escalation_level').default(1),
+  assignedTo: text('assigned_to'),
+  tags: text('tags').array(),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow()
+});
+
+// Alert Templates for creating standardized alerts
+export const alertTemplates = pgTable('alert_templates', {
+  id: serial('id').primaryKey(),
+  templateName: text('template_name').notNull(),
+  alertType: text('alert_type').notNull(),
+  alertTitle: text('alert_title').notNull(),
+  alertDescription: text('alert_description'),
+  severity: text('severity').notNull(),
+  daysBeforeExpiration: integer('days_before_expiration').default(30),
+  isActive: boolean('is_active').default(true),
+  emailTemplate: text('email_template'),
+  tags: text('tags').array(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow()
+});
+
+// Alert History for tracking alert actions
+export const alertHistory = pgTable('alert_history', {
+  id: serial('id').primaryKey(),
+  alertId: integer('alert_id').references(() => alerts.id),
+  action: text('action').notNull(), // 'created', 'acknowledged', 'resolved', 'dismissed', 'escalated'
+  actionBy: text('action_by').notNull(),
+  actionDate: timestamp('action_date').defaultNow(),
+  notes: text('notes'),
+  metadata: jsonb('metadata')
+});
+
+// Relations for alerts
+export const alertsRelations = relations(alerts, ({ one, many }) => ({
+  device: one(devices, {
+    fields: [alerts.deviceId],
+    references: [devices.id]
+  }),
+  history: many(alertHistory)
+}));
+
+export const alertHistoryRelations = relations(alertHistory, ({ one }) => ({
+  alert: one(alerts, {
+    fields: [alertHistory.alertId],
+    references: [alerts.id]
+  })
+}));
+
+// Export insert and select schemas for alerts
+export const insertAlertSchema = createInsertSchema(alerts);
+export const selectAlertSchema = createSelectSchema(alerts);
+export type InsertAlert = z.infer<typeof insertAlertSchema>;
+export type Alert = typeof alerts.$inferSelect;
+
+export const insertAlertTemplateSchema = createInsertSchema(alertTemplates);
+export const selectAlertTemplateSchema = createSelectSchema(alertTemplates);
+export type InsertAlertTemplate = z.infer<typeof insertAlertTemplateSchema>;
+export type AlertTemplate = typeof alertTemplates.$inferSelect;
+
+export const insertAlertHistorySchema = createInsertSchema(alertHistory);
+export const selectAlertHistorySchema = createSelectSchema(alertHistory);
+export type InsertAlertHistory = z.infer<typeof insertAlertHistorySchema>;
+export type AlertHistory = typeof alertHistory.$inferSelect;

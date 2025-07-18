@@ -17,7 +17,8 @@ import {
   insertCmdbConfigurationItemSchema,
   insertCmdbChangeRecordSchema,
   insertCmdbRelationshipSchema,
-  insertCmdbComplianceRuleSchema
+  insertCmdbComplianceRuleSchema,
+  insertAlertSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -1305,6 +1306,184 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error creating CMDB compliance rule:', error);
       res.status(500).json({ message: "Failed to create CMDB compliance rule" });
+    }
+  });
+
+  // ===== ALERT MANAGEMENT ENDPOINTS =====
+  
+  // Get all alerts
+  app.get("/api/alerts", async (req: Request, res: Response) => {
+    try {
+      const alerts = await storage.getAlerts();
+      res.json(alerts);
+    } catch (error) {
+      console.error('Error fetching alerts:', error);
+      res.status(500).json({ message: "Failed to fetch alerts" });
+    }
+  });
+
+  // Get alert by ID
+  app.get("/api/alerts/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const alert = await storage.getAlert(id);
+      if (!alert) {
+        return res.status(404).json({ message: "Alert not found" });
+      }
+      res.json(alert);
+    } catch (error) {
+      console.error('Error fetching alert:', error);
+      res.status(500).json({ message: "Failed to fetch alert" });
+    }
+  });
+
+  // Get alerts by device
+  app.get("/api/alerts/device/:deviceId", async (req: Request, res: Response) => {
+    try {
+      const deviceId = parseInt(req.params.deviceId);
+      const alerts = await storage.getAlertsByDevice(deviceId);
+      res.json(alerts);
+    } catch (error) {
+      console.error('Error fetching alerts by device:', error);
+      res.status(500).json({ message: "Failed to fetch alerts by device" });
+    }
+  });
+
+  // Create alert
+  app.post("/api/alerts", async (req: Request, res: Response) => {
+    try {
+      const result = insertAlertSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid alert data", errors: result.error.errors });
+      }
+
+      const alert = await storage.createAlert(result.data);
+      res.json(alert);
+    } catch (error) {
+      console.error('Error creating alert:', error);
+      res.status(500).json({ message: "Failed to create alert" });
+    }
+  });
+
+  // Update alert status
+  app.patch("/api/alerts/:id/status", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { status, notes } = req.body;
+      
+      if (!status) {
+        return res.status(400).json({ message: "Status is required" });
+      }
+
+      const alert = await storage.updateAlertStatus(id, status, 'system', notes);
+      if (!alert) {
+        return res.status(404).json({ message: "Alert not found" });
+      }
+      
+      res.json(alert);
+    } catch (error) {
+      console.error('Error updating alert status:', error);
+      res.status(500).json({ message: "Failed to update alert status" });
+    }
+  });
+
+  // Get alert history
+  app.get("/api/alerts/:id/history", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const history = await storage.getAlertHistory(id);
+      res.json(history);
+    } catch (error) {
+      console.error('Error fetching alert history:', error);
+      res.status(500).json({ message: "Failed to fetch alert history" });
+    }
+  });
+
+  // Delete alert
+  app.delete("/api/alerts/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteAlert(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Alert not found" });
+      }
+      res.json({ message: "Alert deleted successfully" });
+    } catch (error) {
+      console.error('Error deleting alert:', error);
+      res.status(500).json({ message: "Failed to delete alert" });
+    }
+  });
+
+  // ===== ALERT TEMPLATE ENDPOINTS =====
+
+  // Get all alert templates
+  app.get("/api/alert-templates", async (req: Request, res: Response) => {
+    try {
+      const templates = await storage.getAlertTemplates();
+      res.json(templates);
+    } catch (error) {
+      console.error('Error fetching alert templates:', error);
+      res.status(500).json({ message: "Failed to fetch alert templates" });
+    }
+  });
+
+  // Test endpoint to create sample alerts
+  app.post("/api/alerts/test/create-samples", async (req: Request, res: Response) => {
+    try {
+      const devices = await storage.getDevices();
+      if (devices.length === 0) {
+        return res.status(400).json({ message: "No devices available to create alerts for" });
+      }
+
+      const sampleAlerts = [
+        {
+          deviceId: devices[0].id,
+          alertType: 'warranty_expiration',
+          alertTitle: 'Warranty Expiring Soon',
+          alertDescription: 'Device warranty expires in 30 days',
+          severity: 'Medium',
+          alertDate: new Date(),
+          warrantyExpirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+          assignedTo: 'IT Team',
+          status: 'Active'
+        },
+        {
+          deviceId: devices[Math.min(1, devices.length - 1)].id,
+          alertType: 'end_of_life',
+          alertTitle: 'End of Life Approaching',
+          alertDescription: 'Device reaches end of life in 90 days',
+          severity: 'High',
+          alertDate: new Date(),
+          endOfLifeDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days from now
+          assignedTo: 'System Admin',
+          status: 'Active'
+        },
+        {
+          deviceId: devices[Math.min(2, devices.length - 1)].id,
+          alertType: 'maintenance_due',
+          alertTitle: 'Maintenance Required',
+          alertDescription: 'Scheduled maintenance is overdue',
+          severity: 'Critical',
+          alertDate: new Date(),
+          maintenanceDueDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
+          assignedTo: 'Maintenance Team',
+          status: 'Active'
+        }
+      ];
+
+      const createdAlerts = [];
+      for (const alertData of sampleAlerts) {
+        const alert = await storage.createAlert(alertData);
+        createdAlerts.push(alert);
+      }
+
+      res.json({ 
+        message: "Sample alerts created successfully", 
+        alerts: createdAlerts 
+      });
+    } catch (error) {
+      console.error('Error creating sample alerts:', error);
+      res.status(500).json({ message: "Failed to create sample alerts" });
     }
   });
 

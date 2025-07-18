@@ -14,7 +14,8 @@ import {
   Ticket,
   Mail,
   Bell,
-  Database
+  Database,
+  AlertTriangle
 } from "lucide-react";
 import { UserMenu } from "./user-menu";
 import { useAuth } from "@/contexts/auth-context";
@@ -80,6 +81,11 @@ const Sidebar = () => {
       name: "CMDB",
       href: "/cmdb",
       icon: Database,
+    },
+    {
+      name: "Alert Management",
+      href: "/alerts",
+      icon: AlertTriangle,
     },
     {
       name: "Reports",
