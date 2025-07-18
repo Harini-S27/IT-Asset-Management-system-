@@ -240,17 +240,7 @@ export function AnimatedDeviceList({
                           Edit
                         </Button>
                       )}
-                      {onDeleteDevice && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => onDeleteDevice(device)}
-                          className="h-8 px-3 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-3 w-3 mr-1" />
-                          Delete
-                        </Button>
-                      )}
+
                     </div>
                   </div>
                 </CardContent>

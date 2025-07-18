@@ -25,5 +25,24 @@
     "macAddress": "00:11:22:33:44:77",
     "createdAt": "2025-07-12T08:06:48.128Z",
     "status": "active"
+  },
+  {
+    "deviceId": 22,
+    "apiKey": "finecons_ffeff6f12393e7f8faacad0019d3e2ebb82eedcd314983cc90e9f5369626d05a",
+    "deviceName": "host.docker.internal",
+    "ipAddress": "172.31.128.1",
+    "macAddress": "02:42:35:b2:1a:32",
+    "createdAt": "2025-07-18T16:56:48.348Z",
+    "status": "pending"
+  },
+  {
+    "deviceId": 23,
+    "apiKey": "finecons_092f6dc29c84c6b4f055224eddd63b8b3cf518738fd39ef47fdcc97b4d909f03",
+    "deviceName": "CAM-SEC-002",
+    "ipAddress": "192.168.1.102",
+    "macAddress": "Unknown",
+    "createdAt": "2025-07-18T16:56:48.419Z",
+    "status": "pending",
+    "lastUsed": "2025-07-18T16:56:48.444Z"
   }
 ]
