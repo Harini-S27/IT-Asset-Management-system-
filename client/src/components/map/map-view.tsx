@@ -380,11 +380,13 @@ const MapComponent = () => {
           
           // Add popup and tooltip with custom options
           marker.bindPopup(createDevicePopup(device), {
-                  maxWidth: 350,
-                  minWidth: 280,
+                  maxWidth: 280,
+                  minWidth: 260,
                   className: 'custom-device-popup',
                   closeButton: true,
-                  autoPan: true
+                  autoPan: true,
+                  keepInView: true,
+                  autoClose: false
                 })
                 .on('click', () => {
                   setSelectedDevice(device);
@@ -438,11 +440,13 @@ const MapComponent = () => {
             });
             
             marker.bindPopup(createDevicePopup(device), {
-                    maxWidth: 350,
-                    minWidth: 280,
+                    maxWidth: 280,
+                    minWidth: 260,
                     className: 'custom-device-popup',
                     closeButton: true,
-                    autoPan: true
+                    autoPan: true,
+                    keepInView: true,
+                    autoClose: false
                   })
                   .on('click', () => {
                     setSelectedDevice(device);
@@ -492,11 +496,13 @@ const MapComponent = () => {
             });
             
             clusterMarker.bindPopup(createPopupContent(devices), {
-                           maxWidth: 400,
-                           minWidth: 320,
+                           maxWidth: 320,
+                           minWidth: 300,
                            className: 'custom-cluster-popup',
                            closeButton: true,
-                           autoPan: true
+                           autoPan: true,
+                           keepInView: true,
+                           autoClose: false
                          })
                          .on('click', () => {
                            setSelectedDevice(devices[0]);
@@ -845,44 +851,49 @@ const MapComponent = () => {
       
       {/* Custom CSS for popup styling */}
       <style>{`
-        .custom-device-popup .leaflet-popup-content-wrapper,
-        .custom-cluster-popup .leaflet-popup-content-wrapper {
+        /* Aggressive override of Leaflet popup styling */
+        .leaflet-popup-content-wrapper {
           background: transparent !important;
           border-radius: 0 !important;
           box-shadow: none !important;
           padding: 0 !important;
           border: none !important;
         }
-        .custom-device-popup .leaflet-popup-content,
-        .custom-cluster-popup .leaflet-popup-content {
+        .leaflet-popup-content {
           margin: 0 !important;
           padding: 0 !important;
           width: auto !important;
           line-height: 1 !important;
+          font-size: 14px !important;
         }
-        .custom-device-popup .leaflet-popup-tip,
-        .custom-cluster-popup .leaflet-popup-tip {
+        .leaflet-popup-tip {
           background: white !important;
           border: none !important;
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
         }
         .leaflet-popup-close-button {
-          background: rgba(0, 0, 0, 0.1) !important;
+          background: rgba(255, 255, 255, 0.9) !important;
           color: #666 !important;
           border-radius: 50% !important;
-          width: 24px !important;
-          height: 24px !important;
-          font-size: 16px !important;
-          right: 8px !important;
-          top: 8px !important;
+          width: 26px !important;
+          height: 26px !important;
+          font-size: 18px !important;
+          font-weight: bold !important;
+          right: 6px !important;
+          top: 6px !important;
           padding: 0 !important;
           text-align: center !important;
-          line-height: 22px !important;
-          border: none !important;
+          line-height: 24px !important;
+          border: 1px solid rgba(0, 0, 0, 0.1) !important;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
         }
         .leaflet-popup-close-button:hover {
-          background: rgba(0, 0, 0, 0.2) !important;
+          background: rgba(255, 255, 255, 1) !important;
           color: #333 !important;
+        }
+        /* Ensure popup doesn't get clipped */
+        .leaflet-popup {
+          z-index: 1000 !important;
         }
       `}</style>
       
