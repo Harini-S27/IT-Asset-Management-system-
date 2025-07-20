@@ -249,6 +249,64 @@ const MapComponent = () => {
   
   // Initialize map
   useEffect(() => {
+    // Add CSS to document head for popup styling
+    const style = document.createElement('style');
+    style.id = 'leaflet-popup-custom-styles';
+    style.innerHTML = `
+      /* Aggressive override of Leaflet popup styling */
+      .leaflet-popup-content-wrapper {
+        background: transparent !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        border: none !important;
+      }
+      .leaflet-popup-content {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: auto !important;
+        line-height: 1 !important;
+        font-size: 14px !important;
+      }
+      .leaflet-popup-tip {
+        background: white !important;
+        border: none !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+      }
+      .leaflet-popup-close-button {
+        background: rgba(255, 255, 255, 0.9) !important;
+        color: #666 !important;
+        border-radius: 50% !important;
+        width: 26px !important;
+        height: 26px !important;
+        font-size: 18px !important;
+        font-weight: bold !important;
+        right: 6px !important;
+        top: 6px !important;
+        padding: 0 !important;
+        text-align: center !important;
+        line-height: 24px !important;
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+      }
+      .leaflet-popup-close-button:hover {
+        background: rgba(255, 255, 255, 1) !important;
+        color: #333 !important;
+      }
+      .leaflet-popup {
+        z-index: 1000 !important;
+      }
+    `;
+    
+    if (!document.getElementById('leaflet-popup-custom-styles')) {
+      document.head.appendChild(style);
+    }
+    
+    // Force close any existing popups to apply new styling
+    if (mapRef.current) {
+      mapRef.current.closePopup();
+    }
+
     // Create map only if it doesn't exist yet
     if (!mapRef.current) {
       console.log("Creating new map");
@@ -720,6 +778,9 @@ const MapComponent = () => {
   // Handle refreshing the map view
   const handleRefreshMap = () => {
     if (mapRef.current) {
+      // Close any existing popups to force refresh with new styling
+      mapRef.current.closePopup();
+      
       // Get all markers (regardless of clustering)
       const deviceMarkers = devices
         .filter(device => device.latitude && device.longitude)
@@ -849,53 +910,7 @@ const MapComponent = () => {
         </div>
       </div>
       
-      {/* Custom CSS for popup styling */}
-      <style>{`
-        /* Aggressive override of Leaflet popup styling */
-        .leaflet-popup-content-wrapper {
-          background: transparent !important;
-          border-radius: 0 !important;
-          box-shadow: none !important;
-          padding: 0 !important;
-          border: none !important;
-        }
-        .leaflet-popup-content {
-          margin: 0 !important;
-          padding: 0 !important;
-          width: auto !important;
-          line-height: 1 !important;
-          font-size: 14px !important;
-        }
-        .leaflet-popup-tip {
-          background: white !important;
-          border: none !important;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
-        }
-        .leaflet-popup-close-button {
-          background: rgba(255, 255, 255, 0.9) !important;
-          color: #666 !important;
-          border-radius: 50% !important;
-          width: 26px !important;
-          height: 26px !important;
-          font-size: 18px !important;
-          font-weight: bold !important;
-          right: 6px !important;
-          top: 6px !important;
-          padding: 0 !important;
-          text-align: center !important;
-          line-height: 24px !important;
-          border: 1px solid rgba(0, 0, 0, 0.1) !important;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-        }
-        .leaflet-popup-close-button:hover {
-          background: rgba(255, 255, 255, 1) !important;
-          color: #333 !important;
-        }
-        /* Ensure popup doesn't get clipped */
-        .leaflet-popup {
-          z-index: 1000 !important;
-        }
-      `}</style>
+
       
       <div className="grid grid-cols-4 gap-4">
         {/* Main Map View */}
