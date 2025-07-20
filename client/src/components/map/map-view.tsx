@@ -440,7 +440,7 @@ const MapComponent = () => {
           marker.bindPopup(createDevicePopup(device), {
                   maxWidth: 280,
                   minWidth: 260,
-                  className: 'custom-device-popup',
+                  className: '',
                   closeButton: true,
                   autoPan: true,
                   keepInView: true,
@@ -500,7 +500,7 @@ const MapComponent = () => {
             marker.bindPopup(createDevicePopup(device), {
                     maxWidth: 280,
                     minWidth: 260,
-                    className: 'custom-device-popup',
+                    className: '',
                     closeButton: true,
                     autoPan: true,
                     keepInView: true,
@@ -556,7 +556,7 @@ const MapComponent = () => {
             clusterMarker.bindPopup(createPopupContent(devices), {
                            maxWidth: 320,
                            minWidth: 300,
-                           className: 'custom-cluster-popup',
+                           className: '',
                            closeButton: true,
                            autoPan: true,
                            keepInView: true,
@@ -594,7 +594,7 @@ const MapComponent = () => {
     }
   }, [devices, statusFilter, typeFilter, clusterMode]);
 
-  // Create HTML content for popup for a single device
+  // Create HTML content for popup for a single device with complete inline styling
   const createDevicePopup = (device: Device) => {
     const statusClass = 
       device.status === 'Active' ? 'background: linear-gradient(135deg, #10B981, #059669); color: white;' : 
@@ -606,171 +606,201 @@ const MapComponent = () => {
       device.status === 'Inactive' ? '●' : 
       '●';
     
-    return `
+    // Use a template with aggressive inline styling to override all Leaflet defaults
+    return `<div style="
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+      width: 260px !important;
+      max-width: 260px !important;
+      min-width: 260px !important;
+      background: white !important;
+      border-radius: 12px !important;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+      border: none !important;
+      overflow: hidden !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      line-height: 1.4 !important;
+    ">
       <div style="
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        width: 260px;
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-        border: none;
-        overflow: hidden;
+        ${statusClass}
+        padding: 12px 16px !important;
+        text-align: center !important;
+        margin: 0 !important;
+        border-radius: 12px 12px 0 0 !important;
       ">
-        <!-- Header with Status -->
         <div style="
-          ${statusClass}
-          padding: 12px 16px;
-          text-align: center;
-        ">
+          font-size: 14px !important;
+          font-weight: 600 !important;
+          margin-bottom: 2px !important;
+          color: white !important;
+          line-height: 1.2 !important;
+        ">${device.name}</div>
+        <div style="
+          font-size: 11px !important;
+          opacity: 0.9 !important;
+          color: white !important;
+          line-height: 1.2 !important;
+        ">${statusIcon} ${device.status}</div>
+      </div>
+      
+      <div style="padding: 16px !important; margin: 0 !important; background: white !important;">
+        <div style="margin-bottom: 12px !important;">
           <div style="
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 2px;
-          ">${device.name}</div>
+            font-size: 12px !important;
+            color: #6b7280 !important;
+            margin-bottom: 2px !important;
+            line-height: 1.2 !important;
+          ">Device Model</div>
           <div style="
-            font-size: 11px;
-            opacity: 0.9;
-          ">${statusIcon} ${device.status}</div>
+            font-size: 14px !important;
+            font-weight: 500 !important;
+            color: #1f2937 !important;
+            line-height: 1.2 !important;
+          ">${device.model}</div>
         </div>
         
-        <!-- Content -->
-        <div style="padding: 16px;">
-          <div style="margin-bottom: 12px;">
-            <div style="
-              font-size: 12px;
-              color: #6b7280;
-              margin-bottom: 2px;
-            ">Device Model</div>
-            <div style="
-              font-size: 14px;
-              font-weight: 500;
-              color: #1f2937;
-            ">${device.model}</div>
-          </div>
-          
-          <div style="margin-bottom: 12px;">
-            <div style="
-              font-size: 12px;
-              color: #6b7280;
-              margin-bottom: 2px;
-            ">Type</div>
-            <div style="
-              font-size: 14px;
-              font-weight: 500;
-              color: #1f2937;
-            ">${device.type}</div>
-          </div>
-          
-          <div style="margin-bottom: 12px;">
-            <div style="
-              font-size: 12px;
-              color: #6b7280;
-              margin-bottom: 2px;
-            ">Location</div>
-            <div style="
-              font-size: 14px;
-              font-weight: 500;
-              color: #1f2937;
-            ">${device.location}</div>
-          </div>
-          
-          <div style="margin-bottom: 0;">
-            <div style="
-              font-size: 12px;
-              color: #6b7280;
-              margin-bottom: 2px;
-            ">IP Address</div>
-            <div style="
-              font-size: 13px;
-              font-weight: 500;
-              color: #1f2937;
-              font-family: 'Courier New', monospace;
-              background: #f8fafc;
-              padding: 6px 8px;
-              border-radius: 6px;
-              border: 1px solid #e2e8f0;
-            ">${device.ipAddress || 'N/A'}</div>
-          </div>
+        <div style="margin-bottom: 12px !important;">
+          <div style="
+            font-size: 12px !important;
+            color: #6b7280 !important;
+            margin-bottom: 2px !important;
+            line-height: 1.2 !important;
+          ">Type</div>
+          <div style="
+            font-size: 14px !important;
+            font-weight: 500 !important;
+            color: #1f2937 !important;
+            line-height: 1.2 !important;
+          ">${device.type}</div>
+        </div>
+        
+        <div style="margin-bottom: 12px !important;">
+          <div style="
+            font-size: 12px !important;
+            color: #6b7280 !important;
+            margin-bottom: 2px !important;
+            line-height: 1.2 !important;
+          ">Location</div>
+          <div style="
+            font-size: 14px !important;
+            font-weight: 500 !important;
+            color: #1f2937 !important;
+            line-height: 1.2 !important;
+          ">${device.location}</div>
+        </div>
+        
+        <div style="margin-bottom: 0 !important;">
+          <div style="
+            font-size: 12px !important;
+            color: #6b7280 !important;
+            margin-bottom: 2px !important;
+            line-height: 1.2 !important;
+          ">IP Address</div>
+          <div style="
+            font-size: 13px !important;
+            font-weight: 500 !important;
+            color: #1f2937 !important;
+            font-family: 'Courier New', monospace !important;
+            background: #f8fafc !important;
+            padding: 6px 8px !important;
+            border-radius: 6px !important;
+            border: 1px solid #e2e8f0 !important;
+            line-height: 1.2 !important;
+          ">${device.ipAddress || 'N/A'}</div>
         </div>
       </div>
-    `;
+    </div>`;
   };
 
   // Create HTML content for popup for a group of devices
   const createPopupContent = (devices: Device[]) => {
     const locationName = devices[0]?.location || 'Unknown';
     
-    const html = `
+    const html = `<div style="
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+      width: 300px !important;
+      max-width: 300px !important;
+      min-width: 300px !important;
+      background: white !important;
+      border-radius: 12px !important;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+      border: none !important;
+      overflow: hidden !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      line-height: 1.4 !important;
+    ">
       <div style="
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        width: 300px;
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-        border: none;
-        overflow: hidden;
+        background: linear-gradient(135deg, #3B82F6, #2563EB) !important;
+        color: white !important;
+        padding: 12px 16px !important;
+        text-align: center !important;
+        margin: 0 !important;
+        border-radius: 12px 12px 0 0 !important;
       ">
-        <!-- Header -->
         <div style="
-          background: linear-gradient(135deg, #3B82F6, #2563EB);
-          color: white;
-          padding: 12px 16px;
-          text-align: center;
-        ">
-          <div style="
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 2px;
-          ">📍 ${locationName}</div>
-          <div style="
-            font-size: 11px;
-            opacity: 0.9;
-          ">${devices.length} device${devices.length !== 1 ? 's' : ''}</div>
-        </div>
-        
-        <!-- Device List -->
+          font-size: 14px !important;
+          font-weight: 600 !important;
+          margin-bottom: 2px !important;
+          color: white !important;
+          line-height: 1.2 !important;
+        ">📍 ${locationName}</div>
         <div style="
-          max-height: 180px; 
-          overflow-y: auto;
-          padding: 12px;
-        ">
-          ${devices.map((device, index) => {
-            const statusColor = 
-              device.status === 'Active' ? '#10B981' : 
-              device.status === 'Inactive' ? '#EF4444' : 
-              '#F59E0B';
-            
-            return `
-              <div style="
-                padding: 8px 0;
-                ${index < devices.length - 1 ? 'border-bottom: 1px solid #f1f5f9;' : ''}
-              ">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <div>
-                    <div style="
-                      font-size: 13px;
-                      font-weight: 500;
-                      color: #1f2937;
-                      margin-bottom: 2px;
-                    ">${device.name}</div>
-                    <div style="
-                      font-size: 11px;
-                      color: #6b7280;
-                    ">${device.type}</div>
-                  </div>
-                  <div style="
-                    width: 8px;
-                    height: 8px;
-                    border-radius: 50%;
-                    background-color: ${statusColor};
-                  "></div>
-                </div>
-              </div>
-            `;
-          }).join('')}
-        </div>
+          font-size: 11px !important;
+          opacity: 0.9 !important;
+          color: white !important;
+          line-height: 1.2 !important;
+        ">${devices.length} device${devices.length !== 1 ? 's' : ''}</div>
       </div>
-    `;
+      
+      <div style="
+        max-height: 180px !important; 
+        overflow-y: auto !important;
+        padding: 12px !important;
+        margin: 0 !important;
+        background: white !important;
+      ">
+        ${devices.map((device, index) => {
+          const statusColor = 
+            device.status === 'Active' ? '#10B981' : 
+            device.status === 'Inactive' ? '#EF4444' : 
+            '#F59E0B';
+          
+          return `
+            <div style="
+              padding: 8px 0 !important;
+              margin: 0 !important;
+              ${index < devices.length - 1 ? 'border-bottom: 1px solid #f1f5f9 !important;' : ''}
+            ">
+              <div style="display: flex !important; justify-content: space-between !important; align-items: center !important; margin: 0 !important;">
+                <div style="margin: 0 !important;">
+                  <div style="
+                    font-size: 13px !important;
+                    font-weight: 500 !important;
+                    color: #1f2937 !important;
+                    margin-bottom: 2px !important;
+                    line-height: 1.2 !important;
+                  ">${device.name}</div>
+                  <div style="
+                    font-size: 11px !important;
+                    color: #6b7280 !important;
+                    margin: 0 !important;
+                    line-height: 1.2 !important;
+                  ">${device.type}</div>
+                </div>
+                <div style="
+                  width: 8px !important;
+                  height: 8px !important;
+                  border-radius: 50% !important;
+                  background-color: ${statusColor} !important;
+                  margin: 0 !important;
+                "></div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>`;
     
     return html;
   };
