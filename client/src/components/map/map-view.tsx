@@ -436,8 +436,8 @@ const MapComponent = () => {
             icon: createMarkerIcon(device) 
           });
           
-          // Add popup with DOM element
-          marker.bindPopup(createDevicePopup(device), {
+          // Create popup manually with setContent to ensure DOM elements are used
+          const popup = L.popup({
                   maxWidth: 350,
                   minWidth: 320,
                   className: '',
@@ -446,6 +446,9 @@ const MapComponent = () => {
                   keepInView: true,
                   autoClose: false
                 })
+                .setContent(createDevicePopup(device));
+          
+          marker.bindPopup(popup)
                 .on('click', () => {
                   setSelectedDevice(device);
                   
@@ -497,7 +500,7 @@ const MapComponent = () => {
               icon: createMarkerIcon(device) 
             });
             
-            marker.bindPopup(createDevicePopup(device), {
+            const popup = L.popup({
                     maxWidth: 350,
                     minWidth: 320,
                     className: '',
@@ -506,6 +509,9 @@ const MapComponent = () => {
                     keepInView: true,
                     autoClose: false
                   })
+                  .setContent(createDevicePopup(device));
+            
+            marker.bindPopup(popup)
                   .on('click', () => {
                     setSelectedDevice(device);
                   });
@@ -553,7 +559,7 @@ const MapComponent = () => {
                 createMarkerIcon(representativeDevice)
             });
             
-            clusterMarker.bindPopup(createPopupContent(devices), {
+            const clusterPopup = L.popup({
                            maxWidth: 380,
                            minWidth: 350,
                            className: '',
@@ -562,6 +568,9 @@ const MapComponent = () => {
                            keepInView: true,
                            autoClose: false
                          })
+                         .setContent(createPopupContent(devices));
+            
+            clusterMarker.bindPopup(clusterPopup)
                          .on('click', () => {
                            setSelectedDevice(devices[0]);
                          });
@@ -594,114 +603,122 @@ const MapComponent = () => {
     }
   }, [devices, statusFilter, typeFilter, clusterMode]);
 
-  // Create DOM element for device popup to bypass HTML parsing issues
+  // Create DOM element for device popup - simplified test version
   const createDevicePopup = (device: Device) => {
-    // Create the main container
+    // Test with a simpler but well-styled popup first
     const container = document.createElement('div');
-    container.style.cssText = `
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-      width: 320px !important;
-      max-width: 320px !important;
-      min-width: 320px !important;
-      background: white !important;
-      border-radius: 12px !important;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15) !important;
-      border: none !important;
-      overflow: hidden !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      line-height: 1.4 !important;
-    `;
+    
+    // Apply styles directly to ensure they take precedence
+    container.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    container.style.width = '300px';
+    container.style.backgroundColor = '#ffffff';
+    container.style.borderRadius = '16px';
+    container.style.boxShadow = '0 20px 40px rgba(0, 0, 0, 0.2)';
+    container.style.border = '2px solid #e5e7eb';
+    container.style.overflow = 'hidden';
+    container.style.margin = '0';
+    container.style.padding = '0';
     
     // Status colors
     const statusColor = device.status === 'Active' ? '#10B981' : device.status === 'Inactive' ? '#EF4444' : '#F59E0B';
     const statusEmoji = device.status === 'Active' ? '🟢' : device.status === 'Inactive' ? '🔴' : '🟡';
     
-    // Create header
-    const header = document.createElement('div');
-    header.style.cssText = `
-      background: linear-gradient(135deg, ${statusColor}, ${statusColor}dd) !important;
-      color: white !important;
-      padding: 16px 20px !important;
-      text-align: center !important;
-      margin: 0 !important;
-      border-radius: 12px 12px 0 0 !important;
-    `;
-    
-    const deviceName = document.createElement('div');
-    deviceName.style.cssText = `
-      font-size: 16px !important;
-      font-weight: 600 !important;
-      margin-bottom: 4px !important;
-      color: white !important;
-      line-height: 1.2 !important;
-    `;
-    deviceName.textContent = `${statusEmoji} ${device.name}`;
-    
-    const deviceType = document.createElement('div');
-    deviceType.style.cssText = `
-      font-size: 13px !important;
-      opacity: 0.9 !important;
-      color: white !important;
-      line-height: 1.2 !important;
-    `;
-    deviceType.textContent = device.type;
-    
-    header.appendChild(deviceName);
-    header.appendChild(deviceType);
-    
-    // Create content section
-    const content = document.createElement('div');
-    content.style.cssText = `
-      padding: 20px !important;
-      margin: 0 !important;
-      background: white !important;
-    `;
-    
-    // Helper function to create info rows
-    const createInfoRow = (label: string, value: string, isMonospace = false) => {
-      const row = document.createElement('div');
-      row.style.cssText = `margin-bottom: 16px !important;`;
+    // Create a simple but effective layout
+    container.innerHTML = `
+      <div style="
+        background: linear-gradient(135deg, ${statusColor}, ${statusColor}ee);
+        color: white;
+        padding: 20px;
+        text-align: center;
+        border-radius: 16px 16px 0 0;
+      ">
+        <div style="
+          font-size: 18px;
+          font-weight: 700;
+          margin-bottom: 8px;
+          color: white;
+        ">${statusEmoji} ${device.name}</div>
+        <div style="
+          font-size: 14px;
+          opacity: 0.95;
+          color: white;
+        ">${device.type}</div>
+      </div>
       
-      const labelDiv = document.createElement('div');
-      labelDiv.style.cssText = `
-        font-size: 12px !important;
-        color: #6b7280 !important;
-        margin-bottom: 4px !important;
-        line-height: 1.2 !important;
-        font-weight: 500 !important;
-      `;
-      labelDiv.textContent = label;
-      
-      const valueDiv = document.createElement('div');
-      valueDiv.style.cssText = `
-        font-size: 15px !important;
-        font-weight: 500 !important;
-        color: #1f2937 !important;
-        line-height: 1.3 !important;
-        ${isMonospace ? `
-          font-family: 'Monaco', 'Consolas', monospace !important;
-          background: #f8fafc !important;
-          padding: 8px 12px !important;
-          border-radius: 6px !important;
-          border: 1px solid #e2e8f0 !important;
-        ` : ''}
-      `;
-      valueDiv.textContent = value;
-      
-      row.appendChild(labelDiv);
-      row.appendChild(valueDiv);
-      return row;
-    };
-    
-    content.appendChild(createInfoRow('Device Model', device.model || 'Unknown'));
-    content.appendChild(createInfoRow('Status', device.status));
-    content.appendChild(createInfoRow('Location', device.location || 'Unknown'));
-    content.appendChild(createInfoRow('IP Address', device.ipAddress || 'N/A', true));
-    
-    // Assemble the popup
-    container.appendChild(header);
-    container.appendChild(content);
+      <div style="
+        padding: 24px;
+        background: white;
+      ">
+        <div style="margin-bottom: 16px;">
+          <div style="
+            font-size: 12px;
+            color: #9ca3af;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+          ">Model</div>
+          <div style="
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+          ">${device.model || 'Unknown'}</div>
+        </div>
+        
+        <div style="margin-bottom: 16px;">
+          <div style="
+            font-size: 12px;
+            color: #9ca3af;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+          ">Status</div>
+          <div style="
+            font-size: 16px;
+            font-weight: 600;
+            color: ${statusColor};
+          ">${device.status}</div>
+        </div>
+        
+        <div style="margin-bottom: 16px;">
+          <div style="
+            font-size: 12px;
+            color: #9ca3af;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+          ">Location</div>
+          <div style="
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+          ">${device.location || 'Unknown'}</div>
+        </div>
+        
+        <div>
+          <div style="
+            font-size: 12px;
+            color: #9ca3af;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+          ">IP Address</div>
+          <div style="
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            font-family: 'Monaco', 'Consolas', monospace;
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 8px;
+            border: 2px solid #e5e7eb;
+          ">${device.ipAddress || 'N/A'}</div>
+        </div>
+      </div>
+    `;
     
     return container;
   };
