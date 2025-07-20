@@ -436,10 +436,10 @@ const MapComponent = () => {
             icon: createMarkerIcon(device) 
           });
           
-          // Add popup and tooltip with custom options
+          // Add popup with DOM element
           marker.bindPopup(createDevicePopup(device), {
-                  maxWidth: 280,
-                  minWidth: 260,
+                  maxWidth: 350,
+                  minWidth: 320,
                   className: '',
                   closeButton: true,
                   autoPan: true,
@@ -498,8 +498,8 @@ const MapComponent = () => {
             });
             
             marker.bindPopup(createDevicePopup(device), {
-                    maxWidth: 280,
-                    minWidth: 260,
+                    maxWidth: 350,
+                    minWidth: 320,
                     className: '',
                     closeButton: true,
                     autoPan: true,
@@ -554,8 +554,8 @@ const MapComponent = () => {
             });
             
             clusterMarker.bindPopup(createPopupContent(devices), {
-                           maxWidth: 320,
-                           minWidth: 300,
+                           maxWidth: 380,
+                           minWidth: 350,
                            className: '',
                            closeButton: true,
                            autoPan: true,
@@ -594,215 +594,246 @@ const MapComponent = () => {
     }
   }, [devices, statusFilter, typeFilter, clusterMode]);
 
-  // Create HTML content for popup for a single device with complete inline styling
+  // Create DOM element for device popup to bypass HTML parsing issues
   const createDevicePopup = (device: Device) => {
-    const statusClass = 
-      device.status === 'Active' ? 'background: linear-gradient(135deg, #10B981, #059669); color: white;' : 
-      device.status === 'Inactive' ? 'background: linear-gradient(135deg, #EF4444, #DC2626); color: white;' : 
-      'background: linear-gradient(135deg, #F59E0B, #D97706); color: white;';
-    
-    const statusIcon = 
-      device.status === 'Active' ? '●' : 
-      device.status === 'Inactive' ? '●' : 
-      '●';
-    
-    // Use a template with aggressive inline styling to override all Leaflet defaults
-    return `<div style="
+    // Create the main container
+    const container = document.createElement('div');
+    container.style.cssText = `
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-      width: 260px !important;
-      max-width: 260px !important;
-      min-width: 260px !important;
+      width: 320px !important;
+      max-width: 320px !important;
+      min-width: 320px !important;
       background: white !important;
       border-radius: 12px !important;
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15) !important;
       border: none !important;
       overflow: hidden !important;
       margin: 0 !important;
       padding: 0 !important;
       line-height: 1.4 !important;
-    ">
-      <div style="
-        ${statusClass}
-        padding: 12px 16px !important;
-        text-align: center !important;
-        margin: 0 !important;
-        border-radius: 12px 12px 0 0 !important;
-      ">
-        <div style="
-          font-size: 14px !important;
-          font-weight: 600 !important;
-          margin-bottom: 2px !important;
-          color: white !important;
-          line-height: 1.2 !important;
-        ">${device.name}</div>
-        <div style="
-          font-size: 11px !important;
-          opacity: 0.9 !important;
-          color: white !important;
-          line-height: 1.2 !important;
-        ">${statusIcon} ${device.status}</div>
-      </div>
+    `;
+    
+    // Status colors
+    const statusColor = device.status === 'Active' ? '#10B981' : device.status === 'Inactive' ? '#EF4444' : '#F59E0B';
+    const statusEmoji = device.status === 'Active' ? '🟢' : device.status === 'Inactive' ? '🔴' : '🟡';
+    
+    // Create header
+    const header = document.createElement('div');
+    header.style.cssText = `
+      background: linear-gradient(135deg, ${statusColor}, ${statusColor}dd) !important;
+      color: white !important;
+      padding: 16px 20px !important;
+      text-align: center !important;
+      margin: 0 !important;
+      border-radius: 12px 12px 0 0 !important;
+    `;
+    
+    const deviceName = document.createElement('div');
+    deviceName.style.cssText = `
+      font-size: 16px !important;
+      font-weight: 600 !important;
+      margin-bottom: 4px !important;
+      color: white !important;
+      line-height: 1.2 !important;
+    `;
+    deviceName.textContent = `${statusEmoji} ${device.name}`;
+    
+    const deviceType = document.createElement('div');
+    deviceType.style.cssText = `
+      font-size: 13px !important;
+      opacity: 0.9 !important;
+      color: white !important;
+      line-height: 1.2 !important;
+    `;
+    deviceType.textContent = device.type;
+    
+    header.appendChild(deviceName);
+    header.appendChild(deviceType);
+    
+    // Create content section
+    const content = document.createElement('div');
+    content.style.cssText = `
+      padding: 20px !important;
+      margin: 0 !important;
+      background: white !important;
+    `;
+    
+    // Helper function to create info rows
+    const createInfoRow = (label: string, value: string, isMonospace = false) => {
+      const row = document.createElement('div');
+      row.style.cssText = `margin-bottom: 16px !important;`;
       
-      <div style="padding: 16px !important; margin: 0 !important; background: white !important;">
-        <div style="margin-bottom: 12px !important;">
-          <div style="
-            font-size: 12px !important;
-            color: #6b7280 !important;
-            margin-bottom: 2px !important;
-            line-height: 1.2 !important;
-          ">Device Model</div>
-          <div style="
-            font-size: 14px !important;
-            font-weight: 500 !important;
-            color: #1f2937 !important;
-            line-height: 1.2 !important;
-          ">${device.model}</div>
-        </div>
-        
-        <div style="margin-bottom: 12px !important;">
-          <div style="
-            font-size: 12px !important;
-            color: #6b7280 !important;
-            margin-bottom: 2px !important;
-            line-height: 1.2 !important;
-          ">Type</div>
-          <div style="
-            font-size: 14px !important;
-            font-weight: 500 !important;
-            color: #1f2937 !important;
-            line-height: 1.2 !important;
-          ">${device.type}</div>
-        </div>
-        
-        <div style="margin-bottom: 12px !important;">
-          <div style="
-            font-size: 12px !important;
-            color: #6b7280 !important;
-            margin-bottom: 2px !important;
-            line-height: 1.2 !important;
-          ">Location</div>
-          <div style="
-            font-size: 14px !important;
-            font-weight: 500 !important;
-            color: #1f2937 !important;
-            line-height: 1.2 !important;
-          ">${device.location}</div>
-        </div>
-        
-        <div style="margin-bottom: 0 !important;">
-          <div style="
-            font-size: 12px !important;
-            color: #6b7280 !important;
-            margin-bottom: 2px !important;
-            line-height: 1.2 !important;
-          ">IP Address</div>
-          <div style="
-            font-size: 13px !important;
-            font-weight: 500 !important;
-            color: #1f2937 !important;
-            font-family: 'Courier New', monospace !important;
-            background: #f8fafc !important;
-            padding: 6px 8px !important;
-            border-radius: 6px !important;
-            border: 1px solid #e2e8f0 !important;
-            line-height: 1.2 !important;
-          ">${device.ipAddress || 'N/A'}</div>
-        </div>
-      </div>
-    </div>`;
+      const labelDiv = document.createElement('div');
+      labelDiv.style.cssText = `
+        font-size: 12px !important;
+        color: #6b7280 !important;
+        margin-bottom: 4px !important;
+        line-height: 1.2 !important;
+        font-weight: 500 !important;
+      `;
+      labelDiv.textContent = label;
+      
+      const valueDiv = document.createElement('div');
+      valueDiv.style.cssText = `
+        font-size: 15px !important;
+        font-weight: 500 !important;
+        color: #1f2937 !important;
+        line-height: 1.3 !important;
+        ${isMonospace ? `
+          font-family: 'Monaco', 'Consolas', monospace !important;
+          background: #f8fafc !important;
+          padding: 8px 12px !important;
+          border-radius: 6px !important;
+          border: 1px solid #e2e8f0 !important;
+        ` : ''}
+      `;
+      valueDiv.textContent = value;
+      
+      row.appendChild(labelDiv);
+      row.appendChild(valueDiv);
+      return row;
+    };
+    
+    content.appendChild(createInfoRow('Device Model', device.model || 'Unknown'));
+    content.appendChild(createInfoRow('Status', device.status));
+    content.appendChild(createInfoRow('Location', device.location || 'Unknown'));
+    content.appendChild(createInfoRow('IP Address', device.ipAddress || 'N/A', true));
+    
+    // Assemble the popup
+    container.appendChild(header);
+    container.appendChild(content);
+    
+    return container;
   };
 
-  // Create HTML content for popup for a group of devices
+  // Create DOM element for multi-device popup
   const createPopupContent = (devices: Device[]) => {
     const locationName = devices[0]?.location || 'Unknown';
     
-    const html = `<div style="
+    // Create the main container
+    const container = document.createElement('div');
+    container.style.cssText = `
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-      width: 300px !important;
-      max-width: 300px !important;
-      min-width: 300px !important;
+      width: 350px !important;
+      max-width: 350px !important;
+      min-width: 350px !important;
       background: white !important;
       border-radius: 12px !important;
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15) !important;
       border: none !important;
       overflow: hidden !important;
       margin: 0 !important;
       padding: 0 !important;
       line-height: 1.4 !important;
-    ">
-      <div style="
-        background: linear-gradient(135deg, #3B82F6, #2563EB) !important;
-        color: white !important;
-        padding: 12px 16px !important;
-        text-align: center !important;
-        margin: 0 !important;
-        border-radius: 12px 12px 0 0 !important;
-      ">
-        <div style="
-          font-size: 14px !important;
-          font-weight: 600 !important;
-          margin-bottom: 2px !important;
-          color: white !important;
-          line-height: 1.2 !important;
-        ">📍 ${locationName}</div>
-        <div style="
-          font-size: 11px !important;
-          opacity: 0.9 !important;
-          color: white !important;
-          line-height: 1.2 !important;
-        ">${devices.length} device${devices.length !== 1 ? 's' : ''}</div>
-      </div>
-      
-      <div style="
-        max-height: 180px !important; 
-        overflow-y: auto !important;
-        padding: 12px !important;
-        margin: 0 !important;
-        background: white !important;
-      ">
-        ${devices.map((device, index) => {
-          const statusColor = 
-            device.status === 'Active' ? '#10B981' : 
-            device.status === 'Inactive' ? '#EF4444' : 
-            '#F59E0B';
-          
-          return `
-            <div style="
-              padding: 8px 0 !important;
-              margin: 0 !important;
-              ${index < devices.length - 1 ? 'border-bottom: 1px solid #f1f5f9 !important;' : ''}
-            ">
-              <div style="display: flex !important; justify-content: space-between !important; align-items: center !important; margin: 0 !important;">
-                <div style="margin: 0 !important;">
-                  <div style="
-                    font-size: 13px !important;
-                    font-weight: 500 !important;
-                    color: #1f2937 !important;
-                    margin-bottom: 2px !important;
-                    line-height: 1.2 !important;
-                  ">${device.name}</div>
-                  <div style="
-                    font-size: 11px !important;
-                    color: #6b7280 !important;
-                    margin: 0 !important;
-                    line-height: 1.2 !important;
-                  ">${device.type}</div>
-                </div>
-                <div style="
-                  width: 8px !important;
-                  height: 8px !important;
-                  border-radius: 50% !important;
-                  background-color: ${statusColor} !important;
-                  margin: 0 !important;
-                "></div>
-              </div>
-            </div>
-          `;
-        }).join('')}
-      </div>
-    </div>`;
+    `;
     
-    return html;
+    // Create header
+    const header = document.createElement('div');
+    header.style.cssText = `
+      background: linear-gradient(135deg, #3B82F6, #2563EB) !important;
+      color: white !important;
+      padding: 16px 20px !important;
+      text-align: center !important;
+      margin: 0 !important;
+      border-radius: 12px 12px 0 0 !important;
+    `;
+    
+    const locationTitle = document.createElement('div');
+    locationTitle.style.cssText = `
+      font-size: 16px !important;
+      font-weight: 600 !important;
+      margin-bottom: 4px !important;
+      color: white !important;
+      line-height: 1.2 !important;
+    `;
+    locationTitle.textContent = `📍 ${locationName}`;
+    
+    const deviceCount = document.createElement('div');
+    deviceCount.style.cssText = `
+      font-size: 13px !important;
+      opacity: 0.9 !important;
+      color: white !important;
+      line-height: 1.2 !important;
+    `;
+    deviceCount.textContent = `${devices.length} device${devices.length !== 1 ? 's' : ''}`;
+    
+    header.appendChild(locationTitle);
+    header.appendChild(deviceCount);
+    
+    // Create device list
+    const deviceList = document.createElement('div');
+    deviceList.style.cssText = `
+      max-height: 220px !important; 
+      overflow-y: auto !important;
+      padding: 16px !important;
+      margin: 0 !important;
+      background: white !important;
+    `;
+    
+    devices.forEach((device, index) => {
+      const statusColor = 
+        device.status === 'Active' ? '#10B981' : 
+        device.status === 'Inactive' ? '#EF4444' : 
+        '#F59E0B';
+      
+      const deviceRow = document.createElement('div');
+      deviceRow.style.cssText = `
+        padding: 12px 0 !important;
+        margin: 0 !important;
+        ${index < devices.length - 1 ? 'border-bottom: 1px solid #f1f5f9 !important;' : ''}
+      `;
+      
+      const deviceInfo = document.createElement('div');
+      deviceInfo.style.cssText = `
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        margin: 0 !important;
+      `;
+      
+      const deviceDetails = document.createElement('div');
+      deviceDetails.style.cssText = `margin: 0 !important;`;
+      
+      const deviceName = document.createElement('div');
+      deviceName.style.cssText = `
+        font-size: 14px !important;
+        font-weight: 500 !important;
+        color: #1f2937 !important;
+        margin-bottom: 2px !important;
+        line-height: 1.2 !important;
+      `;
+      deviceName.textContent = device.name;
+      
+      const deviceType = document.createElement('div');
+      deviceType.style.cssText = `
+        font-size: 12px !important;
+        color: #6b7280 !important;
+        margin: 0 !important;
+        line-height: 1.2 !important;
+      `;
+      deviceType.textContent = device.type;
+      
+      const statusDot = document.createElement('div');
+      statusDot.style.cssText = `
+        width: 10px !important;
+        height: 10px !important;
+        border-radius: 50% !important;
+        background-color: ${statusColor} !important;
+        margin: 0 !important;
+      `;
+      
+      deviceDetails.appendChild(deviceName);
+      deviceDetails.appendChild(deviceType);
+      deviceInfo.appendChild(deviceDetails);
+      deviceInfo.appendChild(statusDot);
+      deviceRow.appendChild(deviceInfo);
+      deviceList.appendChild(deviceRow);
+    });
+    
+    container.appendChild(header);
+    container.appendChild(deviceList);
+    
+    return container;
   };
 
   // Handle refreshing the map view
