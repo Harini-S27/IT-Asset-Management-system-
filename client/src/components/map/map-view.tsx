@@ -533,89 +533,100 @@ const MapComponent = () => {
   // Create HTML content for popup for a single device
   const createDevicePopup = (device: Device) => {
     const statusClass = 
-      device.status === 'Active' ? 'background-color: #D1FAE5; color: #065F46; border: 1px solid #A7F3D0;' : 
-      device.status === 'Inactive' ? 'background-color: #FEE2E2; color: #991B1B; border: 1px solid #FECACA;' : 
-      'background-color: #FEF3C7; color: #92400E; border: 1px solid #FDE68A;';
+      device.status === 'Active' ? 'background: linear-gradient(135deg, #10B981, #059669); color: white;' : 
+      device.status === 'Inactive' ? 'background: linear-gradient(135deg, #EF4444, #DC2626); color: white;' : 
+      'background: linear-gradient(135deg, #F59E0B, #D97706); color: white;';
     
     const statusIcon = 
-      device.status === 'Active' ? '🟢' : 
-      device.status === 'Inactive' ? '🔴' : 
-      '🟡';
+      device.status === 'Active' ? '●' : 
+      device.status === 'Inactive' ? '●' : 
+      '●';
     
     return `
       <div style="
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        padding: 16px;
-        min-width: 280px;
-        max-width: 320px;
+        width: 260px;
         background: white;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        border: none;
+        overflow: hidden;
       ">
-        <!-- Header -->
-        <div style="border-bottom: 1px solid #f3f4f6; padding-bottom: 12px; margin-bottom: 12px;">
-          <h3 style="
-            margin: 0 0 4px 0;
-            font-size: 16px;
-            font-weight: 600;
-            color: #1f2937;
-            line-height: 1.25;
-          ">${device.name}</h3>
-          <div style="
-            font-size: 13px;
-            color: #6b7280;
-            margin-bottom: 8px;
-          ">${device.model}</div>
-          <span style="
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 12px;
-            font-weight: 500;
-            padding: 4px 8px;
-            border-radius: 6px;
-            ${statusClass}
-          ">
-            ${statusIcon} ${device.status}
-          </span>
-        </div>
-        
-        <!-- Details -->
-        <div style="space-y: 8px;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-            <span style="font-size: 13px; font-weight: 500; color: #6b7280;">Type:</span>
-            <span style="font-size: 13px; color: #1f2937;">${device.type}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-            <span style="font-size: 13px; font-weight: 500; color: #6b7280;">Location:</span>
-            <span style="font-size: 13px; color: #1f2937;">${device.location}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-            <span style="font-size: 13px; font-weight: 500; color: #6b7280;">IP Address:</span>
-            <span style="
-              font-size: 13px; 
-              color: #1f2937;
-              font-family: 'Courier New', monospace;
-              background: #f9fafb;
-              padding: 2px 4px;
-              border-radius: 3px;
-            ">${device.ipAddress || 'N/A'}</span>
-          </div>
-        </div>
-        
-        <!-- Footer -->
+        <!-- Header with Status -->
         <div style="
-          margin-top: 12px;
-          padding-top: 12px;
-          border-top: 1px solid #f3f4f6;
+          ${statusClass}
+          padding: 12px 16px;
           text-align: center;
         ">
           <div style="
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 2px;
+          ">${device.name}</div>
+          <div style="
             font-size: 11px;
-            color: #9ca3af;
-            cursor: pointer;
-          ">📍 Click marker for detailed view</div>
+            opacity: 0.9;
+          ">${statusIcon} ${device.status}</div>
+        </div>
+        
+        <!-- Content -->
+        <div style="padding: 16px;">
+          <div style="margin-bottom: 12px;">
+            <div style="
+              font-size: 12px;
+              color: #6b7280;
+              margin-bottom: 2px;
+            ">Device Model</div>
+            <div style="
+              font-size: 14px;
+              font-weight: 500;
+              color: #1f2937;
+            ">${device.model}</div>
+          </div>
+          
+          <div style="margin-bottom: 12px;">
+            <div style="
+              font-size: 12px;
+              color: #6b7280;
+              margin-bottom: 2px;
+            ">Type</div>
+            <div style="
+              font-size: 14px;
+              font-weight: 500;
+              color: #1f2937;
+            ">${device.type}</div>
+          </div>
+          
+          <div style="margin-bottom: 12px;">
+            <div style="
+              font-size: 12px;
+              color: #6b7280;
+              margin-bottom: 2px;
+            ">Location</div>
+            <div style="
+              font-size: 14px;
+              font-weight: 500;
+              color: #1f2937;
+            ">${device.location}</div>
+          </div>
+          
+          <div style="margin-bottom: 0;">
+            <div style="
+              font-size: 12px;
+              color: #6b7280;
+              margin-bottom: 2px;
+            ">IP Address</div>
+            <div style="
+              font-size: 13px;
+              font-weight: 500;
+              color: #1f2937;
+              font-family: 'Courier New', monospace;
+              background: #f8fafc;
+              padding: 6px 8px;
+              border-radius: 6px;
+              border: 1px solid #e2e8f0;
+            ">${device.ipAddress || 'N/A'}</div>
+          </div>
         </div>
       </div>
     `;
@@ -628,90 +639,71 @@ const MapComponent = () => {
     const html = `
       <div style="
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        padding: 16px;
-        min-width: 300px;
-        max-width: 360px;
+        width: 300px;
         background: white;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        border: none;
+        overflow: hidden;
       ">
         <!-- Header -->
-        <div style="border-bottom: 1px solid #f3f4f6; padding-bottom: 12px; margin-bottom: 12px;">
-          <h3 style="
-            margin: 0 0 4px 0;
-            font-size: 16px;
+        <div style="
+          background: linear-gradient(135deg, #3B82F6, #2563EB);
+          color: white;
+          padding: 12px 16px;
+          text-align: center;
+        ">
+          <div style="
+            font-size: 14px;
             font-weight: 600;
-            color: #1f2937;
-            line-height: 1.25;
-          ">📍 ${locationName}</h3>
-          <p style="
-            margin: 0;
-            font-size: 13px;
-            color: #6b7280;
-          ">${devices.length} device${devices.length !== 1 ? 's' : ''} at this location</p>
+            margin-bottom: 2px;
+          ">📍 ${locationName}</div>
+          <div style="
+            font-size: 11px;
+            opacity: 0.9;
+          ">${devices.length} device${devices.length !== 1 ? 's' : ''}</div>
         </div>
         
         <!-- Device List -->
-        <div style="max-height: 200px; overflow-y: auto;">
-          ${devices.map(device => {
-            const statusStyle = 
-              device.status === 'Active' ? 'background-color: #D1FAE5; color: #065F46; border: 1px solid #A7F3D0;' : 
-              device.status === 'Inactive' ? 'background-color: #FEE2E2; color: #991B1B; border: 1px solid #FECACA;' : 
-              'background-color: #FEF3C7; color: #92400E; border: 1px solid #FDE68A;';
-            
-            const statusIcon = 
-              device.status === 'Active' ? '🟢' : 
-              device.status === 'Inactive' ? '🔴' : 
-              '🟡';
+        <div style="
+          max-height: 180px; 
+          overflow-y: auto;
+          padding: 12px;
+        ">
+          ${devices.map((device, index) => {
+            const statusColor = 
+              device.status === 'Active' ? '#10B981' : 
+              device.status === 'Inactive' ? '#EF4444' : 
+              '#F59E0B';
             
             return `
               <div style="
                 padding: 8px 0;
-                border-bottom: 1px solid #f3f4f6;
-                margin-bottom: 8px;
+                ${index < devices.length - 1 ? 'border-bottom: 1px solid #f1f5f9;' : ''}
               ">
-                <div style="
-                  font-size: 14px;
-                  font-weight: 500;
-                  color: #1f2937;
-                  margin-bottom: 4px;
-                ">${device.name}</div>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <div style="
+                      font-size: 13px;
+                      font-weight: 500;
+                      color: #1f2937;
+                      margin-bottom: 2px;
+                    ">${device.name}</div>
+                    <div style="
+                      font-size: 11px;
+                      color: #6b7280;
+                    ">${device.type}</div>
+                  </div>
                   <div style="
-                    font-size: 12px;
-                    color: #6b7280;
-                  ">${device.type}</div>
-                  <span style="
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 2px;
-                    font-size: 11px;
-                    font-weight: 500;
-                    padding: 2px 6px;
-                    border-radius: 4px;
-                    ${statusStyle}
-                  ">
-                    ${statusIcon} ${device.status}
-                  </span>
+                    width: 8px;
+                    height: 8px;
+                    border-radius: 50%;
+                    background-color: ${statusColor};
+                  "></div>
                 </div>
               </div>
             `;
           }).join('')}
-        </div>
-        
-        <!-- Footer -->
-        <div style="
-          margin-top: 12px;
-          padding-top: 12px;
-          border-top: 1px solid #f3f4f6;
-          text-align: center;
-        ">
-          <div style="
-            font-size: 11px;
-            color: #3b82f6;
-            cursor: pointer;
-          ">🔍 Click any device for detailed information</div>
         </div>
       </div>
     `;
@@ -853,31 +845,44 @@ const MapComponent = () => {
       
       {/* Custom CSS for popup styling */}
       <style>{`
-        .custom-device-popup .leaflet-popup-content-wrapper {
-          background: transparent !important;
-          border-radius: 0 !important;
-          box-shadow: none !important;
-          padding: 0 !important;
-        }
-        .custom-device-popup .leaflet-popup-content {
-          margin: 0 !important;
-          padding: 0 !important;
-          width: auto !important;
-        }
+        .custom-device-popup .leaflet-popup-content-wrapper,
         .custom-cluster-popup .leaflet-popup-content-wrapper {
           background: transparent !important;
           border-radius: 0 !important;
           box-shadow: none !important;
           padding: 0 !important;
+          border: none !important;
         }
+        .custom-device-popup .leaflet-popup-content,
         .custom-cluster-popup .leaflet-popup-content {
           margin: 0 !important;
           padding: 0 !important;
           width: auto !important;
+          line-height: 1 !important;
         }
-        .leaflet-popup-tip {
+        .custom-device-popup .leaflet-popup-tip,
+        .custom-cluster-popup .leaflet-popup-tip {
           background: white !important;
-          border: 1px solid #e5e7eb !important;
+          border: none !important;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+        }
+        .leaflet-popup-close-button {
+          background: rgba(0, 0, 0, 0.1) !important;
+          color: #666 !important;
+          border-radius: 50% !important;
+          width: 24px !important;
+          height: 24px !important;
+          font-size: 16px !important;
+          right: 8px !important;
+          top: 8px !important;
+          padding: 0 !important;
+          text-align: center !important;
+          line-height: 22px !important;
+          border: none !important;
+        }
+        .leaflet-popup-close-button:hover {
+          background: rgba(0, 0, 0, 0.2) !important;
+          color: #333 !important;
         }
       `}</style>
       
