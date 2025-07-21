@@ -88,3 +88,5 @@
 2025-07-21T04:45:14.939Z | TO: test@example.com | SUBJECT: [FAILED] ITAM System Test Email
 2025-07-21T04:58:57.951Z | TO: test@example.com | SUBJECT: [FAILED] ITAM System Test Email
 2025-07-21T04:59:18.340Z | TO: test@example.com | SUBJECT: ITAM System Test Email
+2025-07-21T05:17:02.909Z | TO: test@example.com | SUBJECT: ITAM System Test Email
+2025-07-21T05:17:26.957Z | TO: test@example.com | SUBJECT: Professional Email Test
