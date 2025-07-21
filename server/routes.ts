@@ -733,27 +733,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let device;
       let isNewDevice = false;
       
-      // Extract geolocation coordinates if available
+      // Extract geolocation coordinates if available (support both 'location' and 'geolocation' keys)
       let latitude = "37.7749";  // Default to San Francisco
       let longitude = "-122.4194";
       let deviceLocation = "Agent-Reported";
       
-      if (geolocation && geolocation.lat && geolocation.lon) {
-        latitude = geolocation.lat.toString();
-        longitude = geolocation.lon.toString();
+      const locationData = location || geolocation;
+      if (locationData && (locationData.latitude || locationData.lat) && (locationData.longitude || locationData.lon)) {
+        latitude = (locationData.latitude || locationData.lat).toString();
+        longitude = (locationData.longitude || locationData.lon).toString();
+        
+        console.log(`[DEVICE-UPDATE] Location data found:`, locationData);
         
         // Try multiple combinations for location string
-        if (geolocation.city && geolocation.region && geolocation.country) {
-          deviceLocation = `${geolocation.city}, ${geolocation.region}, ${geolocation.country}`;
-        } else if (geolocation.city && geolocation.region) {
-          deviceLocation = `${geolocation.city}, ${geolocation.region}`;
-        } else if (geolocation.city && geolocation.country) {
-          deviceLocation = `${geolocation.city}, ${geolocation.country}`;
-        } else if (geolocation.city) {
-          deviceLocation = geolocation.city;
-        } else if (geolocation.region) {
-          deviceLocation = geolocation.region;
+        if (locationData.city && locationData.region && locationData.country) {
+          deviceLocation = `${locationData.city}, ${locationData.region}, ${locationData.country}`;
+        } else if (locationData.city && locationData.region) {
+          deviceLocation = `${locationData.city}, ${locationData.region}`;
+        } else if (locationData.city && locationData.country) {
+          deviceLocation = `${locationData.city}, ${locationData.country}`;
+        } else if (locationData.city) {
+          deviceLocation = locationData.city;
+        } else if (locationData.region) {
+          deviceLocation = locationData.region;
         }
+        
+        console.log(`[DEVICE-UPDATE] Processed location: ${deviceLocation} (${latitude}, ${longitude})`);
+      } else {
+        console.log(`[DEVICE-UPDATE] No valid location data found in payload`);
       }
       
       if (existingDevice) {
@@ -811,7 +818,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             agentVersion: agentVersion || "Unknown",
             reportTime: reportTime || new Date().toISOString(),
             systemUptime: systemUptime || "Unknown",
-            geolocation: geolocation || {},
+            geolocation: locationData || geolocation || {},
             networkDevices: networkDevices || []
           })
         });
