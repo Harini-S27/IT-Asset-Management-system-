@@ -1143,10 +1143,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/email-config", async (req: Request, res: Response) => {
     try {
       const config = emailService.getConfiguration();
+      // Add sender email info to the response
+      config.senderEmail = process.env.SMTP_EMAIL || "admin@example";
       res.json(config);
     } catch (error) {
       console.error('Failed to fetch email configuration:', error);
       res.status(500).json({ message: "Failed to fetch email configuration" });
+    }
+  });
+
+  // Test email endpoint
+  app.post("/api/test-email", async (req: Request, res: Response) => {
+    try {
+      const { to = "test@example.com", subject = "ITAM System Test Email", message = "This is a test email from the ITAM system." } = req.body;
+      
+      const success = await emailService.sendTestEmail(to, subject, message);
+      
+      if (success) {
+        res.json({ 
+          message: "Test email sent successfully",
+          from: process.env.SMTP_EMAIL || "admin@example",
+          to,
+          subject,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        res.status(500).json({ message: "Failed to send test email" });
+      }
+    } catch (error) {
+      console.error("Test email error:", error);
+      res.status(500).json({ message: "Test email failed", error: (error as Error).message });
     }
   });
 

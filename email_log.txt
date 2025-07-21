@@ -83,3 +83,4 @@
 2025-07-18T17:05:29.581Z | TO: support@mi.com | SUBJECT: [FAILED] Device Inactive - Support Ticket TKT-2025-5063
 2025-07-18T17:05:29.735Z | TO: support@mi.com | SUBJECT: [FAILED] Device Inactive - Support Ticket TKT-2025-8146
 2025-07-18T17:05:29.887Z | TO: support@mi.com | SUBJECT: [FAILED] Device Inactive - Support Ticket TKT-2025-8322
+2025-07-21T04:05:52.722Z | TO: test@example.com | SUBJECT: [FAILED] ITAM Test - Real Email

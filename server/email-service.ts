@@ -350,6 +350,70 @@ Please contact our IT department if you need additional information about this d
     }
   }
 
+  // Send a test email
+  async sendTestEmail(to: string, subject: string, message: string): Promise<boolean> {
+    try {
+      if (!this.transporter) {
+        console.log('📧 Email Service: Transporter not initialized');
+        return false;
+      }
+
+      const mailOptions = {
+        from: process.env.SMTP_EMAIL || 'itam-system@company.com',
+        to,
+        subject,
+        text: message,
+        html: `<html><body><p>${message}</p><p><em>Sent from ITAM System at ${new Date().toLocaleString()}</em></p></body></html>`
+      };
+
+      const currentTimestamp = new Date().toISOString();
+
+      if (this.isConfigured) {
+        // Send real email
+        try {
+          const result = await this.transporter.sendMail(mailOptions);
+          console.log(`📧 Test email sent successfully to ${to}`);
+          console.log(`📧 Message ID: ${result.messageId}`);
+          console.log(`📧 From: ${process.env.SMTP_EMAIL || 'itam-system@company.com'}`);
+          
+          // Log to file
+          this.logEmailToFile(to, subject, currentTimestamp);
+          return true;
+        } catch (error: any) {
+          console.error('📧 Test email failed:', error.message);
+          
+          // Log failure to file
+          this.logEmailToFile(to, `[FAILED] ${subject}`, currentTimestamp);
+          
+          if (error.code === 'EAUTH') {
+            console.log('📧 Gmail Authentication Fix:');
+            console.log('📧 1. Enable 2-Factor Authentication on Google Account');
+            console.log('📧 2. Generate App Password: https://myaccount.google.com/apppasswords');
+            console.log('📧 3. Use App Password (not regular password) in SMTP_PASSWORD');
+          }
+          return false;
+        }
+      } else {
+        // Development mode - log email content
+        console.log('\n=== TEST EMAIL (Development Mode) ===');
+        console.log(`📧 To: ${to}`);
+        console.log(`📧 From: ${process.env.SMTP_EMAIL || 'itam-system@company.com'}`);
+        console.log(`📧 Subject: ${subject}`);
+        console.log(`📧 Message: ${message}`);
+        console.log(`📧 Timestamp: ${currentTimestamp}`);
+        console.log('📧 Test email logged - would be sent in production');
+        console.log('======================================\n');
+        
+        // Log to file even in development mode
+        this.logEmailToFile(to, subject, currentTimestamp);
+        return true;
+      }
+    } catch (error) {
+      console.error('📧 Test email error:', error);
+      return false;
+    }
+  }
+
   // Test method to verify email configuration
   async testConfiguration(): Promise<boolean> {
     try {
