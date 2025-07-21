@@ -376,9 +376,9 @@ export default function CmdbPage({}: CmdbPageProps) {
                       </div>
                     )}
                     {item.assetTag && (
-                      <div>
+                      <div className="space-y-2">
                         <Label className="text-sm font-medium text-muted-foreground">Asset Tag</Label>
-                        <p className="font-medium">{item.assetTag}</p>
+                        <p className="font-medium text-sm break-words">{item.assetTag}</p>
                       </div>
                     )}
                   </div>
@@ -392,17 +392,17 @@ export default function CmdbPage({}: CmdbPageProps) {
                   <CardTitle className="text-lg">Software Information</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4">
                     {item.operatingSystem && (
-                      <div>
+                      <div className="space-y-2">
                         <Label className="text-sm font-medium text-muted-foreground">Operating System</Label>
-                        <p className="font-medium">{item.operatingSystem}</p>
+                        <p className="font-medium text-sm break-words">{item.operatingSystem}</p>
                       </div>
                     )}
                     {item.osVersion && (
-                      <div>
+                      <div className="space-y-2">
                         <Label className="text-sm font-medium text-muted-foreground">OS Version</Label>
-                        <p className="font-medium">{item.osVersion}</p>
+                        <p className="font-medium text-sm break-words">{item.osVersion}</p>
                       </div>
                     )}
                   </div>
@@ -444,14 +444,14 @@ export default function CmdbPage({}: CmdbPageProps) {
                     <CardDescription>{record.changeDescription}</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
+                    <div className="grid grid-cols-1 gap-3 text-sm">
+                      <div className="space-y-1">
                         <Label className="text-xs font-medium text-muted-foreground">Requested By</Label>
-                        <p className="font-medium">{record.requestedBy || 'System'}</p>
+                        <p className="font-medium break-words">{record.requestedBy || 'System'}</p>
                       </div>
-                      <div>
+                      <div className="space-y-1">
                         <Label className="text-xs font-medium text-muted-foreground">Implemented By</Label>
-                        <p className="font-medium">{record.implementedBy || 'Pending'}</p>
+                        <p className="font-medium break-words">{record.implementedBy || 'Pending'}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -539,14 +539,14 @@ export default function CmdbPage({}: CmdbPageProps) {
                 </Badge>
               </div>
               <Separator className="my-4" />
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
+              <div className="grid grid-cols-1 gap-4 text-sm">
+                <div className="space-y-2">
                   <Label className="text-xs font-medium text-muted-foreground">Risk Level</Label>
                   <Badge variant="outline" className={RISK_COLORS[item.riskLevel as keyof typeof RISK_COLORS]}>
                     {item.riskLevel}
                   </Badge>
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label className="text-xs font-medium text-muted-foreground">Monitoring</Label>
                   <Badge variant="outline" className={item.monitoringEnabled ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
                     {item.monitoringEnabled ? 'Enabled' : 'Disabled'}
