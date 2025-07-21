@@ -438,7 +438,7 @@ export default function CmdbPage({}: CmdbPageProps) {
                         </Badge>
                       </div>
                       <span className="text-sm text-muted-foreground">
-                        {format(new Date(record.createdAt), 'MMM dd, yyyy HH:mm')}
+                        {record.createdAt ? format(new Date(record.createdAt), 'MMM dd, yyyy HH:mm') : 'Unknown'}
                       </span>
                     </div>
                     <CardDescription>{record.changeDescription}</CardDescription>
@@ -532,32 +532,39 @@ export default function CmdbPage({}: CmdbPageProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                  <span className="font-medium">Overall Compliance</span>
-                  <Badge variant="outline" className={`${COMPLIANCE_COLORS[item.complianceStatus as keyof typeof COMPLIANCE_COLORS]} text-sm px-3 py-1`}>
+                <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border">
+                  <div className="space-y-1">
+                    <span className="font-medium text-base">Overall Compliance</span>
+                    <p className="text-sm text-muted-foreground">Current compliance status for this configuration item</p>
+                  </div>
+                  <Badge variant="outline" className={`${COMPLIANCE_COLORS[item.complianceStatus as keyof typeof COMPLIANCE_COLORS]} text-sm px-4 py-2 font-medium`}>
                     {item.complianceStatus}
                   </Badge>
                 </div>
                 
                 <div className="grid grid-cols-1 gap-4">
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="space-y-1">
-                      <Label className="text-sm font-medium">Risk Assessment</Label>
-                      <p className="text-xs text-muted-foreground">Current risk level for this configuration item</p>
+                  <div className="space-y-4 p-4 bg-muted/20 rounded-lg border">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1 flex-1 min-w-0 pr-4">
+                        <Label className="text-sm font-medium break-words">Risk Assessment</Label>
+                        <p className="text-xs text-muted-foreground break-words">Current risk level for this configuration item</p>
+                      </div>
+                      <Badge variant="outline" className={`${RISK_COLORS[item.riskLevel as keyof typeof RISK_COLORS]} text-sm px-3 py-1 whitespace-nowrap`}>
+                        {item.riskLevel}
+                      </Badge>
                     </div>
-                    <Badge variant="outline" className={`${RISK_COLORS[item.riskLevel as keyof typeof RISK_COLORS]} text-sm px-3 py-1`}>
-                      {item.riskLevel}
-                    </Badge>
                   </div>
                   
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="space-y-1">
-                      <Label className="text-sm font-medium">Monitoring Status</Label>
-                      <p className="text-xs text-muted-foreground">Real-time monitoring configuration</p>
+                  <div className="space-y-4 p-4 bg-muted/20 rounded-lg border">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1 flex-1 min-w-0 pr-4">
+                        <Label className="text-sm font-medium break-words">Monitoring Status</Label>
+                        <p className="text-xs text-muted-foreground break-words">Real-time monitoring configuration</p>
+                      </div>
+                      <Badge variant="outline" className={`${item.monitoringEnabled ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"} text-sm px-3 py-1 whitespace-nowrap`}>
+                        {item.monitoringEnabled ? 'Enabled' : 'Disabled'}
+                      </Badge>
                     </div>
-                    <Badge variant="outline" className={`${item.monitoringEnabled ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"} text-sm px-3 py-1`}>
-                      {item.monitoringEnabled ? 'Enabled' : 'Disabled'}
-                    </Badge>
                   </div>
                 </div>
               </CardContent>
