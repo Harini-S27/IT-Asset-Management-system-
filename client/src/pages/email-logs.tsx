@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Mail, CheckCircle, Clock, AlertCircle, RefreshCw } from "lucide-react";
+import { Mail, CheckCircle, Clock, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 
@@ -133,10 +133,6 @@ export default function EmailLogsPage() {
           <Button onClick={triggerTestEmail} disabled={isLoading}>
             <Mail className="mr-2 h-4 w-4" />
             Trigger Test Email
-          </Button>
-          <Button variant="outline" onClick={() => refetch()}>
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh Email History
           </Button>
         </div>
       </div>
