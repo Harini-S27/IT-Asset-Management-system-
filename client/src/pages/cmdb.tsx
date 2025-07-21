@@ -289,28 +289,28 @@ export default function CmdbPage({}: CmdbPageProps) {
         </TabsList>
 
         <TabsContent value="details" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-4">
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Basic Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-2">
                     <Label className="text-sm font-medium text-muted-foreground">CI Type</Label>
-                    <p className="font-medium">{item.ciType}</p>
+                    <p className="font-medium text-sm break-words">{item.ciType}</p>
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label className="text-sm font-medium text-muted-foreground">Category</Label>
-                    <p className="font-medium">{item.category}</p>
+                    <p className="font-medium text-sm break-words">{item.category}</p>
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label className="text-sm font-medium text-muted-foreground">Environment</Label>
-                    <p className="font-medium">{item.environment}</p>
+                    <p className="font-medium text-sm break-words">{item.environment}</p>
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label className="text-sm font-medium text-muted-foreground">Owner</Label>
-                    <p className="font-medium">{item.owner || 'Not assigned'}</p>
+                    <p className="font-medium text-sm break-words">{item.owner || 'Not assigned'}</p>
                   </div>
                 </div>
               </CardContent>
@@ -321,26 +321,26 @@ export default function CmdbPage({}: CmdbPageProps) {
                 <CardTitle className="text-lg">Status & Compliance</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-2">
                     <Label className="text-sm font-medium text-muted-foreground">Lifecycle Status</Label>
                     <Badge variant="outline" className={LIFECYCLE_COLORS[item.lifecycleStatus as keyof typeof LIFECYCLE_COLORS]}>
                       {item.lifecycleStatus}
                     </Badge>
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label className="text-sm font-medium text-muted-foreground">Risk Level</Label>
                     <Badge variant="outline" className={RISK_COLORS[item.riskLevel as keyof typeof RISK_COLORS]}>
                       {item.riskLevel}
                     </Badge>
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label className="text-sm font-medium text-muted-foreground">Compliance</Label>
                     <Badge variant="outline" className={COMPLIANCE_COLORS[item.complianceStatus as keyof typeof COMPLIANCE_COLORS]}>
                       {item.complianceStatus}
                     </Badge>
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label className="text-sm font-medium text-muted-foreground">Monitoring</Label>
                     <Badge variant="outline" className={item.monitoringEnabled ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
                       {item.monitoringEnabled ? 'Enabled' : 'Disabled'}
@@ -356,23 +356,23 @@ export default function CmdbPage({}: CmdbPageProps) {
                   <CardTitle className="text-lg">Hardware Information</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4">
                     {item.manufacturer && (
-                      <div>
+                      <div className="space-y-2">
                         <Label className="text-sm font-medium text-muted-foreground">Manufacturer</Label>
-                        <p className="font-medium">{item.manufacturer}</p>
+                        <p className="font-medium text-sm break-words">{item.manufacturer}</p>
                       </div>
                     )}
                     {item.model && (
-                      <div>
+                      <div className="space-y-2">
                         <Label className="text-sm font-medium text-muted-foreground">Model</Label>
-                        <p className="font-medium">{item.model}</p>
+                        <p className="font-medium text-sm break-words">{item.model}</p>
                       </div>
                     )}
                     {item.serialNumber && (
-                      <div>
+                      <div className="space-y-2">
                         <Label className="text-sm font-medium text-muted-foreground">Serial Number</Label>
-                        <p className="font-medium">{item.serialNumber}</p>
+                        <p className="font-medium text-sm break-words">{item.serialNumber}</p>
                       </div>
                     )}
                     {item.assetTag && (
@@ -688,7 +688,7 @@ export default function CmdbPage({}: CmdbPageProps) {
           </CardHeader>
           <CardContent>
             {selectedConfigurationItem ? (
-              <ScrollArea className="h-[500px]">
+              <ScrollArea className="h-[600px] pr-4">
                 <ConfigurationItemDetails item={selectedConfigurationItem} />
               </ScrollArea>
             ) : (
