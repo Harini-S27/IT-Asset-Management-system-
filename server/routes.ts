@@ -729,6 +729,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if device already exists by hostname in main devices table
       const existingDevices = await storage.getDevices();
       const existingDevice = existingDevices.find(device => device.name === deviceName);
+      
+      // Also check if there's already a pending device for this hostname
+      const pendingDevices = await storage.getPendingDevices();
+      const existingPendingDevice = pendingDevices.find(device => 
+        device.name === deviceName && !device.isApproved && !device.isRejected
+      );
 
       let device;
       let isNewDevice = false;
@@ -798,7 +804,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.error(`Failed to create notification history for updated device ${deviceName}:`, error);
           }
         }
-      } else {
+      } else if (!existingPendingDevice) {
         // Create new pending device for approval with geolocation
         const deviceType = classifyDeviceType(deviceName, operatingSystem, installedSoftware);
         const pendingDevice = await storage.createPendingDevice({
@@ -860,6 +866,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch (error) {
           console.error(`Failed to create notification history for new pending device ${deviceName}:`, error);
         }
+      } else if (existingPendingDevice) {
+        // Update existing pending device
+        console.log(`[DEVICE-UPDATE] Updating existing pending device: ${deviceName}`);
+        device = {
+          id: existingPendingDevice.id,
+          name: existingPendingDevice.name,
+          model: existingPendingDevice.model,
+          type: existingPendingDevice.type,
+          status: existingPendingDevice.status,
+          location: existingPendingDevice.location,
+          ipAddress: existingPendingDevice.ipAddress,
+          latitude: existingPendingDevice.latitude,
+          longitude: existingPendingDevice.longitude,
+          lastUpdated: new Date().toISOString()
+        };
       }
 
       // Check for prohibited software if installed software is provided
@@ -908,8 +929,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (!existingNetworkDevice) {
               // Create new network-discovered device
               const deviceType = "Network Device";
-              const latitude = geolocation?.lat ? geolocation.lat.toString() : "37.7749";
-              const longitude = geolocation?.lon ? geolocation.lon.toString() : "-122.4194";
+              const latitude = locationData?.latitude || locationData?.lat || geolocation?.lat ? (locationData?.latitude || locationData?.lat || geolocation?.lat).toString() : "37.7749";
+              const longitude = locationData?.longitude || locationData?.lon || geolocation?.lon ? (locationData?.longitude || locationData?.lon || geolocation?.lon).toString() : "-122.4194";
               const location = deviceLocation;
               
               const pendingNetworkDevice = await storage.createPendingDevice({
