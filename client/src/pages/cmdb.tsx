@@ -281,18 +281,30 @@ export default function CmdbPage({}: CmdbPageProps) {
       </div>
 
       <Tabs defaultValue="details" className="w-full">
-        <div className="border-b bg-background/95 backdrop-blur sticky top-0 z-50 pb-2">
-          <TabsList className="grid w-full grid-cols-4 h-11 bg-muted/50 border">
-            <TabsTrigger value="details" className="text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
+        <div className="border-b bg-background/95 backdrop-blur sticky top-0 z-50 pb-3 pt-1">
+          <TabsList className="grid w-full grid-cols-4 h-12 bg-muted/50 border gap-1 p-1">
+            <TabsTrigger 
+              value="details" 
+              className="text-sm font-medium px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground rounded-md transition-all"
+            >
               Details
             </TabsTrigger>
-            <TabsTrigger value="changes" className="text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <TabsTrigger 
+              value="changes" 
+              className="text-sm font-medium px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground rounded-md transition-all"
+            >
               Changes
             </TabsTrigger>
-            <TabsTrigger value="relationships" className="text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <TabsTrigger 
+              value="relationships" 
+              className="text-sm font-medium px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground rounded-md transition-all"
+            >
               Relationships
             </TabsTrigger>
-            <TabsTrigger value="compliance" className="text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <TabsTrigger 
+              value="compliance" 
+              className="text-sm font-medium px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground rounded-md transition-all"
+            >
               Compliance
             </TabsTrigger>
           </TabsList>
