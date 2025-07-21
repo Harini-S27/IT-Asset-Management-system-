@@ -1126,56 +1126,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Email logs endpoint
-  app.get("/api/email-logs", async (req: Request, res: Response) => {
-    try {
-      const logs = emailService.getEmailLogs();
-      res.json(logs);
-    } catch (error) {
-      console.error('Failed to fetch email logs:', error);
-      res.status(500).json({ message: "Failed to fetch email logs" });
-    }
-  });
 
-  // Email configuration status endpoint
-  app.get("/api/email-config", async (req: Request, res: Response) => {
-    try {
-      const config = emailService.getConfiguration();
-      // Add sender email info to the response
-      const configWithSender = {
-        ...config,
-        senderEmail: process.env.SMTP_EMAIL || "admin@example"
-      };
-      res.json(configWithSender);
-    } catch (error) {
-      console.error('Failed to fetch email configuration:', error);
-      res.status(500).json({ message: "Failed to fetch email configuration" });
-    }
-  });
-
-  // Test email endpoint
-  app.post("/api/test-email", async (req: Request, res: Response) => {
-    try {
-      const { to = "test@example.com", subject = "ITAM System Test Email", message = "This is a test email from the ITAM system." } = req.body;
-      
-      const success = await emailService.sendTestEmail(to, subject, message);
-      
-      if (success) {
-        res.json({ 
-          message: "Test email sent successfully",
-          from: process.env.SMTP_EMAIL || "admin@example",
-          to,
-          subject,
-          timestamp: new Date().toISOString()
-        });
-      } else {
-        res.status(500).json({ message: "Failed to send test email" });
-      }
-    } catch (error) {
-      console.error("Test email error:", error);
-      res.status(500).json({ message: "Test email failed", error: (error as Error).message });
-    }
-  });
 
   // Network Discovery API endpoints
   app.get("/api/network-devices", async (req: Request, res: Response) => {
@@ -1965,6 +1916,140 @@ export async function registerRoutes(app: Express): Promise<Server> {
   console.log('🚨 Starting Alert Scheduler...');
   const { AlertScheduler } = await import('./alert-scheduler');
   AlertScheduler.startScheduler();
+
+  // ===== EMAIL NOTIFICATION ENDPOINTS =====
+  
+  // Test email endpoint
+  app.post("/api/test-email", async (req: Request, res: Response) => {
+    try {
+      const { to, subject, message } = req.body;
+      const emailTo = to || "test@example.com";
+      const emailSubject = subject || "ITAM System Test Email";
+      const emailMessage = message || "This is a test email from the ITAM system.";
+      
+      const success = await emailService.sendTestEmail(emailTo, emailSubject, emailMessage);
+      
+      if (success) {
+        res.json({
+          message: "Test email sent successfully",
+          from: process.env.SMTP_EMAIL || 'itam-system@company.com',
+          to: emailTo,
+          subject: emailSubject,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        res.status(500).json({
+          message: "Failed to send test email",
+          error: "Email service not configured or sending failed"
+        });
+      }
+    } catch (error) {
+      console.error('Test email endpoint error:', error);
+      res.status(500).json({
+        message: "Test email failed",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Send device notification email endpoint
+  app.post("/api/send-device-email", async (req: Request, res: Response) => {
+    try {
+      const { deviceName, deviceModel, deviceBrand, issueType, ticketNumber, serialNumber, timestamp } = req.body;
+      
+      if (!deviceName || !deviceModel || !issueType || !ticketNumber) {
+        return res.status(400).json({
+          message: "Missing required fields: deviceName, deviceModel, issueType, ticketNumber"
+        });
+      }
+
+      const deviceData = {
+        deviceName,
+        deviceModel,
+        deviceBrand,
+        issueType,
+        ticketNumber,
+        serialNumber,
+        timestamp: timestamp || new Date().toISOString()
+      };
+      
+      const success = await emailService.sendDeviceNotification(deviceData);
+      
+      if (success) {
+        res.json({
+          message: "Device notification email sent successfully",
+          ticketNumber,
+          deviceName,
+          issueType,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        res.status(500).json({
+          message: "Failed to send device notification email",
+          error: "Email service not configured, brand not supported, or sending failed"
+        });
+      }
+    } catch (error) {
+      console.error('Device email endpoint error:', error);
+      res.status(500).json({
+        message: "Device notification email failed",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Get email configuration
+  app.get("/api/email-config", async (req: Request, res: Response) => {
+    try {
+      const config = emailService.getConfiguration();
+      res.json({
+        ...config,
+        senderEmail: process.env.SMTP_EMAIL || 'not-configured'
+      });
+    } catch (error) {
+      console.error('Email config endpoint error:', error);
+      res.status(500).json({
+        message: "Failed to get email configuration"
+      });
+    }
+  });
+
+  // Get email logs
+  app.get("/api/email-logs", async (req: Request, res: Response) => {
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      
+      const logPath = path.join(process.cwd(), 'email_log.txt');
+      
+      if (!fs.existsSync(logPath)) {
+        return res.json([]);
+      }
+      
+      const logContent = fs.readFileSync(logPath, 'utf8');
+      const lines = logContent.trim().split('\n').filter(line => line.trim());
+      
+      const logs = lines.map((line, index) => {
+        const match = line.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z) \| TO: (.+?) \| SUBJECT: (.+)$/);
+        if (match) {
+          return {
+            id: index + 1,
+            timestamp: match[1],
+            recipient: match[2],
+            subject: match[3]
+          };
+        }
+        return null;
+      }).filter(Boolean);
+      
+      res.json(logs.reverse());
+    } catch (error) {
+      console.error('Email logs endpoint error:', error);
+      res.status(500).json({
+        message: "Failed to get email logs"
+      });
+    }
+  });
 
   return httpServer;
 }
