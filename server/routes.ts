@@ -715,11 +715,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Device update endpoint for Python agents
   app.post("/api/device-update", async (req: Request, res: Response) => {
     try {
+      console.log('[DEVICE-UPDATE] Received payload:', JSON.stringify(req.body, null, 2));
+      
       const { deviceName, operatingSystem, installedSoftware, ipAddress, location, agentVersion, reportTime, systemUptime, networkDevices, discoveredDevices, geolocation } = req.body;
 
       if (!deviceName || !operatingSystem) {
+        console.log('[DEVICE-UPDATE] Missing required fields:', { deviceName: !!deviceName, operatingSystem: !!operatingSystem });
         return res.status(400).json({ message: "Device name and operating system are required" });
       }
+      
+      console.log('[DEVICE-UPDATE] Processing device:', deviceName, 'OS:', operatingSystem);
 
       // Check if device already exists by hostname in main devices table
       const existingDevices = await storage.getDevices();
@@ -879,10 +884,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Process discovered network devices
+      // Process network devices from agent scan
       let discoveredDeviceCount = 0;
+      if (networkDevices && Array.isArray(networkDevices)) {
+        console.log(`[*] Processing ${networkDevices.length} network devices from enhanced agent...`);
+        console.log(`[*] Network devices:`, networkDevices.map(d => `${d.ip} (${d.mac || 'No MAC'})`));
+        
+        for (const networkDevice of networkDevices) {
+          try {
+            // Check if this network device already exists
+            const existingNetworkDevice = existingDevices.find(d => 
+              d.ipAddress === networkDevice.ip || 
+              d.name === networkDevice.ip
+            );
+            
+            if (!existingNetworkDevice) {
+              // Create new network-discovered device
+              const deviceType = "Network Device";
+              const latitude = geolocation?.lat ? geolocation.lat.toString() : "37.7749";
+              const longitude = geolocation?.lon ? geolocation.lon.toString() : "-122.4194";
+              const location = deviceLocation;
+              
+              const pendingNetworkDevice = await storage.createPendingDevice({
+                name: networkDevice.ip,
+                type: deviceType,
+                model: "Network-Discovered Device",
+                status: "Active",
+                location: "Other" as const,
+                ipAddress: networkDevice.ip,
+                macAddress: networkDevice.mac || "Unknown",
+                latitude: latitude,
+                longitude: longitude,
+                discoveryMethod: "agent-network-scan",
+                discoveryData: JSON.stringify({
+                  scanSource: deviceName,
+                  scanTime: reportTime || new Date().toISOString(),
+                  macAddress: networkDevice.mac,
+                  agentVersion: agentVersion || "Unknown"
+                })
+              });
+              
+              discoveredDeviceCount++;
+              console.log(`[*] Created pending network device: ${networkDevice.ip} (MAC: ${networkDevice.mac || 'Unknown'})`);
+              
+              // Broadcast new network device for approval
+              broadcastToClients({
+                type: 'DEVICE_ADDED',
+                data: {
+                  id: pendingNetworkDevice.id,
+                  name: pendingNetworkDevice.name,
+                  model: pendingNetworkDevice.model,
+                  type: pendingNetworkDevice.type,
+                  status: pendingNetworkDevice.status,
+                  location: pendingNetworkDevice.location,
+                  ipAddress: pendingNetworkDevice.ipAddress,
+                  latitude: pendingNetworkDevice.latitude,
+                  longitude: pendingNetworkDevice.longitude,
+                  lastUpdated: pendingNetworkDevice.createdAt
+                },
+                timestamp: new Date().toISOString(),
+                isNewDevice: true,
+                isPending: true
+              });
+              
+              // Create notification history
+              try {
+                await storage.createNotificationHistory({
+                  deviceId: pendingNetworkDevice.id,
+                  deviceName: pendingNetworkDevice.name,
+                  deviceModel: pendingNetworkDevice.model,
+                  deviceType: pendingNetworkDevice.type,
+                  deviceStatus: pendingNetworkDevice.status,
+                  deviceLocation: pendingNetworkDevice.location || 'Unknown',
+                  notificationType: 'DEVICE_ADDED'
+                });
+              } catch (error) {
+                console.error(`Failed to create notification history for network device ${networkDevice.ip}:`, error);
+              }
+            }
+          } catch (error) {
+            console.error(`Error processing network device ${networkDevice.ip}:`, error);
+          }
+        }
+      }
+      
+      // Also process legacy discoveredDevices format for backward compatibility
       if (discoveredDevices && Array.isArray(discoveredDevices)) {
-        console.log(`[*] Processing ${discoveredDevices.length} discovered network devices...`);
+        console.log(`[*] Processing ${discoveredDevices.length} discovered network devices (legacy format)...`);
         console.log(`[*] Discovered devices:`, discoveredDevices.map(d => `${d.name} (${d.ipAddress})`));
         
         for (const discoveredDevice of discoveredDevices) {
@@ -945,52 +1033,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Process network devices discovered by enhanced agent
-      let networkDeviceCount = 0;
-      if (networkDevices && Array.isArray(networkDevices)) {
-        console.log(`[*] Processing ${networkDevices.length} network devices from enhanced agent...`);
-        
-        for (const networkDevice of networkDevices) {
-          try {
-            // Check if this network device already exists
-            const existingNetworkDevice = existingDevices.find(d => 
-              d.ipAddress === networkDevice.ip || 
-              (networkDevice.mac && d.name === networkDevice.hostname)
-            );
-            
-            if (!existingNetworkDevice) {
-              // Use classification function with vendor information
-              const deviceName = networkDevice.hostname || networkDevice.ip;
-              const vendorInfo = networkDevice.vendor || "Unknown";
-              const deviceType = classifyDeviceType(deviceName, vendorInfo, []);
-              const deviceModel = `${vendorInfo} ${deviceType}`;
-              
-              // Create new network device entry
-              const newNetworkDevice = await storage.createDevice({
-                name: networkDevice.hostname || networkDevice.ip,
-                type: deviceType as any,
-                model: deviceModel,
-                status: "Active",
-                location: "Other" as const,
-                ipAddress: networkDevice.ip,
-                latitude: latitude,
-                longitude: longitude
-              });
-              
-              console.log(`[+] Created new network device: ${newNetworkDevice.name} (${newNetworkDevice.ipAddress}) - Type: ${deviceType}`);
-              networkDeviceCount++;
-            } else {
-              // Update existing device's last seen time
-              await storage.updateDevice(existingNetworkDevice.id, {
-                status: "Active"
-              });
-              console.log(`[=] Updated network device: ${existingNetworkDevice.name} (${existingNetworkDevice.ipAddress})`);
-            }
-          } catch (error) {
-            console.error(`[!] Failed to process network device ${networkDevice.ip}:`, error);
-          }
-        }
-      }
+
 
       res.json({
         success: true,
@@ -998,7 +1041,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         deviceId: device?.id,
         detectedThreats,
         discoveredDeviceCount,
-        networkDeviceCount,
+
         agentVersion: agentVersion || "unknown",
         lastUpdate: new Date().toISOString(),
         geolocation: geolocation || {}
