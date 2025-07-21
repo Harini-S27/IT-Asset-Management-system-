@@ -396,7 +396,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: "Workstation",
         model: "Test Device - Windows 11",
         status: "Active",
-        location: "Agent-Reported",
+        location: "Other",
         ipAddress: `192.168.1.${Math.floor(Math.random() * 254) + 1}`,
         latitude: "37.7749",
         longitude: "-122.4194"
@@ -693,7 +693,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Only update if classification has changed
         if (device.type !== newDeviceType) {
           await storage.updateDevice(device.id, {
-            type: newDeviceType
+            type: newDeviceType as any
           });
           console.log(`[RECLASSIFY] ${device.name}: ${device.type} → ${newDeviceType}`);
           reclassifiedCount++;
@@ -758,7 +758,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           model: `${operatingSystem} Device`,
           ipAddress: ipAddress || "Unknown",
           status: "Active",
-          location: deviceLocation,
+          location: "Other" as const,
           latitude: latitude,
           longitude: longitude
         });
@@ -771,18 +771,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         // Create notification history record for device update
-        try {
-          await storage.createNotificationHistory({
-            deviceId: device.id,
-            deviceName: device.name,
-            deviceModel: device.model,
-            deviceType: device.type,
-            deviceStatus: device.status,
-            deviceLocation: device.location || 'Unknown',
-            notificationType: 'DEVICE_UPDATED'
-          });
-        } catch (error) {
-          console.error(`Failed to create notification history for updated device ${deviceName}:`, error);
+        if (device) {
+          try {
+            await storage.createNotificationHistory({
+              deviceId: device.id,
+              deviceName: device.name,
+              deviceModel: device.model,
+              deviceType: device.type,
+              deviceStatus: device.status,
+              deviceLocation: device.location || 'Unknown',
+              notificationType: 'DEVICE_UPDATED'
+            });
+          } catch (error) {
+            console.error(`Failed to create notification history for updated device ${deviceName}:`, error);
+          }
         }
       } else {
         // Create new pending device for approval with geolocation
@@ -792,7 +794,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: deviceType,
           model: `${operatingSystem} Device`,
           status: "Active",
-          location: deviceLocation,
+          location: "Other" as const,
           ipAddress: ipAddress || "Unknown",
           macAddress: "Unknown",
           latitude: latitude,
@@ -900,12 +902,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Create new network device entry
               const networkDevice = await storage.createDevice({
                 name: discoveredDevice.name || discoveredDevice.ipAddress,
-                type: deviceType,
+                type: deviceType as any,
                 model: deviceModel,
                 status: "Active",
-                location: "Network-Discovered",
+                location: "Other",
                 ipAddress: discoveredDevice.ipAddress,
-                macAddress: discoveredDevice.macAddress || "Unknown",
                 latitude: "13.0827",  // Chennai coordinates
                 longitude: "80.2707"
               });
@@ -924,18 +925,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // If existing device is Auto-Discovered, upgrade it to Network-Discovered
               if (existingNetworkDevice.location === "Auto-Discovered") {
                 await storage.updateDevice(existingNetworkDevice.id, {
-                  location: "Network-Discovered",
+                  location: "Other",
                   status: "Active",
                   latitude: "13.0827",  // Chennai coordinates
-                  longitude: "80.2707",
-                  lastUpdated: new Date().toISOString()
+                  longitude: "80.2707"
                 });
                 console.log(`[↑] Upgraded auto-discovered device to network-discovered: ${existingNetworkDevice.name} (${existingNetworkDevice.ipAddress})`);
               } else {
                 // Update existing network device's last seen time
                 await storage.updateDevice(existingNetworkDevice.id, {
-                  status: "Active",
-                  lastUpdated: new Date().toISOString()
+                  status: "Active"
                 });
                 console.log(`[=] Updated existing device: ${existingNetworkDevice.name} (${existingNetworkDevice.ipAddress}) - Location: ${existingNetworkDevice.location}`);
               }
@@ -969,10 +968,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Create new network device entry
               const newNetworkDevice = await storage.createDevice({
                 name: networkDevice.hostname || networkDevice.ip,
-                type: deviceType,
+                type: deviceType as any,
                 model: deviceModel,
                 status: "Active",
-                location: deviceLocation,
+                location: "Other" as const,
                 ipAddress: networkDevice.ip,
                 latitude: latitude,
                 longitude: longitude
@@ -983,8 +982,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             } else {
               // Update existing device's last seen time
               await storage.updateDevice(existingNetworkDevice.id, {
-                status: "Active",
-                lastUpdated: new Date().toISOString()
+                status: "Active"
               });
               console.log(`[=] Updated network device: ${existingNetworkDevice.name} (${existingNetworkDevice.ipAddress})`);
             }
@@ -1144,8 +1142,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const config = emailService.getConfiguration();
       // Add sender email info to the response
-      config.senderEmail = process.env.SMTP_EMAIL || "admin@example";
-      res.json(config);
+      const configWithSender = {
+        ...config,
+        senderEmail: process.env.SMTP_EMAIL || "admin@example"
+      };
+      res.json(configWithSender);
     } catch (error) {
       console.error('Failed to fetch email configuration:', error);
       res.status(500).json({ message: "Failed to fetch email configuration" });
@@ -1194,7 +1195,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(device);
     } catch (error) {
       console.error('Network device creation error:', error);
-      res.status(500).json({ message: "Failed to create network device", error: error.message });
+      res.status(500).json({ message: "Failed to create network device", error: (error as Error).message });
     }
   });
 
@@ -1727,7 +1728,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           alertDate: new Date(),
           warrantyExpirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
           assignedTo: 'IT Team',
-          status: 'Active'
+          status: 'Active',
+          isRecurring: false,
+          emailNotificationSent: false,
+          escalationLevel: 0,
+          tags: []
         },
         {
           deviceId: devices[Math.min(1, devices.length - 1)].id,
@@ -1738,7 +1743,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           alertDate: new Date(),
           endOfLifeDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days from now
           assignedTo: 'System Admin',
-          status: 'Active'
+          status: 'Active',
+          isRecurring: false,
+          emailNotificationSent: false,
+          escalationLevel: 0,
+          tags: []
         },
         {
           deviceId: devices[Math.min(2, devices.length - 1)].id,
@@ -1749,7 +1758,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           alertDate: new Date(),
           maintenanceDueDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
           assignedTo: 'Maintenance Team',
-          status: 'Active'
+          status: 'Active',
+          isRecurring: false,
+          emailNotificationSent: false,
+          escalationLevel: 0,
+          tags: []
         }
       ];
 
@@ -1863,7 +1876,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.updateDeviceWarranty(device.id, warrantyData);
           results.success++;
         } catch (error) {
-          results.errors.push(`Error processing ${row.deviceName}: ${error}`);
+          results.errors.push(`Error processing ${row.deviceName}: ${(error as Error).message}`);
           results.failed++;
         }
       }
