@@ -505,12 +505,11 @@ export default function CmdbPage({}: CmdbPageProps) {
                 </Card>
               ))}
               {relationships.length === 0 && (
-                <Card>
-                  <CardContent className="text-center py-8">
-                    <Link className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">No relationships found</p>
-                  </CardContent>
-                </Card>
+                <div className="text-center py-12">
+                  <Link className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
+                  <h3 className="text-lg font-medium text-muted-foreground mb-2">No relationships found</h3>
+                  <p className="text-sm text-muted-foreground">This configuration item has no defined relationships with other items.</p>
+                </div>
               )}
             </div>
           </ScrollArea>
@@ -524,37 +523,64 @@ export default function CmdbPage({}: CmdbPageProps) {
               Run Compliance Check
             </Button>
           </div>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Current Compliance Status</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
                   <Shield className="h-5 w-5" />
+                  Current Compliance Status
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                   <span className="font-medium">Overall Compliance</span>
-                </div>
-                <Badge variant="outline" className={COMPLIANCE_COLORS[item.complianceStatus as keyof typeof COMPLIANCE_COLORS]}>
-                  {item.complianceStatus}
-                </Badge>
-              </div>
-              <Separator className="my-4" />
-              <div className="grid grid-cols-1 gap-4 text-sm">
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium text-muted-foreground">Risk Level</Label>
-                  <Badge variant="outline" className={RISK_COLORS[item.riskLevel as keyof typeof RISK_COLORS]}>
-                    {item.riskLevel}
+                  <Badge variant="outline" className={`${COMPLIANCE_COLORS[item.complianceStatus as keyof typeof COMPLIANCE_COLORS]} text-sm px-3 py-1`}>
+                    {item.complianceStatus}
                   </Badge>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium text-muted-foreground">Monitoring</Label>
-                  <Badge variant="outline" className={item.monitoringEnabled ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
-                    {item.monitoringEnabled ? 'Enabled' : 'Disabled'}
-                  </Badge>
+                
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="space-y-1">
+                      <Label className="text-sm font-medium">Risk Assessment</Label>
+                      <p className="text-xs text-muted-foreground">Current risk level for this configuration item</p>
+                    </div>
+                    <Badge variant="outline" className={`${RISK_COLORS[item.riskLevel as keyof typeof RISK_COLORS]} text-sm px-3 py-1`}>
+                      {item.riskLevel}
+                    </Badge>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="space-y-1">
+                      <Label className="text-sm font-medium">Monitoring Status</Label>
+                      <p className="text-xs text-muted-foreground">Real-time monitoring configuration</p>
+                    </div>
+                    <Badge variant="outline" className={`${item.monitoringEnabled ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"} text-sm px-3 py-1`}>
+                      {item.monitoringEnabled ? 'Enabled' : 'Disabled'}
+                    </Badge>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Compliance Rules</CardTitle>
+                <CardDescription>Configuration compliance requirements and policies</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <Shield className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
+                  <h3 className="text-lg font-medium text-muted-foreground mb-2">No compliance rules defined</h3>
+                  <p className="text-sm text-muted-foreground mb-4">Define compliance rules to automatically monitor this configuration item.</p>
+                  <Button variant="outline" size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Define Compliance Rules
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
