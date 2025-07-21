@@ -280,17 +280,25 @@ export default function CmdbPage({}: CmdbPageProps) {
         </div>
       </div>
 
-      <Tabs defaultValue="details" className="w-full space-y-6">
-        <div className="border-b bg-background sticky top-0 z-10">
-          <TabsList className="grid w-full grid-cols-4 h-12 bg-muted/30">
-            <TabsTrigger value="details" className="text-sm font-medium data-[state=active]:bg-background">Details</TabsTrigger>
-            <TabsTrigger value="changes" className="text-sm font-medium data-[state=active]:bg-background">Changes</TabsTrigger>
-            <TabsTrigger value="relationships" className="text-sm font-medium data-[state=active]:bg-background">Relationships</TabsTrigger>
-            <TabsTrigger value="compliance" className="text-sm font-medium data-[state=active]:bg-background">Compliance</TabsTrigger>
+      <Tabs defaultValue="details" className="w-full">
+        <div className="border-b bg-background/95 backdrop-blur sticky top-0 z-50 pb-2">
+          <TabsList className="grid w-full grid-cols-4 h-11 bg-muted/50 border">
+            <TabsTrigger value="details" className="text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              Details
+            </TabsTrigger>
+            <TabsTrigger value="changes" className="text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              Changes
+            </TabsTrigger>
+            <TabsTrigger value="relationships" className="text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              Relationships
+            </TabsTrigger>
+            <TabsTrigger value="compliance" className="text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              Compliance
+            </TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent value="details" className="space-y-4 mt-6">
+        <TabsContent value="details" className="space-y-6 pt-6">
           <div className="grid grid-cols-1 gap-4">
             <Card>
               <CardHeader>
@@ -414,7 +422,7 @@ export default function CmdbPage({}: CmdbPageProps) {
           </div>
         </TabsContent>
 
-        <TabsContent value="changes" className="space-y-4 mt-6">
+        <TabsContent value="changes" className="space-y-6 pt-6">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">Change History</h3>
             <Button variant="outline" size="sm">
@@ -471,7 +479,7 @@ export default function CmdbPage({}: CmdbPageProps) {
           </ScrollArea>
         </TabsContent>
 
-        <TabsContent value="relationships" className="space-y-4 mt-6">
+        <TabsContent value="relationships" className="space-y-6 pt-6">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">CI Relationships</h3>
             <Button variant="outline" size="sm">
@@ -517,7 +525,7 @@ export default function CmdbPage({}: CmdbPageProps) {
           </ScrollArea>
         </TabsContent>
 
-        <TabsContent value="compliance" className="space-y-4 mt-6">
+        <TabsContent value="compliance" className="space-y-6 pt-6">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">Compliance Information</h3>
             <Button variant="outline" size="sm">
