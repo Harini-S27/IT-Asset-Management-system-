@@ -942,7 +942,7 @@ const Devices = () => {
                 </div>
                 <div>
                   <h4 className="text-sm font-medium text-gray-500">Model</h4>
-                  <p>{selectedDevice.model}</p>
+                  <p className="break-words text-sm max-w-full overflow-hidden">{selectedDevice.model}</p>
                 </div>
               </div>
               

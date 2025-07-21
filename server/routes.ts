@@ -763,7 +763,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           model: `${operatingSystem} Device`,
           ipAddress: ipAddress || "Unknown",
           status: "Active",
-          location: "Other" as const,
+          location: deviceLocation as any,
           latitude: latitude,
           longitude: longitude
         });
@@ -799,7 +799,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: deviceType,
           model: `${operatingSystem} Device`,
           status: "Active",
-          location: "Other" as const,
+          location: deviceLocation as any,
           ipAddress: ipAddress || "Unknown",
           macAddress: "Unknown",
           latitude: latitude,
