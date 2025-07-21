@@ -79,31 +79,39 @@ export default function EmailLogsPage() {
 
   const triggerTestEmail = async () => {
     try {
-      // Trigger a test device status change to show email notification
-      const response = await fetch('/api/devices/18', {
-        method: 'PATCH',
+      // Send a test email directly using the test email endpoint
+      const response = await fetch('/api/test-email', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ status: 'Damage' }),
+        body: JSON.stringify({ 
+          to: 'support@apple.com',
+          subject: 'ITAM System Test Email',
+          message: 'This is a test email from the IT Asset Management system to verify email notifications are working correctly.'
+        }),
       });
 
       if (response.ok) {
+        const result = await response.json();
         toast({
-          title: "Test Email Triggered",
-          description: "Check console logs for email notification details",
+          title: "Test Email Sent",
+          description: `Email sent successfully to ${result.to}`,
         });
         
         // Reload logs after a short delay
         setTimeout(() => {
           refetch();
         }, 2000);
+      } else {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to send test email');
       }
     } catch (error) {
       console.error('Failed to trigger test email:', error);
       toast({
         title: "Error",
-        description: "Failed to trigger test email",
+        description: `Failed to send test email: ${(error as Error).message}`,
         variant: "destructive",
       });
     }
