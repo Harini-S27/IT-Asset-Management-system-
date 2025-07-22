@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Ticket, AlertTriangle, Clock, CheckCircle, XCircle, Search, Filter, Plus, MoreVertical, Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import { Ticket, AlertTriangle, Clock, CheckCircle, XCircle, Search, Filter, Plus, MoreVertical, Eye, ChevronLeft, ChevronRight, Monitor, Camera, Server, Router, Smartphone, Laptop, HardDrive, Printer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
@@ -212,6 +212,35 @@ export default function Tickets() {
     if (!deviceId) return "N/A";
     const device = devices.find(d => d.id === deviceId);
     return device ? device.name : `Device #${deviceId}`;
+  };
+
+  const getDeviceIcon = (category: string) => {
+    const iconClass = "h-4 w-4 text-blue-600";
+    
+    switch (category.toLowerCase()) {
+      case 'workstation':
+      case 'desktop':
+        return <Monitor className={iconClass} />;
+      case 'security camera':
+      case 'camera':
+        return <Camera className={iconClass} />;
+      case 'server':
+        return <Server className={iconClass} />;
+      case 'network device':
+      case 'router':
+        return <Router className={iconClass} />;
+      case 'mobile device':
+      case 'mobile':
+        return <Smartphone className={iconClass} />;
+      case 'laptop':
+        return <Laptop className={iconClass} />;
+      case 'storage':
+        return <HardDrive className={iconClass} />;
+      case 'printer':
+        return <Printer className={iconClass} />;
+      default:
+        return <Monitor className={iconClass} />;
+    }
   };
 
   const handleCloseTicket = () => {
@@ -577,7 +606,7 @@ export default function Tickets() {
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-                              <Ticket className="h-4 w-4 text-blue-600" />
+                              {getDeviceIcon(ticket.category)}
                             </div>
                             <div>
                               <p className="font-medium">{ticket.ticketNumber}</p>
