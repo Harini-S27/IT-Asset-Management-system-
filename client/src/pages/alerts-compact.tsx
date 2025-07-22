@@ -194,7 +194,7 @@ export default function AlertsCompactPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <DropdownMenu>
+          <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="w-full flex items-center justify-between p-4 h-auto">
                 <div className="flex items-center">
@@ -207,7 +207,7 @@ export default function AlertsCompactPage() {
                 <ChevronDown className="h-5 w-5 text-gray-400" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-[calc(100vw-16rem)] min-w-[800px] max-h-96 overflow-y-auto" align="start" side="bottom" sideOffset={8} avoidCollisions={false}>
+            <DropdownMenuContent className="w-[calc(100vw-17rem)] min-w-[800px] max-h-96 overflow-y-auto z-50" align="start" side="bottom" sideOffset={8} avoidCollisions={false}>
               {alertsLoading ? (
                 <div className="p-6 text-center text-sm text-gray-500">
                   Loading alerts...
