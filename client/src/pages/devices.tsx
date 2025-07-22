@@ -28,7 +28,7 @@ import DeviceTable from "@/components/devices/device-table";
 import AddDeviceDialog from "@/components/devices/add-device-dialog";
 import EditDeviceDialog from "@/components/devices/edit-device-dialog";
 import { WarrantyManagementDialog } from "@/components/devices/warranty-management-dialog";
-import NetworkDiscoveryTable from "@/components/network/network-discovery-table";
+
 import { AnimatedDeviceList } from "@/components/devices/animated-device-list";
 import { useRealtimeDevices } from "@/hooks/useRealtimeDevices";
 import { RealtimeStats } from "@/components/dashboard/realtime-stats";
@@ -451,10 +451,9 @@ const Devices = () => {
 
       {/* Tabbed Interface */}
       <Tabs defaultValue="realtime" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="realtime">Real-time View</TabsTrigger>
           <TabsTrigger value="inventory">Device Inventory</TabsTrigger>
-          <TabsTrigger value="discovery">Network Discovery</TabsTrigger>
           <TabsTrigger value="live">Live Devices</TabsTrigger>
           <TabsTrigger value="audit">Audit & Compliance</TabsTrigger>
         </TabsList>
@@ -515,9 +514,7 @@ const Devices = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="discovery" className="space-y-6 mt-6">
-          <NetworkDiscoveryTable />
-        </TabsContent>
+
 
         <TabsContent value="live" className="space-y-6 mt-6">
           {/* Live Devices Overview */}
