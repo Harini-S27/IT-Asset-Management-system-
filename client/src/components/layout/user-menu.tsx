@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LogOut, Settings, User as UserIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { useLocation } from 'wouter';
-import fineConsLogo from '@assets/finecons-logo.jpg';
+import fineConsLogo from '../../assets/finecons-logo.jpg';
 
 export function UserMenu() {
   const { user, logout } = useAuth();
