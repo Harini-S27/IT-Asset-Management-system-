@@ -186,26 +186,50 @@ export function DeviceNotification({ device, onDismiss, onViewDetails, notificat
               )}
             </div>
 
-            <div className="flex space-x-2 pt-2">
-              <Button
-                size="sm"
-                onClick={handleAccept}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                disabled={updateNotificationMutation.isPending}
-              >
-                <CheckCircle className="h-4 w-4 mr-1" />
-                Accept
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleDismiss}
-                className="flex-1"
-                disabled={updateNotificationMutation.isPending}
-              >
-                Dismiss
-              </Button>
-            </div>
+            {isRetirementAlert ? (
+              <div className="flex space-x-2 pt-2">
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    window.location.href = '/asset-lifecycle';
+                  }}
+                  className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
+                >
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Check Now
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleDismiss}
+                  className="flex-1"
+                  disabled={updateNotificationMutation.isPending}
+                >
+                  Dismiss
+                </Button>
+              </div>
+            ) : (
+              <div className="flex space-x-2 pt-2">
+                <Button
+                  size="sm"
+                  onClick={handleAccept}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                  disabled={updateNotificationMutation.isPending}
+                >
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Accept
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleDismiss}
+                  className="flex-1"
+                  disabled={updateNotificationMutation.isPending}
+                >
+                  Dismiss
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
