@@ -452,7 +452,7 @@ const ProfessionalMapView = () => {
         {/* Device Status Legend */}
         <Card className="mx-4 mb-4">
           <CardContent className="p-3">
-            <div className="flex items-center justify-center gap-4 text-sm">
+            <div className="flex items-center gap-4 text-sm">
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 <span>Active</span>
