@@ -56,31 +56,31 @@ const ProhibitedSoftwarePage = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-8">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold">Prohibited Software Management</h1>
-          <p className="text-gray-500">Monitor and control unauthorized software across your network</p>
+      <div className="flex justify-between items-center pb-4">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight">Prohibited Software Management</h1>
+          <p className="text-gray-600 text-lg">Monitor and control unauthorized software across your network</p>
         </div>
-        <Button onClick={() => setAddDialogOpen(true)} className="bg-red-600 hover:bg-red-700">
+        <Button onClick={() => setAddDialogOpen(true)} className="bg-red-600 hover:bg-red-700 px-6 py-3">
           <Plus className="h-4 w-4 mr-2" />
           Add Prohibited Software
         </Button>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {summaryCards.map((card, index) => (
-          <Card key={index}>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className={`${card.bgColor} p-2 rounded-lg`}>
-                  <card.icon className={`h-6 w-6 ${card.color}`} />
+          <Card key={index} className="hover:shadow-md transition-shadow">
+            <CardContent className="p-8">
+              <div className="flex items-center space-x-4">
+                <div className={`${card.bgColor} p-3 rounded-xl`}>
+                  <card.icon className={`h-7 w-7 ${card.color}`} />
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">{card.title}</p>
-                  <p className="text-2xl font-bold">{card.value}</p>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-gray-600">{card.title}</p>
+                  <p className="text-3xl font-bold text-gray-900">{card.value}</p>
                 </div>
               </div>
             </CardContent>
@@ -89,45 +89,49 @@ const ProhibitedSoftwarePage = () => {
       </div>
 
       {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Left Column - Main Tables */}
         <div className="lg:col-span-3">
-          <Tabs defaultValue="prohibited-software" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="prohibited-software">Prohibited Software</TabsTrigger>
-              <TabsTrigger value="detection-logs">Detection Logs</TabsTrigger>
+          <Tabs defaultValue="prohibited-software" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2 h-12">
+              <TabsTrigger value="prohibited-software" className="text-base">Prohibited Software</TabsTrigger>
+              <TabsTrigger value="detection-logs" className="text-base">Detection Logs</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="prohibited-software" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Ban className="h-5 w-5 mr-2 text-red-600" />
+            <TabsContent value="prohibited-software" className="space-y-6">
+              <Card className="shadow-sm border-gray-200">
+                <CardHeader className="pb-6">
+                  <CardTitle className="flex items-center text-xl">
+                    <Ban className="h-6 w-6 mr-3 text-red-600" />
                     Prohibited Software List
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-base text-gray-600 mt-2">
                     Manage software applications that are banned or restricted on your network
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <ProhibitedSoftwareTable />
+                <CardContent className="px-6 pb-6">
+                  <div className="space-y-4">
+                    <ProhibitedSoftwareTable />
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
 
-            <TabsContent value="detection-logs" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <AlertTriangle className="h-5 w-5 mr-2 text-yellow-600" />
+            <TabsContent value="detection-logs" className="space-y-6">
+              <Card className="shadow-sm border-gray-200">
+                <CardHeader className="pb-6">
+                  <CardTitle className="flex items-center text-xl">
+                    <AlertTriangle className="h-6 w-6 mr-3 text-yellow-600" />
                     Detection & Action Logs
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-base text-gray-600 mt-2">
                     View all instances where prohibited software was detected and actions taken
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <DetectionLogsTable />
+                <CardContent className="px-6 pb-6">
+                  <div className="space-y-4">
+                    <DetectionLogsTable />
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

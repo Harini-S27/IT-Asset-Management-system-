@@ -122,15 +122,15 @@ export function DataTable<T extends { id: number }>({
       <div className="rounded-md border">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">
+            <TableRow className="h-12">
+              <TableHead className="w-16 px-6">
                 <Checkbox 
                   checked={allSelected}
                   onCheckedChange={handleSelectAll}
                 />
               </TableHead>
               {columns.map((column, index) => (
-                <TableHead key={index}>
+                <TableHead key={index} className="px-6 py-3 font-semibold text-gray-700">
                   <div className="flex items-center">
                     {column.header}
                     {column.enableSorting && (
@@ -157,7 +157,7 @@ export function DataTable<T extends { id: number }>({
           <TableBody>
             {paginatedData.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={columns.length + 1} className="h-24 text-center">
+                <TableCell colSpan={columns.length + 1} className="h-32 text-center text-gray-500 text-lg">
                   No results.
                 </TableCell>
               </TableRow>
@@ -165,7 +165,7 @@ export function DataTable<T extends { id: number }>({
               paginatedData.map((row) => (
                 <TableRow 
                   key={row.id}
-                  className={onRowClick ? "cursor-pointer hover:bg-gray-50" : ""}
+                  className={`h-16 ${onRowClick ? "cursor-pointer hover:bg-gray-50" : ""}`}
                   onClick={(e) => {
                     // Only trigger row click if not clicking on dropdown or buttons
                     if (
@@ -176,7 +176,7 @@ export function DataTable<T extends { id: number }>({
                     }
                   }}
                 >
-                  <TableCell className="px-4 py-2">
+                  <TableCell className="px-6 py-4">
                     <Checkbox 
                       checked={selectedRows.has(row.id)}
                       onCheckedChange={(checked) => {
@@ -186,7 +186,7 @@ export function DataTable<T extends { id: number }>({
                     />
                   </TableCell>
                   {columns.map((column, index) => (
-                    <TableCell key={index}>
+                    <TableCell key={index} className="px-6 py-4">
                       {column.cell 
                         ? column.cell(row) 
                         : row[column.accessorKey as keyof T] as React.ReactNode}

@@ -123,9 +123,9 @@ export function ProhibitedSoftwareTable() {
       header: "Software Name",
       accessorKey: "name",
       cell: (item: ProhibitedSoftware) => (
-        <div>
-          <div className="font-medium">{item.name}</div>
-          <div className="text-sm text-gray-500">{item.executableName}</div>
+        <div className="space-y-1">
+          <div className="font-semibold text-gray-900">{item.name}</div>
+          <div className="text-sm text-gray-600">{item.executableName}</div>
         </div>
       ),
     },
@@ -133,14 +133,14 @@ export function ProhibitedSoftwareTable() {
       header: "Category",
       accessorKey: "category",
       cell: (item: ProhibitedSoftware) => (
-        <Badge variant="outline">{item.category}</Badge>
+        <Badge variant="outline" className="font-medium">{item.category}</Badge>
       ),
     },
     {
       header: "Risk Level",
       accessorKey: "riskLevel",
       cell: (item: ProhibitedSoftware) => (
-        <Badge className={getRiskLevelColor(item.riskLevel)}>
+        <Badge className={`${getRiskLevelColor(item.riskLevel)} font-medium px-3 py-1`}>
           {item.riskLevel}
         </Badge>
       ),
@@ -149,7 +149,7 @@ export function ProhibitedSoftwareTable() {
       header: "Block Execution",
       accessorKey: "blockExecution",
       cell: (item: ProhibitedSoftware) => (
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3 justify-center">
           <Switch
             checked={item.blockExecution}
             onCheckedChange={() => handleToggleBlockExecution(item)}
@@ -165,7 +165,7 @@ export function ProhibitedSoftwareTable() {
       header: "Auto Uninstall",
       accessorKey: "autoUninstall",
       cell: (item: ProhibitedSoftware) => (
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3 justify-center">
           <Switch
             checked={item.autoUninstall}
             onCheckedChange={() => handleToggleAutoUninstall(item)}
@@ -181,26 +181,28 @@ export function ProhibitedSoftwareTable() {
       header: "Actions",
       accessorKey: "actions",
       cell: (item: ProhibitedSoftware) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => handleEdit(item)}>
-              <Edit className="mr-2 h-4 w-4" />
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => handleDelete(item.id)}
-              className="text-red-600"
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex justify-center">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-9 w-9 p-0 hover:bg-gray-100">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuItem onClick={() => handleEdit(item)} className="py-2">
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => handleDelete(item.id)}
+                className="text-red-600 py-2"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       ),
     },
   ];
