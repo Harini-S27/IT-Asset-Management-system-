@@ -183,11 +183,11 @@ export function NotificationsHistoryPage() {
             <DropdownMenuContent 
               className="p-0" 
               align="start"
-              alignOffset={-48}
+              alignOffset={-24}
               sideOffset={8}
               style={{ 
-                width: 'calc(100vw - 18rem)',
-                marginLeft: 0
+                width: 'var(--radix-dropdown-menu-trigger-width)',
+                minWidth: 'var(--radix-dropdown-menu-trigger-width)'
               }}
             >
               <div className="p-4 border-b">
