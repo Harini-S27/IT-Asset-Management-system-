@@ -3,9 +3,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Mail, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Mail, CheckCircle, Clock, AlertCircle, ChevronDown, History } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 
 interface EmailLog {
   timestamp: string;
@@ -15,6 +17,7 @@ interface EmailLog {
 
 export default function EmailLogsPage() {
   const { toast } = useToast();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Fetch email logs from API
   const { data: emailLogs = [], isLoading, refetch } = useQuery({
@@ -201,72 +204,99 @@ export default function EmailLogsPage() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>📧 Email History & Notification Log</CardTitle>
-          <CardDescription>
-            Complete history of all automatic email notifications sent to device manufacturers.
-            All emails are logged to email_log.txt file for audit trail and compliance.
-            {emailConfig?.isConfigured ? 
-              'Production mode active - emails are being sent to manufacturer support teams.' :
-              'Development mode active - emails are logged but not sent to prevent spam during testing.'
-            }
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-[500px]">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Ticket</TableHead>
-                  <TableHead>Brand</TableHead>
-                  <TableHead>Support Email</TableHead>
-                  <TableHead>Issue Type</TableHead>
-                  <TableHead>Timestamp</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {emailLogs.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-4">
-                      {isLoading ? "Loading email logs..." : "No email logs found. Generate some tickets to see email notifications."}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  emailLogs.map((log, index) => (
-                    <TableRow key={index}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-blue-500" />
-                          <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
-                            Logged (Dev Mode)
-                          </Badge>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">{extractTicketFromSubject(log.subject)}</div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{extractBrandFromEmail(log.recipient)}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-mono text-sm">{log.recipient}</div>
-                      </TableCell>
-                      <TableCell>
-                        {getIssueTypeBadge(extractIssueTypeFromSubject(log.subject))}
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">{formatTimestamp(log.timestamp)}</div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </ScrollArea>
-        </CardContent>
-      </Card>
+      {/* Email History Dropdown */}
+      <div className="relative">
+        <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="outline" 
+              className="w-full justify-between h-auto p-4 border-2 hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              <div className="flex items-center gap-3">
+                <History className="h-5 w-5 text-blue-600" />
+                <div className="text-left">
+                  <div className="font-medium">📧 Email History & Notification Log</div>
+                  <div className="text-sm text-muted-foreground">
+                    {emailLogs.length} email notifications logged • Click to view detailed history
+                  </div>
+                </div>
+              </div>
+              <ChevronDown className={`h-4 w-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent 
+            className="p-0 min-w-full"
+            style={{ width: 'var(--radix-dropdown-menu-trigger-width)' }}
+            align="start"
+          >
+            <Card className="border-0 shadow-none">
+              <CardHeader className="pb-3">
+                <CardDescription className="text-xs">
+                  Complete history of all automatic email notifications sent to device manufacturers.
+                  All emails are logged to email_log.txt file for audit trail and compliance.
+                  {emailConfig?.isConfigured ? 
+                    ' Production mode active - emails are being sent to manufacturer support teams.' :
+                    ' Development mode active - emails are logged but not sent to prevent spam during testing.'
+                  }
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <ScrollArea className="h-[400px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">Status</TableHead>
+                        <TableHead className="text-xs">Ticket</TableHead>
+                        <TableHead className="text-xs">Brand</TableHead>
+                        <TableHead className="text-xs">Support Email</TableHead>
+                        <TableHead className="text-xs">Issue Type</TableHead>
+                        <TableHead className="text-xs">Timestamp</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {emailLogs.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center py-4 text-sm">
+                            {isLoading ? "Loading email logs..." : "No email logs found. Generate some tickets to see email notifications."}
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        emailLogs.map((log, index) => (
+                          <TableRow key={index} className="text-sm">
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Clock className="h-3 w-3 text-blue-500" />
+                                <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 text-xs">
+                                  Logged (Dev Mode)
+                                </Badge>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-medium text-xs">{extractTicketFromSubject(log.subject)}</div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="text-xs">{extractBrandFromEmail(log.recipient)}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-mono text-xs">{log.recipient}</div>
+                            </TableCell>
+                            <TableCell>
+                              {getIssueTypeBadge(extractIssueTypeFromSubject(log.subject))}
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-xs">{formatTimestamp(log.timestamp)}</div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
         <CardHeader>
