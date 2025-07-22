@@ -44,7 +44,10 @@ export function DeviceNotification({ device, onDismiss, onViewDetails, notificat
   };
 
   const handleDismiss = () => {
-    updateNotificationMutation.mutate("dismissed");
+    console.log('Dismissing notification...');
+    if (notificationHistoryId) {
+      updateNotificationMutation.mutate("dismissed");
+    }
     onDismiss();
   };
 
@@ -195,8 +198,10 @@ export function DeviceNotification({ device, onDismiss, onViewDetails, notificat
                   onClick={() => {
                     console.log('Navigating to asset lifecycle page...');
                     setLocation('/asset-lifecycle');
-                    console.log('Navigation completed');
-                    handleDismiss();
+                    setTimeout(() => {
+                      console.log('Auto-dismissing notification after navigation');
+                      handleDismiss();
+                    }, 100);
                   }}
                   className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
                 >
