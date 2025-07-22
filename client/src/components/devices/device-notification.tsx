@@ -193,7 +193,9 @@ export function DeviceNotification({ device, onDismiss, onViewDetails, notificat
                 <Button
                   size="sm"
                   onClick={() => {
+                    console.log('Navigating to asset lifecycle page...');
                     setLocation('/asset-lifecycle');
+                    console.log('Navigation completed');
                     handleDismiss();
                   }}
                   className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
