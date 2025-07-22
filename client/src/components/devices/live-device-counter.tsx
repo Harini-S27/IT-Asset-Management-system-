@@ -144,22 +144,7 @@ export function LiveDeviceCounter({ devices }: LiveDeviceCounterProps) {
         </CardContent>
       </Card>
 
-      {/* Location Distribution */}
-      <Card className="md:col-span-2 lg:col-span-3">
-        <CardHeader>
-          <CardTitle className="text-sm font-medium">Location Distribution</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {Object.entries(locationStats).map(([location, count]) => (
-              <div key={location} className="text-center">
-                <div className="text-2xl font-bold text-gray-900">{count}</div>
-                <div className="text-sm text-gray-600">{location}</div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+
     </div>
   );
 }
