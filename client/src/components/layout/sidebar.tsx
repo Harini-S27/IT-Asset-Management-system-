@@ -145,7 +145,7 @@ const Sidebar = () => {
             <div className="flex items-center">
               <UserMenu />
               <div className="ml-2">
-                <p className="text-sm font-semibold">{user.username}</p>
+                <p className="text-sm font-semibold">{user.username === 'finecons' ? 'Finecons' : user.username}</p>
                 <p className="text-xs text-gray-300">{user.role}</p>
               </div>
             </div>
