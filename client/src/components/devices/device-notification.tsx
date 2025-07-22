@@ -29,12 +29,18 @@ export function DeviceNotification({ device, onDismiss, onViewDetails, notificat
   }, []);
 
   const updateNotificationMutation = useMutation({
-    mutationFn: (action: string) => {
-      if (!notificationHistoryId) return Promise.resolve();
-      return apiRequest(`/api/notifications/history/${notificationHistoryId}/action`, {
+    mutationFn: async (action: string) => {
+      console.log('Mutation called with action:', action);
+      if (!notificationHistoryId) {
+        console.log('No notificationHistoryId, skipping API call');
+        return;
+      }
+      const response = await fetch(`/api/notifications/history/${notificationHistoryId}/action`, {
         method: "PATCH",
-        body: { action }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action })
       });
+      if (!response.ok) throw new Error('Failed to update notification');
     },
   });
 
@@ -45,10 +51,15 @@ export function DeviceNotification({ device, onDismiss, onViewDetails, notificat
 
   const handleDismiss = () => {
     console.log('Dismissing notification...');
-    if (notificationHistoryId) {
-      updateNotificationMutation.mutate("dismissed");
+    try {
+      if (notificationHistoryId) {
+        updateNotificationMutation.mutate("dismissed");
+      }
+      onDismiss();
+    } catch (error) {
+      console.error('Error dismissing notification:', error);
+      onDismiss(); // Still dismiss even if API call fails
     }
-    onDismiss();
   };
 
   const getDeviceIcon = (type: string) => {
@@ -195,13 +206,15 @@ export function DeviceNotification({ device, onDismiss, onViewDetails, notificat
               <div className="flex space-x-2 pt-2">
                 <Button
                   size="sm"
-                  onClick={() => {
-                    console.log('Navigating to asset lifecycle page...');
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Check Now button clicked - navigating to asset lifecycle page...');
                     setLocation('/asset-lifecycle');
                     setTimeout(() => {
                       console.log('Auto-dismissing notification after navigation');
                       handleDismiss();
-                    }, 100);
+                    }, 200);
                   }}
                   className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
                 >
@@ -211,7 +224,12 @@ export function DeviceNotification({ device, onDismiss, onViewDetails, notificat
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={handleDismiss}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Dismiss button clicked for retirement alert');
+                    handleDismiss();
+                  }}
                   className="flex-1"
                   disabled={updateNotificationMutation.isPending}
                 >
