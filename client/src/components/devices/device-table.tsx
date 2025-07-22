@@ -16,7 +16,8 @@ import {
   Smartphone,
   Laptop,
   HardDrive,
-  Printer
+  Printer,
+  Wifi
 } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import { formatTimeSince, getStatusColor, cn } from "@/lib/utils";
@@ -235,6 +236,8 @@ const getDeviceIcon = (type: string) => {
       return <Video className={iconClass} />;
     case "Server":
       return <Server className={iconClass} />;
+    case "Access Point":
+      return <Wifi className={iconClass} />;
     case "Network":
     case "Router":
     case "Network Device":
