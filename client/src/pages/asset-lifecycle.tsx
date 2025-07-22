@@ -263,17 +263,10 @@ export default function AssetLifecyclePage() {
       return;
     }
 
-    // Convert dates to ISO format
-    const formattedData = {
-      ...data,
-      acquiredDate: new Date(data.acquiredDate).toISOString(),
-      retirementDate: new Date(data.retirementDate).toISOString()
-    };
-
     if (editingAsset) {
-      updateAssetMutation.mutate({ id: editingAsset.id, data: formattedData });
+      updateAssetMutation.mutate({ id: editingAsset.id, data });
     } else {
-      createAssetMutation.mutate(formattedData);
+      createAssetMutation.mutate(data);
     }
   };
 

@@ -607,10 +607,16 @@ export const assetLifecycleRelations = relations(assetLifecycle, ({ one }) => ({
 }));
 
 // Insert and select schemas
-export const insertAssetLifecycleSchema = createInsertSchema(assetLifecycle).omit({
+export const insertAssetLifecycleSchema = createInsertSchema(assetLifecycle, {
+  acquiredDate: z.string().transform((val) => new Date(val)),
+  retirementDate: z.string().transform((val) => new Date(val)),
+}).omit({
   id: true,
   createdAt: true,
-  updatedAt: true
+  updatedAt: true,
+  lastNotificationDate: true,
+  isRetired: true,
+  retiredDate: true
 });
 
 export const selectAssetLifecycleSchema = createSelectSchema(assetLifecycle);
