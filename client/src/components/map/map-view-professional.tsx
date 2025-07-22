@@ -92,8 +92,8 @@ const ProfessionalMapView = () => {
     queryKey: ['/api/devices'],
   });
 
-  // Filter active devices for sidebar
-  const activeDevices = devices.filter(device => device.status === 'Active').slice(0, 10);
+  // Get all devices for sidebar (both active and inactive)
+  const sidebarDevices = devices.slice(0, 10);
 
   // Request user's current location
   const requestUserLocation = () => {
@@ -449,18 +449,28 @@ const ProfessionalMapView = () => {
           </CardContent>
         </Card>
 
-        {/* Active Devices Section */}
+        {/* Recent Devices Section */}
         <Card className="mx-4 mb-4 flex-1 flex flex-col">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Activity className="h-4 w-4 text-green-600" />
-              Active Devices
+              <Activity className="h-4 w-4 text-blue-600" />
+              Recent Devices
+              <div className="ml-auto flex items-center gap-3 text-xs">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>Active</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                  <span>Inactive</span>
+                </div>
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0 flex-1 flex flex-col">
             <ScrollArea className="flex-1">
               <div className="space-y-2">
-                {activeDevices.map((device) => (
+                {sidebarDevices.map((device) => (
                   <div 
                     key={device.id}
                     className="flex items-center gap-3 p-2 rounded-lg border hover:bg-gray-50 cursor-pointer transition-colors"
@@ -472,7 +482,10 @@ const ProfessionalMapView = () => {
                     }}
                   >
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <div className={cn(
+                        "w-2 h-2 rounded-full",
+                        device.status === 'Active' ? "bg-green-500" : "bg-red-500"
+                      )}></div>
                       {getDeviceTypeIcon(device.type)}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -483,9 +496,9 @@ const ProfessionalMapView = () => {
                     </div>
                   </div>
                 ))}
-                {activeDevices.length === 0 && (
+                {sidebarDevices.length === 0 && (
                   <div className="text-sm text-gray-500 text-center py-8">
-                    No active devices found
+                    No devices found
                   </div>
                 )}
               </div>
