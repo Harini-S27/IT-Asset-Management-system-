@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,13 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Ticket, AlertTriangle, Clock, CheckCircle, XCircle, Search, Filter, Plus, ChevronDown, MoreVertical, Eye } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
+import { Ticket, AlertTriangle, Clock, CheckCircle, XCircle, Search, Filter, Plus, MoreVertical, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
@@ -88,9 +82,10 @@ export default function Tickets() {
   const [createTicketDialogOpen, setCreateTicketDialogOpen] = useState(false);
   const [resolvedBy, setResolvedBy] = useState("");
   const [resolutionNotes, setResolutionNotes] = useState("");
-  const [ticketsDropdownOpen, setTicketsDropdownOpen] = useState(false);
   const [selectedTicketForView, setSelectedTicketForView] = useState<TicketData | null>(null);
   const [viewTicketDialogOpen, setViewTicketDialogOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   const createForm = useForm<CreateTicketFormData>({
     resolver: zodResolver(createTicketSchema),
@@ -201,6 +196,17 @@ export default function Tickets() {
     
     return matchesSearch && matchesStatus && matchesPriority;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredTickets.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentTickets = filteredTickets.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, priorityFilter]);
 
   const getDeviceName = (deviceId?: number) => {
     if (!deviceId) return "N/A";
@@ -527,126 +533,174 @@ export default function Tickets() {
         </CardContent>
       </Card>
 
-      {/* Tickets Dropdown Interface */}
+      {/* Tickets Table */}
       <Card>
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <CardTitle>Tickets</CardTitle>
-            <DropdownMenu open={ticketsDropdownOpen} onOpenChange={setTicketsDropdownOpen}>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  className="flex items-center gap-2 min-w-[200px] justify-between"
-                >
-                  <span>View Tickets ({filteredTickets.length})</span>
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent 
-                className="w-[calc(100vw-16rem)] max-h-80 overflow-y-auto"
-                align="start"
-                side="bottom"
-              >
-                {filteredTickets.length === 0 ? (
-                  <div className="p-4 text-center text-muted-foreground">
-                    No tickets found matching your criteria.
-                  </div>
-                ) : (
-                  filteredTickets.map((ticket) => (
-                    <div 
-                      key={ticket.id}
-                      className="p-3 border-b last:border-b-0 hover:bg-muted/50 cursor-pointer"
-                      onClick={() => {
-                        setSelectedTicketForView(ticket);
-                        setViewTicketDialogOpen(true);
-                        setTicketsDropdownOpen(false);
-                      }}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium text-sm truncate">{ticket.ticketNumber}</span>
-                            <Badge className={`${priorityColors[ticket.priority]} text-xs px-1.5 py-0.5`}>
-                              {ticket.priority}
-                            </Badge>
-                            <div className="flex items-center gap-1">
-                              {getStatusIcon(ticket.status)}
-                              <Badge className={`${statusColors[ticket.status]} text-xs px-1.5 py-0.5`}>
-                                {ticket.status}
-                              </Badge>
-                            </div>
-                          </div>
-                          <h4 className="text-sm font-medium text-foreground mb-1 truncate">
-                            {ticket.title}
-                          </h4>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            <span>{ticket.category}</span>
-                            <span>•</span>
-                            <span>Created: {new Date(ticket.createdAt).toLocaleDateString()}</span>
-                            {ticket.assignedTo && (
-                              <>
-                                <span>•</span>
-                                <span>Assigned: {ticket.assignedTo}</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                                <MoreVertical className="h-3 w-3" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedTicketForView(ticket);
-                                  setViewTicketDialogOpen(true);
-                                }}
-                              >
-                                <Eye className="h-4 w-4 mr-2" />
-                                View Details
-                              </DropdownMenuItem>
-                              {ticket.status !== "Closed" && ticket.status !== "Resolved" && (
-                                <DropdownMenuItem
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedTicket(ticket);
-                                    setCloseTicketDialogOpen(true);
-                                  }}
-                                >
-                                  <CheckCircle className="h-4 w-4 mr-2" />
-                                  Close Ticket
-                                </DropdownMenuItem>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+        <CardHeader>
+          <CardTitle>Tickets</CardTitle>
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <span>
+              Showing {startIndex + 1} to {Math.min(endIndex, filteredTickets.length)} of {filteredTickets.length} results
+            </span>
           </div>
         </CardHeader>
-        <CardContent className="pt-4">
-          {isLoading ? (
-            <div className="text-center py-8">Loading tickets...</div>
-          ) : error ? (
-            <div className="text-center py-8 text-red-500">Error loading tickets</div>
-          ) : filteredTickets.length === 0 ? (
+        <CardContent>
+          {filteredTickets.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No tickets found. {searchTerm || statusFilter !== "all" || priorityFilter !== "all" 
                 ? "Try adjusting your filters." 
                 : "Click 'Create Ticket' to create your first support ticket."}
             </div>
           ) : (
-            <div className="text-center py-4 text-muted-foreground">
-              Click "View Tickets" dropdown above to see all {filteredTickets.length} tickets.
-            </div>
+            <>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>
+                        <input type="checkbox" className="rounded border-gray-300" />
+                      </TableHead>
+                      <TableHead>Ticket</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Device</TableHead>
+                      <TableHead>Priority</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {currentTickets.map((ticket) => (
+                      <TableRow key={ticket.id}>
+                        <TableCell>
+                          <input type="checkbox" className="rounded border-gray-300" />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
+                              <Ticket className="h-4 w-4 text-blue-600" />
+                            </div>
+                            <div>
+                              <p className="font-medium">{ticket.ticketNumber}</p>
+                              <p className="text-sm text-muted-foreground">{ticket.title}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{ticket.category}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {getStatusIcon(ticket.status)}
+                            <Badge className={statusColors[ticket.status]}>
+                              {ticket.status}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell>{getDeviceName(ticket.deviceId)}</TableCell>
+                        <TableCell className="font-mono text-sm">
+                          <Badge className={priorityColors[ticket.priority]}>
+                            {ticket.priority}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {new Date(ticket.createdAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                setSelectedTicketForView(ticket);
+                                setViewTicketDialogOpen(true);
+                              }}
+                            >
+                              Edit
+                            </Button>
+                            <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                              Deactivate
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              
+              {/* Pagination */}
+              <div className="flex items-center justify-between mt-4">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(1)}
+                    disabled={currentPage === 1}
+                  >
+                    First
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </Button>
+                </div>
+                
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                    if (pageNum > totalPages) return null;
+                    
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="sm"
+                        className="w-8 h-8 p-0"
+                        onClick={() => setCurrentPage(pageNum)}
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                  {totalPages > 5 && currentPage < totalPages - 2 && (
+                    <>
+                      <span className="px-2">...</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-8 h-8 p-0"
+                        onClick={() => setCurrentPage(totalPages)}
+                      >
+                        {totalPages}
+                      </Button>
+                    </>
+                  )}
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={currentPage === totalPages}
+                  >
+                    Last
+                  </Button>
+                </div>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
