@@ -19,7 +19,8 @@ import {
   insertCmdbRelationshipSchema,
   insertCmdbComplianceRuleSchema,
   insertAlertSchema,
-  insertAssetLifecycleSchema
+  insertAssetLifecycleSchema,
+  insertUserManagementSchema
 } from "@shared/schema";
 import { AlertScheduler, setBroadcastFunction } from "./alert-scheduler";
 import { z } from "zod";
@@ -2405,6 +2406,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching assets near retirement:', error);
       res.status(500).json({ message: "Failed to fetch assets near retirement" });
+    }
+  });
+
+  // User Management routes
+  app.get("/api/user-management", async (req: Request, res: Response) => {
+    try {
+      const users = await storage.getUserManagementUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching user management users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.get("/api/user-management/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      const user = await storage.getUserManagementUser(id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  app.post("/api/user-management", async (req: Request, res: Response) => {
+    try {
+      const parseResult = insertUserManagementSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid user data",
+          errors: parseResult.error.errors 
+        });
+      }
+
+      // Check if email already exists
+      const existingUser = await storage.getUserManagementUserByEmail(parseResult.data.email);
+      if (existingUser) {
+        return res.status(400).json({ message: "Email already exists" });
+      }
+
+      const user = await storage.createUserManagementUser(parseResult.data);
+      res.status(201).json(user);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+
+  app.patch("/api/user-management/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      // Parse and validate the update data
+      const updateData = { ...req.body };
+      delete updateData.id; // Don't allow updating ID
+
+      const user = await storage.updateUserManagementUser(id, updateData);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json(user);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  app.delete("/api/user-management/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      const success = await storage.deleteUserManagementUser(id);
+      if (!success) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Failed to delete user" });
     }
   });
 

@@ -13,29 +13,85 @@ import {
   Settings as SettingsIcon, 
   Bell, 
   Save,
-  RotateCcw
+  RotateCcw,
+  Plus,
+  Edit,
+  Trash2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { UserManagement } from "@shared/schema";
 import {
   OrganizationForm,
   SystemPreferencesForm,
   NotificationForm,
   AccessControlForm,
 } from "@/components/settings/settings-form";
-
-// Mock user data for the User Management tab
-const mockUsers = [
-  { id: 1, name: "Admin User", email: "admin@company.com", role: "Admin", status: "Active", lastLogin: "Today at 09:45 AM" },
-  { id: 2, name: "John Manager", email: "john@company.com", role: "Manager", status: "Active", lastLogin: "Yesterday at 06:23 PM" },
-  { id: 3, name: "Jane Viewer", email: "jane@company.com", role: "Viewer", status: "Inactive", lastLogin: "May 15, 2025 at 11:30 AM" },
-];
+import { AddUserDialog } from "@/components/user-management/add-user-dialog";
+import { EditUserDialog } from "@/components/user-management/edit-user-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function SettingsPage() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("user-management");
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  
+  // User Management state
+  const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
+  const [editUserDialogOpen, setEditUserDialogOpen] = useState(false);
+  const [deleteUserDialogOpen, setDeleteUserDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserManagement | null>(null);
+
+  // Fetch users for user management
+  const { data: users = [], isLoading: usersLoading } = useQuery({
+    queryKey: ["/api/user-management"],
+    queryFn: () => apiRequest("/api/user-management")
+  });
+
+  // Delete user mutation
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      const response = await fetch(`/api/user-management/${userId}`, {
+        method: "DELETE"
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to delete user");
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user-management"] });
+      toast({
+        title: "Success",
+        description: "User has been deleted successfully"
+      });
+      setDeleteUserDialogOpen(false);
+      setSelectedUser(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete user",
+        variant: "destructive"
+      });
+    }
+  });
   
   // This is a simpler, more reliable approach to resetting the form
   const [resetCounter, setResetCounter] = useState(0);
@@ -244,53 +300,91 @@ export default function SettingsPage() {
             <div className="p-4 bg-white rounded-md shadow-sm">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-medium">Users</h3>
-                <Button className="bg-[#48BB78] hover:bg-[#48BB78]/90">Add User</Button>
+                <Button 
+                  className="bg-[#48BB78] hover:bg-[#48BB78]/90"
+                  onClick={() => setAddUserDialogOpen(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add User
+                </Button>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-gray-50 border-b">
-                      <th className="px-4 py-2 text-left font-medium">Name</th>
-                      <th className="px-4 py-2 text-left font-medium">Email</th>
-                      <th className="px-4 py-2 text-left font-medium">Role</th>
-                      <th className="px-4 py-2 text-left font-medium">Status</th>
-                      <th className="px-4 py-2 text-left font-medium">Last Login</th>
-                      <th className="px-4 py-2 text-left font-medium">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {mockUsers.map(user => (
-                      <tr key={user.id} className="border-b hover:bg-gray-50">
-                        <td className="px-4 py-3">{user.name}</td>
-                        <td className="px-4 py-3">{user.email}</td>
-                        <td className="px-4 py-3">
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            user.role === 'Admin' ? 'bg-rose-100 text-rose-800' :
-                            user.role === 'Manager' ? 'bg-amber-100 text-amber-800' :
-                            'bg-emerald-100 text-emerald-800'
-                          }`}>
-                            {user.role}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            user.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {user.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">{user.lastLogin}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex space-x-2">
-                            <Button variant="outline" size="sm">Edit</Button>
-                            <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">Deactivate</Button>
-                          </div>
-                        </td>
+              
+              {usersLoading ? (
+                <div className="text-center py-8">Loading users...</div>
+              ) : users.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  No users found. Click "Add User" to create the first user.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-gray-50 border-b">
+                        <th className="px-4 py-2 text-left font-medium">Name</th>
+                        <th className="px-4 py-2 text-left font-medium">Email</th>
+                        <th className="px-4 py-2 text-left font-medium">Role</th>
+                        <th className="px-4 py-2 text-left font-medium">Status</th>
+                        <th className="px-4 py-2 text-left font-medium">Last Login</th>
+                        <th className="px-4 py-2 text-left font-medium">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {users.map((user: UserManagement) => (
+                        <tr key={user.id} className="border-b hover:bg-gray-50">
+                          <td className="px-4 py-3">{user.name}</td>
+                          <td className="px-4 py-3">{user.email}</td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              user.role === 'Admin' ? 'bg-rose-100 text-rose-800' :
+                              user.role === 'Manager' ? 'bg-amber-100 text-amber-800' :
+                              'bg-emerald-100 text-emerald-800'
+                            }`}>
+                              {user.role}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              user.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {user.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() + " at " + new Date(user.lastLogin).toLocaleTimeString() : "Never"}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex space-x-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedUser(user);
+                                  setEditUserDialogOpen(true);
+                                }}
+                              >
+                                <Edit className="h-3 w-3 mr-1" />
+                                Edit
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="text-red-600 hover:text-red-700"
+                                onClick={() => {
+                                  setSelectedUser(user);
+                                  setDeleteUserDialogOpen(true);
+                                }}
+                              >
+                                <Trash2 className="h-3 w-3 mr-1" />
+                                Delete
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         </TabsContent>
@@ -317,6 +411,38 @@ export default function SettingsPage() {
 
 
       </Tabs>
+
+      {/* User Management Dialogs */}
+      <AddUserDialog
+        open={addUserDialogOpen}
+        onOpenChange={setAddUserDialogOpen}
+      />
+
+      <EditUserDialog
+        open={editUserDialogOpen}
+        onOpenChange={setEditUserDialogOpen}
+        user={selectedUser}
+      />
+
+      <AlertDialog open={deleteUserDialogOpen} onOpenChange={setDeleteUserDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the user account for {selectedUser?.name}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => selectedUser && deleteUserMutation.mutate(selectedUser.id)}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteUserMutation.isPending ? "Deleting..." : "Delete User"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

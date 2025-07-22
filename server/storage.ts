@@ -1,7 +1,10 @@
 import { 
   users, 
   type User, 
-  type InsertUser, 
+  type InsertUser,
+  userManagement,
+  type UserManagement,
+  type InsertUserManagement, 
   devices, 
   type Device, 
   type InsertDevice,
@@ -72,6 +75,14 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  
+  // User Management operations
+  getUserManagementUsers(): Promise<UserManagement[]>;
+  getUserManagementUser(id: number): Promise<UserManagement | undefined>;
+  createUserManagementUser(user: InsertUserManagement): Promise<UserManagement>;
+  updateUserManagementUser(id: number, user: Partial<InsertUserManagement>): Promise<UserManagement | undefined>;
+  deleteUserManagementUser(id: number): Promise<boolean>;
+  getUserManagementUserByEmail(email: string): Promise<UserManagement | undefined>;
   
   // Device operations
   getDevices(): Promise<Device[]>;
@@ -235,6 +246,43 @@ export class DatabaseStorage implements IStorage {
       .insert(users)
       .values(insertUser)
       .returning();
+    return user;
+  }
+
+  // User Management operations
+  async getUserManagementUsers(): Promise<UserManagement[]> {
+    return await db.select().from(userManagement).orderBy(desc(userManagement.createdAt));
+  }
+
+  async getUserManagementUser(id: number): Promise<UserManagement | undefined> {
+    const [user] = await db.select().from(userManagement).where(eq(userManagement.id, id));
+    return user;
+  }
+
+  async createUserManagementUser(insertUser: InsertUserManagement): Promise<UserManagement> {
+    const [user] = await db
+      .insert(userManagement)
+      .values(insertUser)
+      .returning();
+    return user;
+  }
+
+  async updateUserManagementUser(id: number, updatedUser: Partial<InsertUserManagement>): Promise<UserManagement | undefined> {
+    const [user] = await db
+      .update(userManagement)
+      .set({ ...updatedUser, updatedAt: new Date() })
+      .where(eq(userManagement.id, id))
+      .returning();
+    return user;
+  }
+
+  async deleteUserManagementUser(id: number): Promise<boolean> {
+    const result = await db.delete(userManagement).where(eq(userManagement.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getUserManagementUserByEmail(email: string): Promise<UserManagement | undefined> {
+    const [user] = await db.select().from(userManagement).where(eq(userManagement.email, email));
     return user;
   }
 

@@ -613,10 +613,10 @@ export function MapPreferencesForm() {
 
   const handleChange = (field: string, value: string | boolean) => {
     // Update local state
-    setMapSettings(prev => ({ ...prev, [field]: value }));
+    setMapSettings((prev: any) => ({ ...prev, [field]: value }));
     
     // Show saving indicator
-    setSaveStatus(prev => ({ ...prev, [field]: true }));
+    setSaveStatus((prev: any) => ({ ...prev, [field]: true }));
     
     // Save to localStorage
     setTimeout(() => {
@@ -633,7 +633,7 @@ export function MapPreferencesForm() {
         
         // Clear saving indicator after a moment
         setTimeout(() => {
-          setSaveStatus(prev => ({ ...prev, [field]: false }));
+          setSaveStatus((prev: any) => ({ ...prev, [field]: false }));
         }, 1000);
         
         // Dispatch custom event to notify map component
@@ -645,7 +645,7 @@ export function MapPreferencesForm() {
           description: "Please try again",
           variant: "destructive"
         });
-        setSaveStatus(prev => ({ ...prev, [field]: false }));
+        setSaveStatus((prev: any) => ({ ...prev, [field]: false }));
       }
     }, 300);
   };

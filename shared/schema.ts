@@ -32,11 +32,24 @@ export const deviceLocations = [
   "Other"
 ] as const;
 
-// Users schema (keeping the original)
+// Users schema (keeping the original for login)
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+});
+
+// User Management schema (for settings/user management)
+export const userManagement = pgTable("user_management", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  role: text("role").notNull().default("Viewer"), // "Admin", "Manager", "Viewer"
+  status: text("status").notNull().default("Active"), // "Active", "Inactive"
+  password: text("password").notNull(),
+  lastLogin: timestamp("last_login"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Devices schema
@@ -204,6 +217,15 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
 });
 
+export const insertUserManagementSchema = createInsertSchema(userManagement)
+  .omit({ id: true, createdAt: true, updatedAt: true, lastLogin: true })
+  .extend({
+    role: z.enum(["Admin", "Manager", "Viewer"]).default("Viewer"),
+    status: z.enum(["Active", "Inactive"]).default("Active"),
+    email: z.string().email(),
+    password: z.string().min(6),
+  });
+
 export const insertDeviceSchema = createInsertSchema(devices)
   .omit({ id: true, lastUpdated: true })
   .extend({
@@ -277,6 +299,9 @@ export const insertSoftwareScanResultsSchema = createInsertSchema(softwareScanRe
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+export type InsertUserManagement = z.infer<typeof insertUserManagementSchema>;
+export type UserManagement = typeof userManagement.$inferSelect;
 
 export type InsertDevice = z.infer<typeof insertDeviceSchema>;
 export type Device = typeof devices.$inferSelect;
