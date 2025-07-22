@@ -167,6 +167,7 @@ Changelog:
 - July 22, 2025. **DEVICE ICONS ENHANCEMENT COMPLETE**: Updated Device Management page with proper device-specific icons using blue color scheme (#2563eb). Security cameras now display Video icons, mobile devices show Smartphone icons, with all icons having consistent blue styling and circular backgrounds for professional appearance.
 - July 22, 2025. **UI SPACING ENHANCEMENT COMPLETE**: Significantly improved UI spacing and layout for Prohibited Software page with generous padding (p-6, space-y-8), enhanced summary cards with hover effects, taller table rows (h-16), increased cell padding (px-6 py-4), improved typography, and professional visual hierarchy throughout the interface.
 - July 22, 2025. **SIDEBAR NAVIGATION REORDER**: Updated sidebar navigation to custom user-requested order: Dashboard, Devices, Alert Management, Notifications, Email Notifications, Asset Lifecycle, Blocked Websites, CMDB, Map View, Network Discovery, Prohibited Software, Router Setup, Reports, Settings. Removed Support Tickets from main navigation as requested.
+- July 22, 2025. **FINECONS CAPITALIZATION FIX**: Updated all instances of "finecons" to "Finecons" with proper capitalization in user menu and deployment documentation. Fixed user authentication checks and logo display logic to use correct capitalized username.
 
 ## User Preferences
 

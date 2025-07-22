@@ -40,8 +40,8 @@ export function UserMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-          <Avatar className={user.username === 'finecons' ? 'bg-white' : roleColor}>
-            {user.username === 'finecons' ? (
+          <Avatar className={user.username === 'Finecons' ? 'bg-white' : roleColor}>
+            {user.username === 'Finecons' ? (
               <AvatarImage src={fineConsLogo} alt="Finecons Logo" className="object-cover" />
             ) : (
               <AvatarFallback>{userInitials}</AvatarFallback>

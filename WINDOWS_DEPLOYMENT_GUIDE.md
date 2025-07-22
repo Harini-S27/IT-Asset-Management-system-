@@ -6,7 +6,7 @@ You're trying to run npm in a directory without the project files. The ZIP needs
 ## Step-by-Step Fix
 
 ### 1. Download the ZIP file
-- Download `finecons-itam-system.zip` from your Replit project
+- Download `Finecons-itam-system.zip` from your Replit project
 - Save it to your Windows computer
 
 ### 2. Extract the ZIP file
@@ -20,7 +20,7 @@ cd "ITAM-System"
 
 # Extract the ZIP here (right-click ZIP file > Extract All)
 # Or use PowerShell:
-Expand-Archive -Path "..\finecons-itam-system.zip" -DestinationPath "."
+Expand-Archive -Path "..\Finecons-itam-system.zip" -DestinationPath "."
 ```
 
 ### 3. Verify files are extracted
