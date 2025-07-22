@@ -4,7 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Bell, Calendar, Clock, Filter, Check, X, Eye } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Bell, Calendar, Clock, Filter, Check, X, Eye, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 import type { NotificationHistory } from "@shared/schema";
@@ -12,6 +15,8 @@ import type { NotificationHistory } from "@shared/schema";
 export function NotificationsHistoryPage() {
   const [filterType, setFilterType] = useState<string>("all");
   const [filterAction, setFilterAction] = useState<string>("all");
+  const [selectedNotification, setSelectedNotification] = useState<NotificationHistory | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -28,6 +33,7 @@ export function NotificationsHistoryPage() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/notifications/history"] });
+      setIsDialogOpen(false);
     },
   });
 
@@ -101,48 +107,6 @@ export function NotificationsHistoryPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filters
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Notification Type</label>
-              <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="DEVICE_ADDED">Device Added</SelectItem>
-                  <SelectItem value="DEVICE_UPDATED">Device Updated</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Action Status</label>
-              <Select value={filterAction} onValueChange={setFilterAction}>
-                <SelectTrigger className="w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Actions</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="accepted">Accepted</SelectItem>
-                  <SelectItem value="dismissed">Dismissed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
@@ -200,98 +164,189 @@ export function NotificationsHistoryPage() {
         </Card>
       </div>
 
-      {/* Notifications List */}
+      {/* Compact Notifications Dropdown */}
       <Card>
-        <CardHeader>
-          <CardTitle>Notifications ({filteredNotifications.length})</CardTitle>
-          <CardDescription>
-            Complete history of device notifications and admin actions
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {filteredNotifications.length === 0 ? (
-            <div className="text-center py-8">
-              <Eye className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No notifications found</h3>
-              <p className="text-gray-600">No notifications match your current filters.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {filteredNotifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="text-xl">{getTypeIcon(notification.notificationType)}</span>
-                        <div className="flex items-center gap-2">
-                          {getTypeBadge(notification.notificationType)}
-                          {getStatusBadge(notification.action)}
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-1">
-                        <h4 className="font-medium text-gray-900">
-                          {notification.deviceName} ({notification.deviceModel})
-                        </h4>
-                        <div className="text-sm text-gray-600 grid grid-cols-2 md:grid-cols-4 gap-2">
-                          <span><strong>Type:</strong> {notification.deviceType}</span>
-                          <span><strong>Status:</strong> {notification.deviceStatus}</span>
-                          <span><strong>Location:</strong> {notification.deviceLocation}</span>
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {format(new Date(notification.timestamp), "MMM dd, yyyy HH:mm")}
-                          </span>
-                        </div>
-                        
-                        {notification.action && notification.actionTimestamp && (
-                          <div className="text-sm text-gray-500 flex items-center gap-1 mt-2">
-                            <Clock className="h-3 w-3" />
-                            Action taken: {format(new Date(notification.actionTimestamp), "MMM dd, yyyy HH:mm")}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {!notification.action && (
-                      <div className="flex gap-2 ml-4">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border-green-200 text-green-700 hover:bg-green-50"
-                          onClick={() => updateActionMutation.mutate({ 
-                            id: notification.id, 
-                            action: "accepted" 
-                          })}
-                          disabled={updateActionMutation.isPending}
-                        >
-                          <Check className="h-4 w-4 mr-1" />
-                          Accept
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border-gray-200 text-gray-700 hover:bg-gray-50"
-                          onClick={() => updateActionMutation.mutate({ 
-                            id: notification.id, 
-                            action: "dismissed" 
-                          })}
-                          disabled={updateActionMutation.isPending}
-                        >
-                          <X className="h-4 w-4 mr-1" />
-                          Dismiss
-                        </Button>
-                      </div>
-                    )}
+        <CardContent className="p-4">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="w-full justify-between h-12 text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <Bell className="h-5 w-5 text-blue-600" />
+                  <div>
+                    <div className="font-medium">View Notifications ({filteredNotifications.length})</div>
+                    <div className="text-sm text-gray-500">Click to browse notification history</div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent 
+              className="w-screen max-w-4xl p-0" 
+              align="start"
+              sideOffset={8}
+            >
+              <div className="p-4 border-b">
+                <div className="flex gap-4">
+                  <Select value={filterType} onValueChange={setFilterType}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Filter by type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="DEVICE_ADDED">Device Added</SelectItem>
+                      <SelectItem value="DEVICE_UPDATED">Device Updated</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select value={filterAction} onValueChange={setFilterAction}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Actions</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="accepted">Accepted</SelectItem>
+                      <SelectItem value="dismissed">Dismissed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <ScrollArea className="h-80">
+                <div className="p-4">
+                  {filteredNotifications.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Eye className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No notifications found</h3>
+                      <p className="text-gray-600">No notifications match your current filters.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {filteredNotifications.map((notification) => (
+                        <div
+                          key={notification.id}
+                          className="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                          onClick={() => {
+                            setSelectedNotification(notification);
+                            setIsDialogOpen(true);
+                          }}
+                        >
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className="text-xl">{getTypeIcon(notification.notificationType)}</span>
+                            <div className="flex items-center gap-2">
+                              {getTypeBadge(notification.notificationType)}
+                              {getStatusBadge(notification.action)}
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <h4 className="font-medium text-gray-900">
+                              {notification.deviceName} ({notification.deviceModel})
+                            </h4>
+                            <div className="text-sm text-gray-600 flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {format(new Date(notification.timestamp), "MMM dd, yyyy HH:mm")}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </CardContent>
       </Card>
+
+      {/* Notification Details Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-xl">{selectedNotification && getTypeIcon(selectedNotification.notificationType)}</span>
+              Notification Details
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedNotification && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                {getTypeBadge(selectedNotification.notificationType)}
+                {getStatusBadge(selectedNotification.action)}
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <label className="font-medium text-gray-900">Device Name</label>
+                  <p className="text-gray-600">{selectedNotification.deviceName}</p>
+                </div>
+                <div>
+                  <label className="font-medium text-gray-900">Model</label>
+                  <p className="text-gray-600">{selectedNotification.deviceModel}</p>
+                </div>
+                <div>
+                  <label className="font-medium text-gray-900">Type</label>
+                  <p className="text-gray-600">{selectedNotification.deviceType}</p>
+                </div>
+                <div>
+                  <label className="font-medium text-gray-900">Status</label>
+                  <p className="text-gray-600">{selectedNotification.deviceStatus}</p>
+                </div>
+                <div>
+                  <label className="font-medium text-gray-900">Location</label>
+                  <p className="text-gray-600">{selectedNotification.deviceLocation}</p>
+                </div>
+                <div>
+                  <label className="font-medium text-gray-900">Timestamp</label>
+                  <p className="text-gray-600">{format(new Date(selectedNotification.timestamp), "MMM dd, yyyy HH:mm")}</p>
+                </div>
+              </div>
+              
+              {selectedNotification.action && selectedNotification.actionTimestamp && (
+                <div className="border-t pt-4">
+                  <label className="font-medium text-gray-900">Action History</label>
+                  <p className="text-sm text-gray-600">
+                    Action: {selectedNotification.action} on {format(new Date(selectedNotification.actionTimestamp), "MMM dd, yyyy HH:mm")}
+                  </p>
+                </div>
+              )}
+              
+              {!selectedNotification.action && (
+                <div className="flex gap-3 pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    className="border-green-200 text-green-700 hover:bg-green-50"
+                    onClick={() => updateActionMutation.mutate({ 
+                      id: selectedNotification.id, 
+                      action: "accepted" 
+                    })}
+                    disabled={updateActionMutation.isPending}
+                  >
+                    <Check className="h-4 w-4 mr-1" />
+                    Accept
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="border-gray-200 text-gray-700 hover:bg-gray-50"
+                    onClick={() => updateActionMutation.mutate({ 
+                      id: selectedNotification.id, 
+                      action: "dismissed" 
+                    })}
+                    disabled={updateActionMutation.isPending}
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Dismiss
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
