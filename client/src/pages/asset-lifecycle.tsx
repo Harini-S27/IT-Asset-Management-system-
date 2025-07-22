@@ -20,13 +20,24 @@ import { useToast } from "@/hooks/use-toast";
 
 // Form schema for asset lifecycle
 const assetLifecycleSchema = z.object({
-  deviceId: z.number(),
+  deviceId: z.number().min(1, "Please select a device"),
   deviceName: z.string().min(1, "Device name is required"),
-  acquiredDate: z.string().min(1, "Acquired date is required"),
-  retirementDate: z.string().min(1, "Retirement date is required"),
+  acquiredDate: z.string().min(1, "Acquired date is required").refine((date) => {
+    return !isNaN(Date.parse(date));
+  }, "Invalid date format"),
+  retirementDate: z.string().min(1, "Retirement date is required").refine((date) => {
+    return !isNaN(Date.parse(date));
+  }, "Invalid date format"),
   notificationDays: z.number().min(1, "Notification days must be at least 1").max(365, "Max 365 days"),
   dailyNotifications: z.boolean(),
   notes: z.string().optional()
+}).refine((data) => {
+  const acquired = new Date(data.acquiredDate);
+  const retirement = new Date(data.retirementDate);
+  return retirement > acquired;
+}, {
+  message: "Retirement date must be after acquisition date",
+  path: ["retirementDate"]
 });
 
 type AssetLifecycleForm = z.infer<typeof assetLifecycleSchema>;
@@ -83,8 +94,8 @@ export default function AssetLifecyclePage() {
     defaultValues: {
       deviceId: 0,
       deviceName: "",
-      acquiredDate: "",
-      retirementDate: "",
+      acquiredDate: format(new Date(), "yyyy-MM-dd"),
+      retirementDate: format(addDays(new Date(), 365 * 3), "yyyy-MM-dd"), // Default 3 years
       notificationDays: 30,
       dailyNotifications: false,
       notes: ""
@@ -243,10 +254,26 @@ export default function AssetLifecyclePage() {
   };
 
   const handleSubmit = (data: AssetLifecycleForm) => {
+    // Ensure device is selected
+    if (!data.deviceId || data.deviceId === 0) {
+      toast({
+        title: "Please select a device",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Convert dates to ISO format
+    const formattedData = {
+      ...data,
+      acquiredDate: new Date(data.acquiredDate).toISOString(),
+      retirementDate: new Date(data.retirementDate).toISOString()
+    };
+
     if (editingAsset) {
-      updateAssetMutation.mutate({ id: editingAsset.id, data });
+      updateAssetMutation.mutate({ id: editingAsset.id, data: formattedData });
     } else {
-      createAssetMutation.mutate(data);
+      createAssetMutation.mutate(formattedData);
     }
   };
 
@@ -308,11 +335,17 @@ export default function AssetLifecyclePage() {
                       <SelectValue placeholder="Choose a device..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {availableDevices.map((device: Device) => (
-                        <SelectItem key={device.id} value={device.id.toString()}>
-                          {device.name} ({device.type})
+                      {availableDevices.length === 0 ? (
+                        <SelectItem value="no-devices" disabled>
+                          No available devices
                         </SelectItem>
-                      ))}
+                      ) : (
+                        availableDevices.map((device) => (
+                          <SelectItem key={device.id} value={device.id.toString()}>
+                            {device.name} ({device.type})
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -327,6 +360,9 @@ export default function AssetLifecyclePage() {
                       {...form.register("acquiredDate")}
                       required
                     />
+                    {form.formState.errors.acquiredDate && (
+                      <p className="text-sm text-red-500">{form.formState.errors.acquiredDate.message}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -336,6 +372,9 @@ export default function AssetLifecyclePage() {
                       {...form.register("retirementDate")}
                       required
                     />
+                    {form.formState.errors.retirementDate && (
+                      <p className="text-sm text-red-500">{form.formState.errors.retirementDate.message}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
