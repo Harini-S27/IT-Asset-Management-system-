@@ -13,9 +13,11 @@ interface DeviceNotificationProps {
   onDismiss: () => void;
   onViewDetails: (device: Device) => void;
   notificationHistoryId?: number;
+  type?: 'DEVICE_ADDED' | 'DEVICE_UPDATED' | 'ASSET_RETIREMENT_ALERT';
+  retirementData?: any;
 }
 
-export function DeviceNotification({ device, onDismiss, onViewDetails, notificationHistoryId }: DeviceNotificationProps) {
+export function DeviceNotification({ device, onDismiss, onViewDetails, notificationHistoryId, type = 'DEVICE_ADDED', retirementData }: DeviceNotificationProps) {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -89,23 +91,47 @@ export function DeviceNotification({ device, onDismiss, onViewDetails, notificat
     }
   };
 
+  // Retirement alert specific styling and content
+  const isRetirementAlert = type === 'ASSET_RETIREMENT_ALERT';
+  
   return (
     <div className={cn(
       "fixed top-4 right-4 z-50 transition-all duration-500 ease-out",
       isVisible ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"
     )}>
-      <Card className="w-96 shadow-lg border-l-4 border-l-green-500 bg-white">
+      <Card className={cn(
+        "w-96 shadow-lg border-l-4 bg-white",
+        isRetirementAlert ? "border-l-orange-500" : "border-l-green-500"
+      )}>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="relative">
-                {getDeviceIcon(device.type)}
-                <div className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full animate-pulse"></div>
+                {isRetirementAlert ? (
+                  <div className="h-8 w-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <AlertCircle className="h-4 w-4 text-orange-600" />
+                  </div>
+                ) : (
+                  getDeviceIcon(device.type)
+                )}
+                <div className={cn(
+                  "absolute -top-1 -right-1 h-3 w-3 rounded-full animate-pulse",
+                  isRetirementAlert ? "bg-orange-500" : "bg-green-500"
+                )}></div>
               </div>
               <div>
                 <CardTitle className="text-sm font-semibold text-gray-900 flex items-center">
-                  <Plus className="h-4 w-4 text-green-600 mr-1" />
-                  New Device Detected
+                  {isRetirementAlert ? (
+                    <>
+                      <AlertCircle className="h-4 w-4 text-orange-600 mr-1" />
+                      Asset Retirement Alert
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 text-green-600 mr-1" />
+                      New Device Detected
+                    </>
+                  )}
                 </CardTitle>
                 <p className="text-xs text-gray-500 mt-1">
                   <Clock className="h-3 w-3 inline mr-1" />
@@ -128,10 +154,15 @@ export function DeviceNotification({ device, onDismiss, onViewDetails, notificat
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-medium text-gray-900">{device.name}</h3>
-                <p className="text-sm text-gray-600">{device.model}</p>
+                <p className="text-sm text-gray-600">
+                  {isRetirementAlert ? retirementData?.message : device.model}
+                </p>
               </div>
-              <Badge className={cn("text-xs", getStatusColor(device.status))}>
-                {device.status}
+              <Badge className={cn(
+                "text-xs",
+                isRetirementAlert ? "bg-orange-100 text-orange-800 border-orange-200" : getStatusColor(device.status)
+              )}>
+                {isRetirementAlert ? `${retirementData?.daysUntilRetirement} days` : device.status}
               </Badge>
             </div>
             

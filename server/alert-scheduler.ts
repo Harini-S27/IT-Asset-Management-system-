@@ -1,6 +1,13 @@
 import { storage } from './storage';
 import { WarrantyService } from './warranty-service';
 
+// WebSocket broadcast function declaration (will be set from routes.ts)
+let broadcastToClients: ((message: any) => void) | null = null;
+
+export function setBroadcastFunction(broadcastFn: (message: any) => void) {
+  broadcastToClients = broadcastFn;
+}
+
 export class AlertScheduler {
   private static isRunning = false;
   private static intervalId: NodeJS.Timeout | null = null;
@@ -47,6 +54,9 @@ export class AlertScheduler {
       
       // Check for overdue maintenance
       await this.checkOverdueMaintenanceAlerts();
+      
+      // Check asset retirement dates
+      await this.checkAssetRetirements();
       
       console.log('✅ Scheduled alert checks completed');
     } catch (error) {
@@ -299,6 +309,143 @@ export class AlertScheduler {
       }
     } catch (error) {
       console.error('Error creating overdue maintenance alert:', error);
+    }
+  }
+
+  // Check asset retirement dates and create alerts
+  private static async checkAssetRetirements(): Promise<void> {
+    try {
+      const assetLifecycles = await storage.getAssetLifecycles();
+      const now = new Date();
+      
+      console.log(`📋 Checking ${assetLifecycles.length} asset lifecycles for retirement notifications...`);
+      
+      for (const asset of assetLifecycles) {
+        if (!asset.isRetired && asset.retirementDate) {
+          const retirementDate = new Date(asset.retirementDate);
+          const daysUntilRetirement = Math.ceil((retirementDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          
+          console.log(`📋 Asset: ${asset.deviceName}, Days until retirement: ${daysUntilRetirement}, Notification threshold: ${asset.notificationDays}`);
+          
+          // Check if we should send a notification based on asset's notification settings
+          if (daysUntilRetirement <= asset.notificationDays && daysUntilRetirement >= 0) {
+            const shouldNotify = asset.dailyNotifications || 
+              !asset.lastNotificationDate || 
+              (now.getTime() - new Date(asset.lastNotificationDate).getTime()) >= (asset.notificationDays * 24 * 60 * 60 * 1000);
+            
+            console.log(`📋 Should notify: ${shouldNotify}, Daily notifications: ${asset.dailyNotifications}, Last notification: ${asset.lastNotificationDate}`);
+            
+            if (shouldNotify) {
+              await this.createAssetRetirementAlert(asset, retirementDate, daysUntilRetirement);
+              
+              // Update last notification date
+              await storage.updateAssetLifecycle(asset.id, {
+                lastNotificationDate: now
+              });
+            }
+          }
+          
+          // Create overdue retirement alert
+          if (daysUntilRetirement < 0) {
+            await this.createOverdueRetirementAlert(asset, Math.abs(daysUntilRetirement));
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking asset retirements:', error);
+    }
+  }
+
+  // Create asset retirement alert
+  private static async createAssetRetirementAlert(asset: any, retirementDate: Date, daysUntilRetirement: number): Promise<void> {
+    try {
+      const existingAlerts = await storage.getAlerts();
+      const hasExistingAlert = existingAlerts.some(alert => 
+        alert.deviceId === asset.deviceId && 
+        alert.alertType === 'end_of_life' && 
+        alert.status === 'Active' &&
+        alert.alertDescription?.includes('retirement')
+      );
+
+      if (!hasExistingAlert) {
+        let severity = 'Low';
+        if (daysUntilRetirement <= 7) severity = 'Critical';
+        else if (daysUntilRetirement <= 30) severity = 'High';
+        else if (daysUntilRetirement <= 90) severity = 'Medium';
+
+        await storage.createAlert({
+          deviceId: asset.deviceId,
+          alertType: 'end_of_life',
+          alertTitle: `ASSET RETIREMENT IN ${daysUntilRetirement} DAYS`,
+          alertDescription: `Asset "${asset.deviceName}" is scheduled for retirement on ${retirementDate.toLocaleDateString()}. Begin replacement planning and data migration.`,
+          severity: severity as 'Low' | 'Medium' | 'High' | 'Critical',
+          alertDate: new Date(),
+          endOfLifeDate: retirementDate,
+          assignedTo: 'IT Asset Manager',
+          status: 'Active',
+          isRecurring: asset.dailyNotifications,
+          recurringInterval: asset.dailyNotifications ? 1 : 7,
+          tags: ['auto-generated', 'asset-retirement', 'lifecycle-management']
+        });
+
+        console.log(`📅 Created asset retirement alert for ${asset.deviceName}: ${daysUntilRetirement} days remaining`);
+        
+        // Broadcast retirement notification to connected clients
+        if (broadcastToClients) {
+          broadcastToClients({
+            type: 'ASSET_RETIREMENT_ALERT',
+            data: {
+              id: asset.id,
+              deviceId: asset.deviceId,
+              deviceName: asset.deviceName,
+              retirementDate: retirementDate.toLocaleDateString(),
+              daysUntilRetirement: daysUntilRetirement,
+              severity: severity,
+              message: `Asset "${asset.deviceName}" is scheduled for retirement in ${daysUntilRetirement} days`,
+              alertTitle: `ASSET RETIREMENT IN ${daysUntilRetirement} DAYS`,
+              alertDescription: `Asset "${asset.deviceName}" is scheduled for retirement on ${retirementDate.toLocaleDateString()}. Begin replacement planning and data migration.`
+            },
+            timestamp: new Date().toISOString(),
+            isRetirementAlert: true
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error creating asset retirement alert:', error);
+    }
+  }
+
+  // Create overdue retirement alert
+  private static async createOverdueRetirementAlert(asset: any, daysOverdue: number): Promise<void> {
+    try {
+      const existingAlerts = await storage.getAlerts();
+      const hasExistingAlert = existingAlerts.some(alert => 
+        alert.deviceId === asset.deviceId && 
+        alert.alertType === 'end_of_life' && 
+        alert.status === 'Active' &&
+        alert.alertDescription?.includes('OVERDUE RETIREMENT')
+      );
+
+      if (!hasExistingAlert) {
+        await storage.createAlert({
+          deviceId: asset.deviceId,
+          alertType: 'end_of_life',
+          alertTitle: `OVERDUE RETIREMENT - ${daysOverdue} DAYS`,
+          alertDescription: `Asset "${asset.deviceName}" retirement is ${daysOverdue} days overdue. Immediate action required for asset disposal and replacement.`,
+          severity: 'Critical',
+          alertDate: new Date(),
+          endOfLifeDate: new Date(asset.retirementDate),
+          assignedTo: 'IT Asset Manager',
+          status: 'Active',
+          isRecurring: true,
+          recurringInterval: 7,
+          tags: ['auto-generated', 'asset-retirement', 'overdue', 'critical']
+        });
+
+        console.log(`📅 Created overdue retirement alert for ${asset.deviceName}: ${daysOverdue} days overdue`);
+      }
+    } catch (error) {
+      console.error('Error creating overdue retirement alert:', error);
     }
   }
 

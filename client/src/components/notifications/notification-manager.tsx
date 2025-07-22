@@ -9,9 +9,10 @@ import { apiRequest } from '@/lib/queryClient';
 interface NotificationItem {
   id: string;
   device: Device;
-  type: 'DEVICE_ADDED' | 'DEVICE_UPDATED';
+  type: 'DEVICE_ADDED' | 'DEVICE_UPDATED' | 'ASSET_RETIREMENT_ALERT';
   timestamp: string;
   notificationHistoryId?: number;
+  retirementData?: any;
 }
 
 export function NotificationManager() {
@@ -57,6 +58,34 @@ export function NotificationManager() {
           // Silent update - no toast notification to avoid spam
           // History is already recorded in the server-side endpoint
         }
+      }
+      
+      // Handle asset retirement alerts
+      if (type === 'ASSET_RETIREMENT_ALERT') {
+        console.log('Received asset retirement alert:', data);
+        
+        // Create retirement notification 
+        const retirementNotification: NotificationItem = {
+          id: `retirement-${data.deviceId}-${timestamp}`,
+          device: {
+            id: data.deviceId,
+            name: data.deviceName,
+            model: 'Asset Retirement',
+            type: 'Asset',
+            status: 'Retiring',
+            location: 'Asset Management',
+            ipAddress: '',
+            latitude: '0',
+            longitude: '0',
+            lastUpdated: timestamp
+          },
+          type: 'ASSET_RETIREMENT_ALERT',
+          timestamp,
+          retirementData: data
+        };
+        
+        setNotifications(prev => [...prev, retirementNotification]);
+        console.log('Asset retirement notification added:', retirementNotification);
       }
     }
   }, [lastMessage, queryClient, toast]);
@@ -143,6 +172,8 @@ export function NotificationManager() {
           onDismiss={() => handleDismissNotification(notification.id)}
           onViewDetails={handleAcceptDevice}
           notificationHistoryId={notification.notificationHistoryId}
+          type={notification.type}
+          retirementData={notification.retirementData}
         />
       ))}
     </div>

@@ -21,6 +21,7 @@ import {
   insertAlertSchema,
   insertAssetLifecycleSchema
 } from "@shared/schema";
+import { AlertScheduler, setBroadcastFunction } from "./alert-scheduler";
 import { z } from "zod";
 
 // WebSocket connection management
@@ -1968,7 +1969,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Manual trigger for alert scheduler
   app.post("/api/alerts/trigger-check", async (req: Request, res: Response) => {
     try {
-      const { AlertScheduler } = await import('./alert-scheduler');
       await AlertScheduler.triggerManualCheck();
       res.json({ message: "Alert check triggered successfully" });
     } catch (error) {
@@ -1986,7 +1986,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Start alert scheduler
   console.log('🚨 Starting Alert Scheduler...');
-  const { AlertScheduler } = await import('./alert-scheduler');
+  setBroadcastFunction(broadcastToClients);
   AlertScheduler.startScheduler();
 
   // ===== EMAIL NOTIFICATION ENDPOINTS =====
