@@ -336,12 +336,14 @@ export class AlertScheduler {
             console.log(`📋 Should notify: ${shouldNotify}, Daily notifications: ${asset.dailyNotifications}, Last notification: ${asset.lastNotificationDate}`);
             
             if (shouldNotify) {
+              console.log(`📋 Creating retirement alert for ${asset.deviceName}...`);
               await this.createAssetRetirementAlert(asset, retirementDate, daysUntilRetirement);
               
               // Update last notification date
               await storage.updateAssetLifecycle(asset.id, {
                 lastNotificationDate: now
               });
+              console.log(`📋 Updated last notification date for ${asset.deviceName}`);
             }
           }
           
@@ -385,13 +387,16 @@ export class AlertScheduler {
           status: 'Active',
           isRecurring: asset.dailyNotifications,
           recurringInterval: asset.dailyNotifications ? 1 : 7,
-          tags: ['auto-generated', 'asset-retirement', 'lifecycle-management']
+          tags: ['auto-generated', 'asset-retirement', 'lifecycle-management'],
+          emailNotificationSent: false,
+          escalationLevel: 1
         });
 
         console.log(`📅 Created asset retirement alert for ${asset.deviceName}: ${daysUntilRetirement} days remaining`);
         
         // Broadcast retirement notification to connected clients
         if (broadcastToClients) {
+          console.log(`📡 Broadcasting retirement alert to connected clients for ${asset.deviceName}`);
           broadcastToClients({
             type: 'ASSET_RETIREMENT_ALERT',
             data: {
@@ -408,6 +413,8 @@ export class AlertScheduler {
             timestamp: new Date().toISOString(),
             isRetirementAlert: true
           });
+        } else {
+          console.log(`❌ No broadcast function available - retirement alert not sent`);
         }
       }
     } catch (error) {
@@ -439,7 +446,9 @@ export class AlertScheduler {
           status: 'Active',
           isRecurring: true,
           recurringInterval: 7,
-          tags: ['auto-generated', 'asset-retirement', 'overdue', 'critical']
+          tags: ['auto-generated', 'asset-retirement', 'overdue', 'critical'],
+          emailNotificationSent: false,
+          escalationLevel: 2
         });
 
         console.log(`📅 Created overdue retirement alert for ${asset.deviceName}: ${daysOverdue} days overdue`);

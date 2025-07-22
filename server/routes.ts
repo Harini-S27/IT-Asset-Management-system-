@@ -1977,6 +1977,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test endpoint to manually send a retirement notification popup
+  app.post("/api/test/retirement-notification", async (req: Request, res: Response) => {
+    try {
+      console.log('🧪 Sending test retirement notification popup');
+      
+      // Get the first device for testing
+      const devices = await storage.getDevices();
+      const testDevice = devices[0];
+      
+      if (!testDevice) {
+        return res.status(404).json({ error: 'No devices found for testing' });
+      }
+
+      // Send a test retirement notification
+      if (broadcastToClients) {
+        broadcastToClients({
+          type: 'ASSET_RETIREMENT_ALERT',
+          data: {
+            id: 999,
+            deviceId: testDevice.id,
+            deviceName: testDevice.name,
+            retirementDate: '7/23/2025',
+            daysUntilRetirement: 1,
+            severity: 'Critical',
+            message: `Test: Asset "${testDevice.name}" is scheduled for retirement in 1 day`,
+            alertTitle: 'TEST RETIREMENT ALERT',
+            alertDescription: `This is a test retirement notification for device "${testDevice.name}"`
+          },
+          timestamp: new Date().toISOString(),
+          isRetirementAlert: true
+        });
+        
+        console.log(`📡 Test retirement notification sent for device: ${testDevice.name}`);
+        res.json({ 
+          message: 'Test retirement notification sent successfully',
+          deviceName: testDevice.name,
+          deviceId: testDevice.id
+        });
+      } else {
+        res.status(500).json({ error: 'WebSocket broadcast function not available' });
+      }
+    } catch (error) {
+      console.error('Error sending test retirement notification:', error);
+      res.status(500).json({ error: 'Failed to send test notification' });
+    }
+  });
+
   // Start network scanners when server starts
   console.log('🚀 Starting Finecons network scanner...');
   networkScanner.startScanning(5); // Scan every 5 minutes
