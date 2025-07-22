@@ -81,15 +81,7 @@ export function NotificationsHistoryPage() {
     }
   };
 
-  const handleAccept = (notification: NotificationHistory) => {
-    updateActionMutation.mutate({ id: notification.id, action: "accepted" });
-  };
-
-  const handleDecline = (notification: NotificationHistory) => {
-    updateActionMutation.mutate({ id: notification.id, action: "dismissed" });
-  };
-
-  const renderNotificationTable = (data: NotificationHistory[], showActions: boolean = false) => {
+  const renderNotificationTable = (data: NotificationHistory[]) => {
     const paginatedData = getPaginatedData(data);
     
     return (
@@ -135,10 +127,10 @@ export function NotificationsHistoryPage() {
                 {getStatusBadge(notification.action)}
               </div>
               <div className="col-span-2 flex items-center text-sm text-gray-600">
-                {format(new Date(notification.timestamp), "MMM dd, yyyy")}
+                {notification.timestamp ? format(new Date(notification.timestamp), "MMM dd, yyyy") : "N/A"}
               </div>
               <div className="col-span-2 flex items-center text-sm text-gray-600">
-                {format(new Date(notification.timestamp), "HH:mm:ss")}
+                {notification.timestamp ? format(new Date(notification.timestamp), "HH:mm:ss") : "N/A"}
               </div>
               <div className="col-span-2 flex items-center space-x-2">
                 <Button
@@ -151,26 +143,6 @@ export function NotificationsHistoryPage() {
                 >
                   <Eye className="h-4 w-4" />
                 </Button>
-                {showActions && !notification.action && (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleAccept(notification)}
-                      disabled={updateActionMutation.isPending}
-                    >
-                      <Check className="h-4 w-4 text-green-600" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDecline(notification)}
-                      disabled={updateActionMutation.isPending}
-                    >
-                      <X className="h-4 w-4 text-red-600" />
-                    </Button>
-                  </>
-                )}
               </div>
             </div>
           ))}
@@ -373,7 +345,7 @@ export function NotificationsHistoryPage() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Timestamp</label>
-                  <p className="text-lg">{format(new Date(selectedNotification.timestamp), "PPpp")}</p>
+                  <p className="text-lg">{selectedNotification.timestamp ? format(new Date(selectedNotification.timestamp), "PPpp") : "N/A"}</p>
                 </div>
               </div>
               
@@ -384,27 +356,7 @@ export function NotificationsHistoryPage() {
                 </div>
               )}
               
-              {!selectedNotification.action && (
-                <div className="flex gap-2 pt-4">
-                  <Button
-                    onClick={() => handleAccept(selectedNotification)}
-                    disabled={updateActionMutation.isPending}
-                    className="flex-1"
-                  >
-                    <Check className="h-4 w-4 mr-2" />
-                    Accept
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => handleDecline(selectedNotification)}
-                    disabled={updateActionMutation.isPending}
-                    className="flex-1"
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Decline
-                  </Button>
-                </div>
-              )}
+
             </div>
           )}
         </DialogContent>
