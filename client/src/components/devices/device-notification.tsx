@@ -51,14 +51,20 @@ export function DeviceNotification({ device, onDismiss, onViewDetails, notificat
 
   const handleDismiss = () => {
     console.log('Dismissing notification...');
-    try {
-      if (notificationHistoryId) {
-        updateNotificationMutation.mutate("dismissed");
-      }
+    console.log('Notification type:', isRetirementAlert ? 'retirement' : 'device');
+    console.log('Has notificationHistoryId:', !!notificationHistoryId);
+    
+    // For retirement alerts, just dismiss locally since they don't have notification history
+    if (isRetirementAlert) {
+      console.log('Dismissing retirement alert locally');
       onDismiss();
-    } catch (error) {
-      console.error('Error dismissing notification:', error);
-      onDismiss(); // Still dismiss even if API call fails
+    } else if (notificationHistoryId) {
+      console.log('Dismissing regular notification via API');
+      updateNotificationMutation.mutate("dismissed");
+      onDismiss();
+    } else {
+      console.log('No notification history ID, dismissing locally');
+      onDismiss();
     }
   };
 
