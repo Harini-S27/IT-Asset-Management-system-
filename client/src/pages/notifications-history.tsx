@@ -184,7 +184,7 @@ export function NotificationsHistoryPage() {
               className="p-0" 
               align="start"
               alignOffset={-24}
-              sideOffset={8}
+              sideOffset={0}
               style={{ 
                 width: 'var(--radix-dropdown-menu-trigger-width)',
                 minWidth: 'var(--radix-dropdown-menu-trigger-width)'
