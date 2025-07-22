@@ -66,9 +66,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Check if user is already logged in
-    const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+    // First check localStorage (persistent "remember me"), then sessionStorage (current session)
+    const persistentUser = localStorage.getItem('user');
+    const sessionUser = sessionStorage.getItem('user');
+    
+    if (persistentUser) {
+      console.log('Restoring user from localStorage (remember me):', persistentUser);
+      setUser(JSON.parse(persistentUser));
+    } else if (sessionUser) {
+      console.log('Restoring user from sessionStorage (current session):', sessionUser);
+      setUser(JSON.parse(sessionUser));
+    } else {
+      console.log('No stored user found, user needs to login');
     }
   }, []);
 
@@ -88,11 +97,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const userData = { username, role };
     setUser(userData);
     
+    console.log('Logging in user:', username, 'Role:', role, 'Remember me:', rememberMe);
+    
+    // Clear any existing auth data first
+    localStorage.removeItem('user');
+    sessionStorage.removeItem('user');
+    
     // Store auth data based on remember me selection
     if (rememberMe) {
       localStorage.setItem('user', JSON.stringify(userData));
+      console.log('User data stored in localStorage for persistent login');
     } else {
       sessionStorage.setItem('user', JSON.stringify(userData));
+      console.log('User data stored in sessionStorage for current session only');
     }
   };
 
