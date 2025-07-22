@@ -53,11 +53,15 @@ export function DeviceNotification({ device, onDismiss, onViewDetails, notificat
     console.log('handleDismiss called - Dismissing notification...');
     console.log('Notification type:', isRetirementAlert ? 'retirement' : 'device');
     console.log('Has notificationHistoryId:', !!notificationHistoryId);
-    console.log('Calling onDismiss function...');
+    console.log('About to call onDismiss callback...');
     
-    // Always dismiss locally - no API calls needed for retirement alerts
-    onDismiss();
-    console.log('onDismiss called successfully');
+    // Call the onDismiss callback which should remove from notification manager state
+    try {
+      onDismiss();
+      console.log('onDismiss callback executed successfully');
+    } catch (error) {
+      console.error('Error calling onDismiss:', error);
+    }
   };
 
   const getDeviceIcon = (type: string) => {

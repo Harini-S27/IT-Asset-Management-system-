@@ -101,8 +101,14 @@ export function NotificationManager() {
     
     // For retirement alerts, just dismiss locally
     if (notification.type === 'ASSET_RETIREMENT_ALERT') {
-      console.log('Dismissing retirement alert locally');
-      setNotifications(prev => prev.filter(n => n.id !== id));
+      console.log('Dismissing retirement alert locally, current notifications:', notifications.length);
+      console.log('Removing notification with id:', id);
+      setNotifications(prev => {
+        const filtered = prev.filter(n => n.id !== id);
+        console.log('Notifications after filtering:', filtered.length);
+        return filtered;
+      });
+      console.log('Retirement alert dismissed successfully');
       return;
     }
     
