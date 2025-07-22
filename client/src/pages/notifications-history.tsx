@@ -183,9 +183,12 @@ export function NotificationsHistoryPage() {
             <DropdownMenuContent 
               className="p-0" 
               align="start"
-              alignOffset={-16}
+              alignOffset={-48}
               sideOffset={8}
-              style={{ width: 'calc(100vw - 20rem)' }}
+              style={{ 
+                width: 'calc(100vw - 18rem)',
+                marginLeft: 0
+              }}
             >
               <div className="p-4 border-b">
                 <div className="flex gap-4">
