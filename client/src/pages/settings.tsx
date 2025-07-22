@@ -58,7 +58,13 @@ export default function SettingsPage() {
   // Fetch users for user management
   const { data: users = [], isLoading: usersLoading } = useQuery({
     queryKey: ["/api/user-management"],
-    queryFn: () => apiRequest("/api/user-management")
+    queryFn: async () => {
+      const response = await fetch("/api/user-management");
+      if (!response.ok) {
+        throw new Error("Failed to fetch users");
+      }
+      return response.json();
+    }
   });
 
   // Delete user mutation
@@ -73,7 +79,8 @@ export default function SettingsPage() {
         throw new Error(error.message || "Failed to delete user");
       }
       
-      return response.json();
+      // DELETE requests typically don't return content
+      return null;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/user-management"] });
