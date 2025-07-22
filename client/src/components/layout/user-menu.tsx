@@ -36,12 +36,15 @@ export function UserMenu() {
     ? roleColors[user.role as keyof typeof roleColors] 
     : 'bg-gray-500';
 
+  // Display username with proper capitalization for UI
+  const displayUsername = user.username === 'finecons' ? 'Finecons' : user.username;
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-          <Avatar className={user.username === 'Finecons' ? 'bg-white' : roleColor}>
-            {user.username === 'Finecons' ? (
+          <Avatar className={user.username === 'finecons' ? 'bg-white' : roleColor}>
+            {user.username === 'finecons' ? (
               <AvatarImage src={fineConsLogo} alt="Finecons Logo" className="object-cover" />
             ) : (
               <AvatarFallback>{userInitials}</AvatarFallback>
@@ -52,7 +55,7 @@ export function UserMenu() {
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>
           <div className="flex flex-col">
-            <span>{user.username}</span>
+            <span>{displayUsername}</span>
             <span className="text-xs text-muted-foreground">{user.role}</span>
           </div>
         </DropdownMenuLabel>
