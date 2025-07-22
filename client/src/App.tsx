@@ -18,6 +18,7 @@ import NetworkDiscovery from "@/pages/network-discovery";
 import { NotificationsHistoryPage } from "@/pages/notifications-history";
 import CmdbPage from "@/pages/cmdb";
 import AlertsPage from "@/pages/alerts";
+import AssetLifecyclePage from "@/pages/asset-lifecycle";
 import Sidebar from "@/components/layout/sidebar";
 import LoginPage from "@/pages/login";
 import { AuthProvider, useAuth } from "@/contexts/auth-context";
@@ -58,6 +59,7 @@ function Router() {
                 <Route path="/notifications" component={NotificationsHistoryPage} />
                 <Route path="/cmdb" component={CmdbPage} />
                 <Route path="/alerts" component={AlertsPage} />
+                <Route path="/asset-lifecycle" component={AssetLifecyclePage} />
                 <Route path="/settings" component={Settings} />
                 <Route path="/reports" component={Reports} />
                 <Route path="/login">

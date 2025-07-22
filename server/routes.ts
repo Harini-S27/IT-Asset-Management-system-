@@ -18,7 +18,8 @@ import {
   insertCmdbChangeRecordSchema,
   insertCmdbRelationshipSchema,
   insertCmdbComplianceRuleSchema,
-  insertAlertSchema
+  insertAlertSchema,
+  insertAssetLifecycleSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -2119,6 +2120,134 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         message: "Failed to get email logs"
       });
+    }
+  });
+
+  // ===== ASSET LIFECYCLE MANAGEMENT ENDPOINTS =====
+  
+  // Get all asset lifecycles
+  app.get("/api/asset-lifecycle", async (req: Request, res: Response) => {
+    try {
+      const lifecycles = await storage.getAssetLifecycles();
+      res.json(lifecycles);
+    } catch (error) {
+      console.error('Error fetching asset lifecycles:', error);
+      res.status(500).json({ message: "Failed to fetch asset lifecycles" });
+    }
+  });
+
+  // Get asset lifecycle by ID
+  app.get("/api/asset-lifecycle/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid lifecycle ID" });
+      }
+      
+      const lifecycle = await storage.getAssetLifecycle(id);
+      if (!lifecycle) {
+        return res.status(404).json({ message: "Asset lifecycle not found" });
+      }
+      
+      res.json(lifecycle);
+    } catch (error) {
+      console.error('Error fetching asset lifecycle:', error);
+      res.status(500).json({ message: "Failed to fetch asset lifecycle" });
+    }
+  });
+
+  // Create asset lifecycle
+  app.post("/api/asset-lifecycle", async (req: Request, res: Response) => {
+    try {
+      const result = insertAssetLifecycleSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid asset lifecycle data", 
+          errors: result.error.errors 
+        });
+      }
+
+      // Check if device exists
+      const device = await storage.getDevice(result.data.deviceId);
+      if (!device) {
+        return res.status(404).json({ message: "Device not found" });
+      }
+
+      // Check if lifecycle already exists for this device
+      const existingLifecycle = await storage.getAssetLifecycleByDeviceId(result.data.deviceId);
+      if (existingLifecycle) {
+        return res.status(409).json({ message: "Asset lifecycle already exists for this device" });
+      }
+
+      const lifecycle = await storage.createAssetLifecycle(result.data);
+      res.json(lifecycle);
+    } catch (error) {
+      console.error('Error creating asset lifecycle:', error);
+      res.status(500).json({ message: "Failed to create asset lifecycle" });
+    }
+  });
+
+  // Update asset lifecycle
+  app.put("/api/asset-lifecycle/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid lifecycle ID" });
+      }
+
+      const result = insertAssetLifecycleSchema.partial().safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid asset lifecycle data", 
+          errors: result.error.errors 
+        });
+      }
+
+      const lifecycle = await storage.updateAssetLifecycle(id, result.data);
+      if (!lifecycle) {
+        return res.status(404).json({ message: "Asset lifecycle not found" });
+      }
+
+      res.json(lifecycle);
+    } catch (error) {
+      console.error('Error updating asset lifecycle:', error);
+      res.status(500).json({ message: "Failed to update asset lifecycle" });
+    }
+  });
+
+  // Delete asset lifecycle
+  app.delete("/api/asset-lifecycle/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid lifecycle ID" });
+      }
+
+      const deleted = await storage.deleteAssetLifecycle(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Asset lifecycle not found" });
+      }
+
+      res.json({ message: "Asset lifecycle deleted successfully" });
+    } catch (error) {
+      console.error('Error deleting asset lifecycle:', error);
+      res.status(500).json({ message: "Failed to delete asset lifecycle" });
+    }
+  });
+
+  // Get assets near retirement
+  app.get("/api/asset-lifecycle/near-retirement/:days", async (req: Request, res: Response) => {
+    try {
+      const days = parseInt(req.params.days);
+      if (isNaN(days) || days < 0) {
+        return res.status(400).json({ message: "Invalid days parameter" });
+      }
+
+      const lifecycles = await storage.getAssetsNearRetirement(days);
+      res.json(lifecycles);
+    } catch (error) {
+      console.error('Error fetching assets near retirement:', error);
+      res.status(500).json({ message: "Failed to fetch assets near retirement" });
     }
   });
 

@@ -58,7 +58,10 @@ import {
   type InsertAlertHistory,
   alertTemplates,
   type AlertTemplate,
-  type InsertAlertTemplate
+  type InsertAlertTemplate,
+  assetLifecycle,
+  type SelectAssetLifecycle,
+  type InsertAssetLifecycle
 } from "@shared/schema";
 import { db } from "./db";
 import { emailService } from "./email-service";
@@ -204,6 +207,15 @@ export interface IStorage {
   createAlertTemplate(template: InsertAlertTemplate): Promise<AlertTemplate>;
   updateAlertTemplate(id: number, template: Partial<InsertAlertTemplate>): Promise<AlertTemplate | undefined>;
   deleteAlertTemplate(id: number): Promise<boolean>;
+  
+  // Asset Lifecycle operations
+  getAssetLifecycles(): Promise<SelectAssetLifecycle[]>;
+  getAssetLifecycle(id: number): Promise<SelectAssetLifecycle | undefined>;
+  getAssetLifecycleByDeviceId(deviceId: number): Promise<SelectAssetLifecycle | undefined>;
+  createAssetLifecycle(lifecycle: InsertAssetLifecycle): Promise<SelectAssetLifecycle>;
+  updateAssetLifecycle(id: number, lifecycle: Partial<InsertAssetLifecycle>): Promise<SelectAssetLifecycle | undefined>;
+  deleteAssetLifecycle(id: number): Promise<boolean>;
+  getAssetsNearRetirement(daysThreshold: number): Promise<SelectAssetLifecycle[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1518,6 +1530,51 @@ export class DatabaseStorage implements IStorage {
   async deleteAlertTemplate(id: number): Promise<boolean> {
     const result = await db.delete(alertTemplates).where(eq(alertTemplates.id, id));
     return (result.rowCount || 0) > 0;
+  }
+
+  // Asset Lifecycle operations
+  async getAssetLifecycles(): Promise<SelectAssetLifecycle[]> {
+    return await db.select().from(assetLifecycle).orderBy(desc(assetLifecycle.createdAt));
+  }
+
+  async getAssetLifecycle(id: number): Promise<SelectAssetLifecycle | undefined> {
+    const [lifecycle] = await db.select().from(assetLifecycle).where(eq(assetLifecycle.id, id));
+    return lifecycle;
+  }
+
+  async getAssetLifecycleByDeviceId(deviceId: number): Promise<SelectAssetLifecycle | undefined> {
+    const [lifecycle] = await db.select().from(assetLifecycle)
+      .where(eq(assetLifecycle.deviceId, deviceId));
+    return lifecycle;
+  }
+
+  async createAssetLifecycle(lifecycle: InsertAssetLifecycle): Promise<SelectAssetLifecycle> {
+    const [newLifecycle] = await db.insert(assetLifecycle).values(lifecycle).returning();
+    return newLifecycle;
+  }
+
+  async updateAssetLifecycle(id: number, lifecycle: Partial<InsertAssetLifecycle>): Promise<SelectAssetLifecycle | undefined> {
+    const [updatedLifecycle] = await db.update(assetLifecycle)
+      .set({ ...lifecycle, updatedAt: new Date() })
+      .where(eq(assetLifecycle.id, id))
+      .returning();
+    return updatedLifecycle;
+  }
+
+  async deleteAssetLifecycle(id: number): Promise<boolean> {
+    const result = await db.delete(assetLifecycle).where(eq(assetLifecycle.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async getAssetsNearRetirement(daysThreshold: number): Promise<SelectAssetLifecycle[]> {
+    const thresholdDate = new Date();
+    thresholdDate.setDate(thresholdDate.getDate() + daysThreshold);
+    
+    return await db.select().from(assetLifecycle)
+      .where(
+        sql`${assetLifecycle.retirementDate} <= ${thresholdDate.toISOString()} AND ${assetLifecycle.isRetired} = false`
+      )
+      .orderBy(assetLifecycle.retirementDate);
   }
 }
 

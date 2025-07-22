@@ -15,7 +15,8 @@ import {
   Mail,
   Bell,
   Database,
-  AlertTriangle
+  AlertTriangle,
+  Calendar
 } from "lucide-react";
 import { UserMenu } from "./user-menu";
 import { useAuth } from "@/contexts/auth-context";
@@ -86,6 +87,11 @@ const Sidebar = () => {
       name: "Alert Management",
       href: "/alerts",
       icon: AlertTriangle,
+    },
+    {
+      name: "Asset Lifecycle",
+      href: "/asset-lifecycle",
+      icon: Calendar,
     },
     {
       name: "Reports",

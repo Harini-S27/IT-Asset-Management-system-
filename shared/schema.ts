@@ -580,3 +580,40 @@ export const insertAlertHistorySchema = createInsertSchema(alertHistory);
 export const selectAlertHistorySchema = createSelectSchema(alertHistory);
 export type InsertAlertHistory = z.infer<typeof insertAlertHistorySchema>;
 export type AlertHistory = typeof alertHistory.$inferSelect;
+
+// Asset Lifecycle Management schema
+export const assetLifecycle = pgTable("asset_lifecycle", {
+  id: serial("id").primaryKey(),
+  deviceId: integer("device_id").notNull(),
+  deviceName: text("device_name").notNull(),
+  acquiredDate: timestamp("acquired_date").notNull(),
+  retirementDate: timestamp("retirement_date").notNull(),
+  notificationDays: integer("notification_days").notNull().default(30), // Days before retirement to notify
+  dailyNotifications: boolean("daily_notifications").notNull().default(false),
+  lastNotificationDate: timestamp("last_notification_date"),
+  isRetired: boolean("is_retired").notNull().default(false),
+  retiredDate: timestamp("retired_date"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+// Asset Lifecycle relations
+export const assetLifecycleRelations = relations(assetLifecycle, ({ one }) => ({
+  device: one(devices, {
+    fields: [assetLifecycle.deviceId],
+    references: [devices.id]
+  })
+}));
+
+// Insert and select schemas
+export const insertAssetLifecycleSchema = createInsertSchema(assetLifecycle).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const selectAssetLifecycleSchema = createSelectSchema(assetLifecycle);
+
+export type InsertAssetLifecycle = z.infer<typeof insertAssetLifecycleSchema>;
+export type SelectAssetLifecycle = z.infer<typeof selectAssetLifecycleSchema>;
