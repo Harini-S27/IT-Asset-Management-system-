@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { 
   AlertTriangle, 
   Shield, 
@@ -16,7 +16,6 @@ import {
   Settings,
   Eye,
   ChevronDown,
-  ChevronRight,
   Calendar,
   Wrench
 } from "lucide-react";
@@ -49,7 +48,6 @@ export default function AlertsCompactPage() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
-  const [expandedAlerts, setExpandedAlerts] = useState<Set<number>>(new Set());
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -103,18 +101,6 @@ export default function AlertsCompactPage() {
 
   const handleStatusUpdate = (alert: Alert, newStatus: string) => {
     updateAlertStatus.mutate({ id: alert.id, status: newStatus });
-  };
-
-  const toggleAlertExpansion = (alertId: number) => {
-    setExpandedAlerts(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(alertId)) {
-        newSet.delete(alertId);
-      } else {
-        newSet.add(alertId);
-      }
-      return newSet;
-    });
   };
 
   return (
@@ -199,41 +185,46 @@ export default function AlertsCompactPage() {
         </Select>
       </div>
 
-      {/* Sequential Alert Dropdown List */}
+      {/* Scrollable Alert Dropdown */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Bell className="h-5 w-5 mr-2" />
-            Alerts ({filteredAlerts.length})
-            <div className="text-sm font-normal text-gray-500 ml-2">Active alerts requiring attention</div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {alertsLoading ? (
-              <div className="text-center py-8">Loading alerts...</div>
-            ) : filteredAlerts.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <Bell className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                No alerts found
-              </div>
-            ) : (
-              filteredAlerts.map((alert, index) => (
-                <Collapsible 
-                  key={alert.id} 
-                  open={expandedAlerts.has(alert.id)}
-                  onOpenChange={() => toggleAlertExpansion(alert.id)}
-                >
-                  <CollapsibleTrigger asChild>
-                    <div className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="text-blue-600">
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Bell className="h-5 w-5 mr-2" />
+              Alert Management
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="flex items-center">
+                  <Bell className="h-4 w-4 mr-2" />
+                  View Alerts ({filteredAlerts.length})
+                  <ChevronDown className="h-4 w-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-96 max-h-80 overflow-y-auto">
+                {alertsLoading ? (
+                  <div className="p-4 text-center text-sm text-gray-500">Loading alerts...</div>
+                ) : filteredAlerts.length === 0 ? (
+                  <div className="p-4 text-center text-sm text-gray-500">
+                    <Bell className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                    No alerts found
+                  </div>
+                ) : (
+                  filteredAlerts.map((alert, index) => (
+                    <div key={alert.id}>
+                      <DropdownMenuItem 
+                        className="p-4 cursor-pointer"
+                        onClick={() => setSelectedAlert(alert)}
+                      >
+                        <div className="flex items-start space-x-3 w-full">
+                          <div className="text-blue-600 mt-1">
                             {ALERT_ICONS[alert.alertType as keyof typeof ALERT_ICONS] || <AlertTriangle className="h-4 w-4" />}
                           </div>
-                          <div className="flex-1">
-                            <div className="font-medium text-gray-900">{alert.alertTitle}</div>
-                            <div className="text-sm text-gray-600 mt-1">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm text-gray-900 truncate">
+                              {alert.alertTitle}
+                            </div>
+                            <div className="text-xs text-gray-600 mt-1 line-clamp-2">
                               {alert.alertType === 'warranty_expiration' && 'Device warranty expires in 30 days'}
                               {alert.alertType === 'maintenance_due' && 'Scheduled maintenance is overdue'}  
                               {alert.alertType === 'end_of_life' && 'Asset scheduled for retirement'}
@@ -241,108 +232,32 @@ export default function AlertsCompactPage() {
                               {alert.alertType === 'security_risk' && 'Security risk assessment required'}
                             </div>
                             <div className="text-xs text-gray-500 mt-1">
-                              Device: {alert.deviceId} • Date: {new Date(alert.alertDate).toLocaleDateString()}
+                              Device: {alert.deviceId} • {new Date(alert.alertDate).toLocaleDateString()}
+                            </div>
+                            <div className="flex items-center space-x-2 mt-2">
+                              <Badge className={`text-xs px-2 py-1 ${SEVERITY_COLORS[alert.severity as keyof typeof SEVERITY_COLORS]}`}>
+                                {alert.severity}
+                              </Badge>
+                              <Badge className={`text-xs px-2 py-1 ${STATUS_COLORS[alert.status as keyof typeof STATUS_COLORS]}`}>
+                                {alert.status}
+                              </Badge>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-2">
-                            <Badge className={SEVERITY_COLORS[alert.severity as keyof typeof SEVERITY_COLORS]}>
-                              {alert.severity}
-                            </Badge>
-                            <Badge className={STATUS_COLORS[alert.status as keyof typeof STATUS_COLORS]}>
-                              {alert.status}
-                            </Badge>
-                            {expandedAlerts.has(alert.id) ? (
-                              <ChevronDown className="h-4 w-4 text-gray-400" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4 text-gray-400" />
-                            )}
-                          </div>
                         </div>
-                      </div>
+                      </DropdownMenuItem>
+                      {index < filteredAlerts.length - 1 && <DropdownMenuSeparator />}
                     </div>
-                  </CollapsibleTrigger>
-                  
-                  <CollapsibleContent className="border-l-2 border-gray-200 ml-6 pl-4 mt-2">
-                    <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-                      {/* Alert Details */}
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="font-medium text-gray-700">Alert Type:</span>
-                          <div className="text-gray-600 capitalize">
-                            {alert.alertType.replace('_', ' ')}
-                          </div>
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-700">Assigned To:</span>
-                          <div className="text-gray-600">
-                            {alert.assignedTo || 'IT Asset Manager'}
-                          </div>
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-700">Created:</span>
-                          <div className="text-gray-600">
-                            {new Date(alert.alertDate).toLocaleDateString()}
-                          </div>
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-700">Priority:</span>
-                          <div className="text-gray-600">{alert.severity}</div>
-                        </div>
-                      </div>
-
-                      {/* Alert Description */}
-                      <div className="border-t pt-3">
-                        <span className="font-medium text-gray-700 text-sm">Description:</span>
-                        <div className="text-sm text-gray-600 mt-1 bg-white p-3 rounded border">
-                          {alert.alertDescription}
-                        </div>
-                      </div>
-
-                      {/* Action Buttons */}
-                      {alert.status === 'Active' && (
-                        <div className="flex space-x-2 pt-3 border-t">
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="text-yellow-600 border-yellow-200 hover:bg-yellow-50"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleStatusUpdate(alert, 'Acknowledged');
-                            }}
-                          >
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Acknowledge
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            className="bg-green-600 hover:bg-green-700"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleStatusUpdate(alert, 'Resolved');
-                            }}
-                          >
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Resolve
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="text-red-600 border-red-200 hover:bg-red-50"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleStatusUpdate(alert, 'Dismissed');
-                            }}
-                          >
-                            <XCircle className="h-4 w-4 mr-1" />
-                            Dismiss
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              ))
-            )}
+                  ))
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center text-gray-500 py-8">
+            <Bell className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+            <div className="text-lg font-medium mb-2">Alert Management</div>
+            <div className="text-sm">Click "View Alerts" above to browse and manage all system alerts</div>
           </div>
         </CardContent>
       </Card>
