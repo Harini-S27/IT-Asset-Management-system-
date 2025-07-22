@@ -17,7 +17,7 @@ import GlobalBlocking from "@/pages/global-blocking";
 import NetworkDiscovery from "@/pages/network-discovery";
 import { NotificationsHistoryPage } from "@/pages/notifications-history";
 import CmdbPage from "@/pages/cmdb";
-import AlertsPage from "@/pages/alerts";
+import AlertsCompactPage from "@/pages/alerts-compact";
 import AssetLifecyclePage from "@/pages/asset-lifecycle";
 import Sidebar from "@/components/layout/sidebar";
 import LoginPage from "@/pages/login";
@@ -58,7 +58,7 @@ function Router() {
                 <Route path="/network-discovery" component={NetworkDiscovery} />
                 <Route path="/notifications" component={NotificationsHistoryPage} />
                 <Route path="/cmdb" component={CmdbPage} />
-                <Route path="/alerts" component={AlertsPage} />
+                <Route path="/alerts" component={AlertsCompactPage} />
                 <Route path="/asset-lifecycle" component={AssetLifecyclePage} />
                 <Route path="/settings" component={Settings} />
                 <Route path="/reports" component={Reports} />
