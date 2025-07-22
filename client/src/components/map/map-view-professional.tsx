@@ -463,43 +463,7 @@ const ProfessionalMapView = () => {
               </div>
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-0 flex-1 flex flex-col">
-            <ScrollArea className="flex-1">
-              <div className="space-y-2">
-                {sidebarDevices.map((device) => (
-                  <div 
-                    key={device.id}
-                    className="flex items-center gap-3 p-2 rounded-lg border hover:bg-gray-50 cursor-pointer transition-colors"
-                    onClick={() => {
-                      setSelectedDevice(device);
-                      if (device.latitude && device.longitude && mapRef.current) {
-                        mapRef.current.setView([parseFloat(device.latitude.toString()), parseFloat(device.longitude.toString())], 15);
-                      }
-                    }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className={cn(
-                        "w-2 h-2 rounded-full",
-                        device.status === 'Active' ? "bg-green-500" : "bg-red-500"
-                      )}></div>
-                      {getDeviceTypeIcon(device.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm truncate">{device.name}</div>
-                      <div className="text-xs text-gray-600">
-                        {device.location === 'Agent-Reported' ? 'Auto-Discovered' : device.location}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {sidebarDevices.length === 0 && (
-                  <div className="text-sm text-gray-500 text-center py-8">
-                    No devices found
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
-          </CardContent>
+
         </Card>
       </div>
       
