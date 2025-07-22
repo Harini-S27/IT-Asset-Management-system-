@@ -312,7 +312,6 @@ export function SystemPreferencesForm() {
     timeZone: "America/Los_Angeles",
     dateFormat: "MM/DD/YYYY",
     language: "en-US",
-    darkMode: false,
     autoRefresh: true,
     sessionTimeout: "30"
   });
@@ -415,21 +414,7 @@ export function SystemPreferencesForm() {
           <div>
             <h3 className="text-sm font-medium mb-3">Advanced Settings</h3>
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="toggle-dark-mode" className="text-sm">Enable Dark Mode</Label>
-                  <p className="text-xs text-gray-500">Allow users to toggle between light and dark themes</p>
-                </div>
-                <Switch 
-                  id="toggle-dark-mode"
-                  checked={preferences.darkMode} 
-                  onCheckedChange={(checked) => {
-                    handleChange('darkMode', checked);
-                    // Apply dark mode effect immediately for demonstration
-                    document.documentElement.classList.toggle('dark', checked);
-                  }} 
-                />
-              </div>
+
               <div className="flex items-center justify-between">
                 <div>
                   <Label htmlFor="toggle-auto-refresh" className="text-sm">Auto-refresh Dashboard</Label>
