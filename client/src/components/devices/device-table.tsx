@@ -8,7 +8,15 @@ import {
   Eye,
   Monitor,
   Cpu,
-  Shield
+  Shield,
+  Video,
+  Camera,
+  Server,
+  Router,
+  Smartphone,
+  Laptop,
+  HardDrive,
+  Printer
 } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import { formatTimeSince, getStatusColor, cn } from "@/lib/utils";
@@ -67,7 +75,7 @@ const DeviceTable = ({
       accessorKey: "name",
       cell: (device: Device) => (
         <div className="flex items-center">
-          <div className="h-10 w-10 rounded-md bg-gray-100 mr-3 flex items-center justify-center">
+          <div className="h-10 w-10 rounded-md bg-blue-100 mr-3 flex items-center justify-center">
             {getDeviceIcon(device.type)}
           </div>
           <div>
@@ -216,21 +224,33 @@ const getStatusColorClass = (status: string): string => {
 
 // Helper function to get device type icon
 const getDeviceIcon = (type: string) => {
+  const iconClass = "h-6 w-6 text-blue-600";
+  
   switch (type) {
     case "Workstation":
-      return <Monitor className="h-6 w-6 text-gray-500" />;
+    case "Desktop":
+      return <Monitor className={iconClass} />;
+    case "Security Camera":
+    case "Camera":
+      return <Video className={iconClass} />;
     case "Server":
-      return <Cpu className="h-6 w-6 text-gray-500" />;
+      return <Server className={iconClass} />;
     case "Network":
-      return <Cpu className="h-6 w-6 text-gray-500" />;
     case "Router":
-      return <Cpu className="h-6 w-6 text-gray-500" />;
+    case "Network Device":
+      return <Router className={iconClass} />;
     case "Laptop":
-      return <Monitor className="h-6 w-6 text-gray-500" />;
+      return <Laptop className={iconClass} />;
     case "Mobile":
-      return <Monitor className="h-6 w-6 text-gray-500" />;
+    case "Mobile Device":
+    case "Mobile Phone":
+      return <Smartphone className={iconClass} />;
+    case "Storage":
+      return <HardDrive className={iconClass} />;
+    case "Printer":
+      return <Printer className={iconClass} />;
     default:
-      return <Monitor className="h-6 w-6 text-gray-500" />;
+      return <Monitor className={iconClass} />;
   }
 };
 
