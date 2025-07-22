@@ -318,21 +318,21 @@ export default function CmdbPage({}: CmdbPageProps) {
               <CardHeader>
                 <CardTitle className="text-lg">Basic Information</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="space-y-2">
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 gap-6">
+                  <div className="space-y-3">
                     <Label className="text-sm font-medium text-muted-foreground">CI Type</Label>
                     <p className="font-medium text-sm break-words">{item.ciType}</p>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Label className="text-sm font-medium text-muted-foreground">Category</Label>
                     <p className="font-medium text-sm break-words">{item.category}</p>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Label className="text-sm font-medium text-muted-foreground">Environment</Label>
                     <p className="font-medium text-sm break-words">{item.environment}</p>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Label className="text-sm font-medium text-muted-foreground">Owner</Label>
                     <p className="font-medium text-sm break-words">{item.owner || 'Not assigned'}</p>
                   </div>
@@ -344,27 +344,27 @@ export default function CmdbPage({}: CmdbPageProps) {
               <CardHeader>
                 <CardTitle className="text-lg">Status & Compliance</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="space-y-2">
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 gap-6">
+                  <div className="space-y-3">
                     <Label className="text-sm font-medium text-muted-foreground">Lifecycle Status</Label>
                     <Badge variant="outline" className={LIFECYCLE_COLORS[item.lifecycleStatus as keyof typeof LIFECYCLE_COLORS]}>
                       {item.lifecycleStatus}
                     </Badge>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Label className="text-sm font-medium text-muted-foreground">Risk Level</Label>
                     <Badge variant="outline" className={RISK_COLORS[item.riskLevel as keyof typeof RISK_COLORS]}>
                       {item.riskLevel}
                     </Badge>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Label className="text-sm font-medium text-muted-foreground">Compliance</Label>
                     <Badge variant="outline" className={COMPLIANCE_COLORS[item.complianceStatus as keyof typeof COMPLIANCE_COLORS]}>
                       {item.complianceStatus}
                     </Badge>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Label className="text-sm font-medium text-muted-foreground">Monitoring</Label>
                     <Badge variant="outline" className={item.monitoringEnabled ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
                       {item.monitoringEnabled ? 'Enabled' : 'Disabled'}
@@ -379,28 +379,28 @@ export default function CmdbPage({}: CmdbPageProps) {
                 <CardHeader>
                   <CardTitle className="text-lg">Hardware Information</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 gap-4">
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 gap-6">
                     {item.manufacturer && (
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         <Label className="text-sm font-medium text-muted-foreground">Manufacturer</Label>
                         <p className="font-medium text-sm break-words">{item.manufacturer}</p>
                       </div>
                     )}
                     {item.model && (
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         <Label className="text-sm font-medium text-muted-foreground">Model</Label>
                         <p className="font-medium text-sm break-words">{item.model}</p>
                       </div>
                     )}
                     {item.serialNumber && (
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         <Label className="text-sm font-medium text-muted-foreground">Serial Number</Label>
                         <p className="font-medium text-sm break-words">{item.serialNumber}</p>
                       </div>
                     )}
                     {item.assetTag && (
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         <Label className="text-sm font-medium text-muted-foreground">Asset Tag</Label>
                         <p className="font-medium text-sm break-words">{item.assetTag}</p>
                       </div>
@@ -415,16 +415,16 @@ export default function CmdbPage({}: CmdbPageProps) {
                 <CardHeader>
                   <CardTitle className="text-lg">Software Information</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 gap-4">
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 gap-6">
                     {item.operatingSystem && (
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         <Label className="text-sm font-medium text-muted-foreground">Operating System</Label>
                         <p className="font-medium text-sm break-words">{item.operatingSystem}</p>
                       </div>
                     )}
                     {item.osVersion && (
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         <Label className="text-sm font-medium text-muted-foreground">OS Version</Label>
                         <p className="font-medium text-sm break-words">{item.osVersion}</p>
                       </div>
