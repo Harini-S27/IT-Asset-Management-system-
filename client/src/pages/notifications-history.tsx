@@ -184,7 +184,7 @@ export function NotificationsHistoryPage() {
               className="p-0" 
               align="start"
               sideOffset={8}
-              style={{ width: 'calc(100vw - 16rem)' }}
+              style={{ width: 'calc(100vw - 20rem)' }}
             >
               <div className="p-4 border-b">
                 <div className="flex gap-4">
