@@ -10,7 +10,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Ticket, AlertTriangle, Clock, CheckCircle, XCircle, Search, Filter, Plus } from "lucide-react";
+import { Ticket, AlertTriangle, Clock, CheckCircle, XCircle, Search, Filter, Plus, ChevronDown, MoreVertical, Eye } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
@@ -82,6 +88,9 @@ export default function Tickets() {
   const [createTicketDialogOpen, setCreateTicketDialogOpen] = useState(false);
   const [resolvedBy, setResolvedBy] = useState("");
   const [resolutionNotes, setResolutionNotes] = useState("");
+  const [ticketsDropdownOpen, setTicketsDropdownOpen] = useState(false);
+  const [selectedTicketForView, setSelectedTicketForView] = useState<TicketData | null>(null);
+  const [viewTicketDialogOpen, setViewTicketDialogOpen] = useState(false);
 
   const createForm = useForm<CreateTicketFormData>({
     resolver: zodResolver(createTicketSchema),
@@ -518,157 +527,223 @@ export default function Tickets() {
         </CardContent>
       </Card>
 
-      {/* Tickets Table */}
+      {/* Tickets Dropdown Interface */}
       <Card>
-        <CardHeader>
-          <CardTitle>Tickets</CardTitle>
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <CardTitle>Tickets</CardTitle>
+            <DropdownMenu open={ticketsDropdownOpen} onOpenChange={setTicketsDropdownOpen}>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="flex items-center gap-2 min-w-[200px] justify-between"
+                >
+                  <span>View Tickets ({filteredTickets.length})</span>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent 
+                className="w-[calc(100vw-16rem)] max-h-80 overflow-y-auto"
+                align="start"
+                side="bottom"
+              >
+                {filteredTickets.length === 0 ? (
+                  <div className="p-4 text-center text-muted-foreground">
+                    No tickets found matching your criteria.
+                  </div>
+                ) : (
+                  filteredTickets.map((ticket) => (
+                    <div 
+                      key={ticket.id}
+                      className="p-3 border-b last:border-b-0 hover:bg-muted/50 cursor-pointer"
+                      onClick={() => {
+                        setSelectedTicketForView(ticket);
+                        setViewTicketDialogOpen(true);
+                        setTicketsDropdownOpen(false);
+                      }}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium text-sm truncate">{ticket.ticketNumber}</span>
+                            <Badge className={`${priorityColors[ticket.priority]} text-xs px-1.5 py-0.5`}>
+                              {ticket.priority}
+                            </Badge>
+                            <div className="flex items-center gap-1">
+                              {getStatusIcon(ticket.status)}
+                              <Badge className={`${statusColors[ticket.status]} text-xs px-1.5 py-0.5`}>
+                                {ticket.status}
+                              </Badge>
+                            </div>
+                          </div>
+                          <h4 className="text-sm font-medium text-foreground mb-1 truncate">
+                            {ticket.title}
+                          </h4>
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            <span>{ticket.category}</span>
+                            <span>•</span>
+                            <span>Created: {new Date(ticket.createdAt).toLocaleDateString()}</span>
+                            {ticket.assignedTo && (
+                              <>
+                                <span>•</span>
+                                <span>Assigned: {ticket.assignedTo}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                                <MoreVertical className="h-3 w-3" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedTicketForView(ticket);
+                                  setViewTicketDialogOpen(true);
+                                }}
+                              >
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                              {ticket.status !== "Closed" && ticket.status !== "Resolved" && (
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedTicket(ticket);
+                                    setCloseTicketDialogOpen(true);
+                                  }}
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-2" />
+                                  Close Ticket
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </CardHeader>
-        <CardContent>
-          {filteredTickets.length === 0 ? (
-            <div className="text-center py-8">
-              <Ticket className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No tickets found</h3>
-              <p className="text-muted-foreground">
-                {tickets.length === 0 
-                  ? "No support tickets have been created yet."
-                  : "No tickets match your current filters."
-                }
-              </p>
+        <CardContent className="pt-4">
+          {isLoading ? (
+            <div className="text-center py-8">Loading tickets...</div>
+          ) : error ? (
+            <div className="text-center py-8 text-red-500">Error loading tickets</div>
+          ) : filteredTickets.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No tickets found. {searchTerm || statusFilter !== "all" || priorityFilter !== "all" 
+                ? "Try adjusting your filters." 
+                : "Click 'Create Ticket' to create your first support ticket."}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Ticket #</TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Device</TableHead>
-                    <TableHead>Priority</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredTickets.map((ticket) => (
-                    <TableRow key={ticket.id}>
-                      <TableCell className="font-mono text-sm">
-                        <div className="flex items-center gap-2">
-                          {ticket.ticketNumber}
-                          {ticket.isAutoGenerated && (
-                            <Badge variant="secondary" className="text-xs">AUTO</Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="max-w-xs">
-                          <p className="font-medium truncate">{ticket.title}</p>
-                          <p className="text-sm text-muted-foreground truncate">{ticket.description}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>{getDeviceName(ticket.deviceId)}</TableCell>
-                      <TableCell>
-                        <Badge className={priorityColors[ticket.priority]}>
-                          {ticket.priority}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {getStatusIcon(ticket.status)}
-                          <Badge className={statusColors[ticket.status]}>
-                            {ticket.status}
-                          </Badge>
-                        </div>
-                      </TableCell>
-                      <TableCell>{ticket.category}</TableCell>
-                      <TableCell className="text-sm">
-                        {new Date(ticket.createdAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="outline" size="sm">
-                                View
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-2xl">
-                              <DialogHeader>
-                                <DialogTitle>Ticket Details - {ticket.ticketNumber}</DialogTitle>
-                              </DialogHeader>
-                              <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <Label className="text-sm font-medium">Status</Label>
-                                    <div className="flex items-center gap-2 mt-1">
-                                      {getStatusIcon(ticket.status)}
-                                      <Badge className={statusColors[ticket.status]}>
-                                        {ticket.status}
-                                      </Badge>
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <Label className="text-sm font-medium">Priority</Label>
-                                    <Badge className={`${priorityColors[ticket.priority]} mt-1`}>
-                                      {ticket.priority}
-                                    </Badge>
-                                  </div>
-                                  <div>
-                                    <Label className="text-sm font-medium">Category</Label>
-                                    <p className="mt-1">{ticket.category}</p>
-                                  </div>
-                                  <div>
-                                    <Label className="text-sm font-medium">Device</Label>
-                                    <p className="mt-1">{getDeviceName(ticket.deviceId)}</p>
-                                  </div>
-                                </div>
-                                <div>
-                                  <Label className="text-sm font-medium">Description</Label>
-                                  <p className="mt-1 text-sm">{ticket.description}</p>
-                                </div>
-                                {ticket.notes && (
-                                  <div>
-                                    <Label className="text-sm font-medium">Notes</Label>
-                                    <p className="mt-1 text-sm">{ticket.notes}</p>
-                                  </div>
-                                )}
-                                <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
-                                  <div>
-                                    <Label className="text-sm font-medium">Created By</Label>
-                                    <p className="mt-1">{ticket.createdBy}</p>
-                                  </div>
-                                  <div>
-                                    <Label className="text-sm font-medium">Created At</Label>
-                                    <p className="mt-1">{new Date(ticket.createdAt).toLocaleString()}</p>
-                                  </div>
-                                </div>
-                                {ticket.status === "Open" && (
-                                  <div className="pt-4 border-t">
-                                    <Button 
-                                      onClick={() => {
-                                        setSelectedTicket(ticket);
-                                        setCloseTicketDialogOpen(true);
-                                      }}
-                                      className="w-full"
-                                    >
-                                      Close Ticket
-                                    </Button>
-                                  </div>
-                                )}
-                              </div>
-                            </DialogContent>
-                          </Dialog>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <div className="text-center py-4 text-muted-foreground">
+              Click "View Tickets" dropdown above to see all {filteredTickets.length} tickets.
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* View Ticket Dialog */}
+      <Dialog open={viewTicketDialogOpen} onOpenChange={setViewTicketDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Ticket Details - {selectedTicketForView?.ticketNumber}</DialogTitle>
+          </DialogHeader>
+          {selectedTicketForView && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium">Status</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    {getStatusIcon(selectedTicketForView.status)}
+                    <Badge className={statusColors[selectedTicketForView.status]}>
+                      {selectedTicketForView.status}
+                    </Badge>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Priority</Label>
+                  <Badge className={`${priorityColors[selectedTicketForView.priority]} mt-1`}>
+                    {selectedTicketForView.priority}
+                  </Badge>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Category</Label>
+                  <p className="mt-1">{selectedTicketForView.category}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Device</Label>
+                  <p className="mt-1">{getDeviceName(selectedTicketForView.deviceId)}</p>
+                </div>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Title</Label>
+                <p className="mt-1">{selectedTicketForView.title}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Description</Label>
+                <div className="mt-1 p-3 bg-muted rounded-md">
+                  <p className="whitespace-pre-wrap">{selectedTicketForView.description}</p>
+                </div>
+              </div>
+              {selectedTicketForView.assignedTo && (
+                <div>
+                  <Label className="text-sm font-medium">Assigned To</Label>
+                  <p className="mt-1">{selectedTicketForView.assignedTo}</p>
+                </div>
+              )}
+              {selectedTicketForView.notes && (
+                <div>
+                  <Label className="text-sm font-medium">Additional Notes</Label>
+                  <div className="mt-1 p-3 bg-muted rounded-md">
+                    <p className="whitespace-pre-wrap">{selectedTicketForView.notes}</p>
+                  </div>
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                <div>
+                  <Label className="text-sm font-medium">Created By</Label>
+                  <p className="mt-1">{selectedTicketForView.createdBy}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Created At</Label>
+                  <p className="mt-1">{new Date(selectedTicketForView.createdAt).toLocaleString()}</p>
+                </div>
+                {selectedTicketForView.resolvedAt && (
+                  <>
+                    <div>
+                      <Label className="text-sm font-medium">Resolved At</Label>
+                      <p className="mt-1">{new Date(selectedTicketForView.resolvedAt).toLocaleString()}</p>
+                    </div>
+                  </>
+                )}
+              </div>
+              {selectedTicketForView.status !== "Closed" && selectedTicketForView.status !== "Resolved" && (
+                <div className="pt-4 border-t">
+                  <Button 
+                    onClick={() => {
+                      setSelectedTicket(selectedTicketForView);
+                      setViewTicketDialogOpen(false);
+                      setCloseTicketDialogOpen(true);
+                    }}
+                    className="w-full"
+                  >
+                    Close Ticket
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Close Ticket Dialog */}
       <Dialog open={closeTicketDialogOpen} onOpenChange={setCloseTicketDialogOpen}>
