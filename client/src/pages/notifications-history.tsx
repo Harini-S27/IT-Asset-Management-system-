@@ -27,10 +27,7 @@ export function NotificationsHistoryPage() {
 
   const updateActionMutation = useMutation({
     mutationFn: ({ id, action }: { id: number; action: string }) => 
-      apiRequest(`/api/notifications/history/${id}/action`, {
-        method: "PATCH",
-        body: { action }
-      }),
+      apiRequest(`/api/notifications/history/${id}/action`, "PATCH", { action }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/notifications/history"] });
       setIsDialogOpen(false);
@@ -184,9 +181,10 @@ export function NotificationsHistoryPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent 
-              className="w-screen max-w-4xl p-0" 
+              className="p-0" 
               align="start"
               sideOffset={8}
+              style={{ width: 'calc(100vw - 16rem)' }}
             >
               <div className="p-4 border-b">
                 <div className="flex gap-4">
@@ -248,7 +246,7 @@ export function NotificationsHistoryPage() {
                             </h4>
                             <div className="text-sm text-gray-600 flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
-                              {format(new Date(notification.timestamp), "MMM dd, yyyy HH:mm")}
+                              {notification.timestamp ? format(new Date(notification.timestamp), "MMM dd, yyyy HH:mm") : "N/A"}
                             </div>
                           </div>
                         </div>
@@ -302,7 +300,7 @@ export function NotificationsHistoryPage() {
                 </div>
                 <div>
                   <label className="font-medium text-gray-900">Timestamp</label>
-                  <p className="text-gray-600">{format(new Date(selectedNotification.timestamp), "MMM dd, yyyy HH:mm")}</p>
+                  <p className="text-gray-600">{selectedNotification.timestamp ? format(new Date(selectedNotification.timestamp), "MMM dd, yyyy HH:mm") : "N/A"}</p>
                 </div>
               </div>
               
