@@ -207,7 +207,7 @@ export default function AlertsCompactPage() {
                 <ChevronDown className="h-5 w-5 text-gray-400" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-full min-w-[800px] max-h-96 overflow-y-auto" align="start">
+            <DropdownMenuContent className="w-full min-w-[800px] max-h-96 overflow-y-auto" align="start" side="bottom">
               {alertsLoading ? (
                 <div className="p-6 text-center text-sm text-gray-500">
                   Loading alerts...
