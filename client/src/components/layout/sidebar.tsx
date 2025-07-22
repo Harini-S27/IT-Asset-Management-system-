@@ -27,7 +27,28 @@ const Sidebar = () => {
   const [location] = useLocation();
   const { user, logout, canAccess } = useAuth();
 
+  // Navigation items in alphabetical order
   const navigationItems = [
+    {
+      name: "Alert Management",
+      href: "/alerts",
+      icon: AlertTriangle,
+    },
+    {
+      name: "Asset Lifecycle",
+      href: "/asset-lifecycle",
+      icon: Calendar,
+    },
+    {
+      name: "Blocked Websites",
+      href: "/global-blocking",
+      icon: Globe,
+    },
+    {
+      name: "CMDB",
+      href: "/cmdb",
+      icon: Database,
+    },
     {
       name: "Dashboard",
       href: "/",
@@ -39,34 +60,14 @@ const Sidebar = () => {
       icon: Monitor,
     },
     {
-      name: "Map View",
-      href: "/map",
-      icon: Map,
-    },
-    {
-      name: "Prohibited Software",
-      href: "/prohibited-software",
-      icon: Shield,
-    },
-    {
-      name: "Support Tickets",
-      href: "/tickets",
-      icon: Ticket,
-    },
-    {
       name: "Email Notifications",
       href: "/email-logs",
       icon: Mail,
     },
     {
-      name: "Router Setup",
-      href: "/router-setup",
-      icon: Router,
-    },
-    {
-      name: "Blocked Websites",
-      href: "/global-blocking",
-      icon: Globe,
+      name: "Map View",
+      href: "/map",
+      icon: Map,
     },
     {
       name: "Network Discovery",
@@ -79,19 +80,9 @@ const Sidebar = () => {
       icon: Bell,
     },
     {
-      name: "CMDB",
-      href: "/cmdb",
-      icon: Database,
-    },
-    {
-      name: "Alert Management",
-      href: "/alerts",
-      icon: AlertTriangle,
-    },
-    {
-      name: "Asset Lifecycle",
-      href: "/asset-lifecycle",
-      icon: Calendar,
+      name: "Prohibited Software",
+      href: "/prohibited-software",
+      icon: Shield,
     },
     {
       name: "Reports",
@@ -99,9 +90,19 @@ const Sidebar = () => {
       icon: FileBarChart,
     },
     {
+      name: "Router Setup",
+      href: "/router-setup",
+      icon: Router,
+    },
+    {
       name: "Settings",
       href: "/settings",
       icon: Settings,
+    },
+    {
+      name: "Support Tickets",
+      href: "/tickets",
+      icon: Ticket,
     },
   ];
 
@@ -116,29 +117,31 @@ const Sidebar = () => {
         </h1>
       </div>
       
-      <nav className="flex-1">
-        <ul>
-          {navigationItems.map((item) => {
-            // Only show navigation items that the user can access
-            if (!canAccess(item.href)) return null;
-            
-            return (
-              <li key={item.name} className="mb-1">
-                <Link href={item.href}>
-                  <div
-                    className={cn(
-                      "flex items-center py-2 px-4 rounded hover:bg-[#4299E1] transition-colors cursor-pointer",
-                      location === item.href ? "bg-[#4299E1]" : ""
-                    )}
-                  >
-                    <item.icon className="h-5 w-5 mr-3" />
-                    {item.name}
-                  </div>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+      <nav className="flex-1 overflow-hidden">
+        <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
+          <ul className="pr-2">
+            {navigationItems.map((item) => {
+              // Only show navigation items that the user can access
+              if (!canAccess(item.href)) return null;
+              
+              return (
+                <li key={item.name} className="mb-1">
+                  <Link href={item.href}>
+                    <div
+                      className={cn(
+                        "flex items-center py-2 px-4 rounded hover:bg-[#4299E1] transition-colors cursor-pointer",
+                        location === item.href ? "bg-[#4299E1]" : ""
+                      )}
+                    >
+                      <item.icon className="h-5 w-5 mr-3" />
+                      {item.name}
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       </nav>
       
       <div className="mt-auto pb-4">
