@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Ticket, AlertTriangle, Clock, CheckCircle, XCircle, Search, Filter, Plus, MoreVertical, Eye, ChevronLeft, ChevronRight, Monitor, Camera, Server, Router, Smartphone, Laptop, HardDrive, Printer } from "lucide-react";
+import { Ticket, AlertTriangle, Clock, CheckCircle, XCircle, Search, Filter, Plus, MoreVertical, Eye, ChevronLeft, ChevronRight, Monitor, Camera, Server, Router, Smartphone, Laptop, HardDrive, Printer, Video } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
@@ -223,7 +223,7 @@ export default function Tickets() {
         return <Monitor className={iconClass} />;
       case 'security camera':
       case 'camera':
-        return <Camera className={iconClass} />;
+        return <Video className={iconClass} />;
       case 'server':
         return <Server className={iconClass} />;
       case 'network device':
