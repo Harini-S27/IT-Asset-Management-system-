@@ -27,7 +27,7 @@ const Sidebar = () => {
   const [location] = useLocation();
   const { user, logout, canAccess } = useAuth();
 
-  // Navigation items - Dashboard and Devices first, then alphabetical order
+  // Navigation items in requested order
   const navigationItems = [
     {
       name: "Dashboard",
@@ -45,6 +45,16 @@ const Sidebar = () => {
       icon: AlertTriangle,
     },
     {
+      name: "Notifications",
+      href: "/notifications",
+      icon: Bell,
+    },
+    {
+      name: "Email Notifications",
+      href: "/email-logs",
+      icon: Mail,
+    },
+    {
       name: "Asset Lifecycle",
       href: "/asset-lifecycle",
       icon: Calendar,
@@ -60,11 +70,6 @@ const Sidebar = () => {
       icon: Database,
     },
     {
-      name: "Email Notifications",
-      href: "/email-logs",
-      icon: Mail,
-    },
-    {
       name: "Map View",
       href: "/map",
       icon: Map,
@@ -75,19 +80,9 @@ const Sidebar = () => {
       icon: Router,
     },
     {
-      name: "Notifications",
-      href: "/notifications",
-      icon: Bell,
-    },
-    {
       name: "Prohibited Software",
       href: "/prohibited-software",
       icon: Shield,
-    },
-    {
-      name: "Reports",
-      href: "/reports",
-      icon: FileBarChart,
     },
     {
       name: "Router Setup",
@@ -95,14 +90,14 @@ const Sidebar = () => {
       icon: Router,
     },
     {
+      name: "Reports",
+      href: "/reports",
+      icon: FileBarChart,
+    },
+    {
       name: "Settings",
       href: "/settings",
       icon: Settings,
-    },
-    {
-      name: "Support Tickets",
-      href: "/tickets",
-      icon: Ticket,
     },
   ];
 
