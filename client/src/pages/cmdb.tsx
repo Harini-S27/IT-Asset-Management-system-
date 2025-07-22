@@ -12,7 +12,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Database, Server, Network, Laptop, HardDrive, Shield, Settings, Plus, Edit, Trash2, Eye, Clock, Link } from "lucide-react";
+import { Database, Server, Network, Laptop, HardDrive, Shield, Settings, Plus, Edit, Trash2, Eye, Clock, Link, ChevronDown, Monitor } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { Device, CmdbConfigurationItem, CmdbChangeRecord, CmdbRelationship } from "@shared/schema";
@@ -44,6 +45,7 @@ export default function CmdbPage({}: CmdbPageProps) {
   const [selectedConfigurationItem, setSelectedConfigurationItem] = useState<CmdbConfigurationItem | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [isDevicesDropdownOpen, setIsDevicesDropdownOpen] = useState(false);
   const [formData, setFormData] = useState({
     ciName: '',
     ciDescription: '',
@@ -644,47 +646,76 @@ export default function CmdbPage({}: CmdbPageProps) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Device List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Approved Devices</CardTitle>
-            <CardDescription>
-              {approvedDevices.length} devices available for configuration management
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[500px]">
-              <div className="space-y-2">
-                {approvedDevices.map((device) => (
-                  <div
-                    key={device.id}
-                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                      selectedDevice?.id === device.id 
-                        ? 'border-primary bg-primary/10' 
-                        : 'border-border hover:bg-muted/50'
-                    }`}
-                    onClick={() => setSelectedDevice(device)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="flex-shrink-0">
-                        {device.type === 'Server' && <Server className="h-4 w-4" />}
-                        {device.type === 'Workstation' && <Laptop className="h-4 w-4" />}
-                        {device.type === 'Network' && <Network className="h-4 w-4" />}
-                        {!['Server', 'Workstation', 'Network'].includes(device.type) && <HardDrive className="h-4 w-4" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{device.name}</p>
-                        <p className="text-sm text-muted-foreground truncate">
-                          {device.type} • {device.location}
-                        </p>
-                      </div>
+        {/* Approved Devices Dropdown */}
+        <div className="relative">
+          <DropdownMenu open={isDevicesDropdownOpen} onOpenChange={setIsDevicesDropdownOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="w-full justify-between h-auto p-4 border-2 hover:bg-gray-50 dark:hover:bg-gray-800"
+              >
+                <div className="flex items-center gap-3">
+                  <Monitor className="h-5 w-5 text-blue-600" />
+                  <div className="text-left">
+                    <div className="font-medium">Approved Devices</div>
+                    <div className="text-sm text-muted-foreground">
+                      {approvedDevices.length} devices • {selectedDevice ? `Selected: ${selectedDevice.name}` : 'Click to select a device'}
                     </div>
                   </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
+                </div>
+                <ChevronDown className={`h-4 w-4 transition-transform ${isDevicesDropdownOpen ? 'rotate-180' : ''}`} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent 
+              className="p-0 min-w-full"
+              style={{ width: 'var(--radix-dropdown-menu-trigger-width)' }}
+              align="start"
+            >
+              <Card className="border-0 shadow-none">
+                <CardHeader className="pb-3">
+                  <CardDescription className="text-xs">
+                    Select a device to view and manage its configuration items
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <ScrollArea className="h-[400px]">
+                    <div className="space-y-2">
+                      {approvedDevices.map((device) => (
+                        <div
+                          key={device.id}
+                          className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                            selectedDevice?.id === device.id 
+                              ? 'border-primary bg-primary/10' 
+                              : 'border-border hover:bg-muted/50'
+                          }`}
+                          onClick={() => {
+                            setSelectedDevice(device);
+                            setIsDevicesDropdownOpen(false);
+                          }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className="flex-shrink-0">
+                              {device.type === 'Server' && <Server className="h-3 w-3" />}
+                              {device.type === 'Workstation' && <Laptop className="h-3 w-3" />}
+                              {device.type === 'Network' && <Network className="h-3 w-3" />}
+                              {!['Server', 'Workstation', 'Network'].includes(device.type) && <HardDrive className="h-3 w-3" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate text-sm">{device.name}</p>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {device.type} • {device.location}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
         {/* Configuration Items for Selected Device */}
         <Card>
