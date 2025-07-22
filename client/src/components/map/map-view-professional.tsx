@@ -318,9 +318,9 @@ const ProfessionalMapView = () => {
         {/* Map Controls Overlay */}
         <div className="absolute top-4 left-4 z-[1000] space-y-2">
           <Card className="bg-white/95 backdrop-blur-sm border shadow-lg">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-blue-600" />
+            <CardHeader className="pb-3 pt-4">
+              <CardTitle className="text-base flex items-center gap-3">
+                <MapPin className="h-5 w-5 text-blue-600" />
                 Asset Location Map
               </CardTitle>
             </CardHeader>
