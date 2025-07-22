@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
   AlertTriangle, 
   Shield, 
@@ -16,7 +16,9 @@ import {
   Settings,
   Eye,
   ChevronDown,
-  MoreHorizontal
+  ChevronRight,
+  Calendar,
+  Wrench
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Alert } from "@shared/schema";
@@ -47,6 +49,7 @@ export default function AlertsCompactPage() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
+  const [expandedAlerts, setExpandedAlerts] = useState<Set<number>>(new Set());
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -100,6 +103,18 @@ export default function AlertsCompactPage() {
 
   const handleStatusUpdate = (alert: Alert, newStatus: string) => {
     updateAlertStatus.mutate({ id: alert.id, status: newStatus });
+  };
+
+  const toggleAlertExpansion = (alertId: number) => {
+    setExpandedAlerts(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(alertId)) {
+        newSet.delete(alertId);
+      } else {
+        newSet.add(alertId);
+      }
+      return newSet;
+    });
   };
 
   return (
@@ -184,12 +199,13 @@ export default function AlertsCompactPage() {
         </Select>
       </div>
 
-      {/* Alerts Dropdown List */}
+      {/* Sequential Alert Dropdown List */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
             <Bell className="h-5 w-5 mr-2" />
             Alerts ({filteredAlerts.length})
+            <div className="text-sm font-normal text-gray-500 ml-2">Active alerts requiring attention</div>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -202,9 +218,13 @@ export default function AlertsCompactPage() {
                 No alerts found
               </div>
             ) : (
-              filteredAlerts.map((alert) => (
-                <DropdownMenu key={alert.id}>
-                  <DropdownMenuTrigger asChild>
+              filteredAlerts.map((alert, index) => (
+                <Collapsible 
+                  key={alert.id} 
+                  open={expandedAlerts.has(alert.id)}
+                  onOpenChange={() => toggleAlertExpansion(alert.id)}
+                >
+                  <CollapsibleTrigger asChild>
                     <div className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
@@ -212,9 +232,13 @@ export default function AlertsCompactPage() {
                             {ALERT_ICONS[alert.alertType as keyof typeof ALERT_ICONS] || <AlertTriangle className="h-4 w-4" />}
                           </div>
                           <div className="flex-1">
-                            <div className="font-medium">{alert.alertTitle}</div>
-                            <div className="text-sm text-gray-600 truncate max-w-md">
-                              {alert.alertDescription}
+                            <div className="font-medium text-gray-900">{alert.alertTitle}</div>
+                            <div className="text-sm text-gray-600 mt-1">
+                              {alert.alertType === 'warranty_expiration' && 'Device warranty expires in 30 days'}
+                              {alert.alertType === 'maintenance_due' && 'Scheduled maintenance is overdue'}  
+                              {alert.alertType === 'end_of_life' && 'Asset scheduled for retirement'}
+                              {alert.alertType === 'compliance_violation' && 'Compliance policy violation detected'}
+                              {alert.alertType === 'security_risk' && 'Security risk assessment required'}
                             </div>
                             <div className="text-xs text-gray-500 mt-1">
                               Device: {alert.deviceId} • Date: {new Date(alert.alertDate).toLocaleDateString()}
@@ -227,35 +251,96 @@ export default function AlertsCompactPage() {
                             <Badge className={STATUS_COLORS[alert.status as keyof typeof STATUS_COLORS]}>
                               {alert.status}
                             </Badge>
+                            {expandedAlerts.has(alert.id) ? (
+                              <ChevronDown className="h-4 w-4 text-gray-400" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4 text-gray-400" />
+                            )}
                           </div>
                         </div>
-                        <ChevronDown className="h-4 w-4 text-gray-400" />
                       </div>
                     </div>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56" align="end">
-                    <DropdownMenuItem onClick={() => setSelectedAlert(alert)}>
-                      <Eye className="h-4 w-4 mr-2" />
-                      View Details
-                    </DropdownMenuItem>
-                    {alert.status === 'Active' && (
-                      <>
-                        <DropdownMenuItem onClick={() => handleStatusUpdate(alert, 'Acknowledged')}>
-                          <CheckCircle className="h-4 w-4 mr-2 text-yellow-600" />
-                          Acknowledge
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleStatusUpdate(alert, 'Resolved')}>
-                          <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
-                          Mark Resolved
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleStatusUpdate(alert, 'Dismissed')}>
-                          <XCircle className="h-4 w-4 mr-2 text-red-600" />
-                          Dismiss
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  </CollapsibleTrigger>
+                  
+                  <CollapsibleContent className="border-l-2 border-gray-200 ml-6 pl-4 mt-2">
+                    <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+                      {/* Alert Details */}
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="font-medium text-gray-700">Alert Type:</span>
+                          <div className="text-gray-600 capitalize">
+                            {alert.alertType.replace('_', ' ')}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-700">Assigned To:</span>
+                          <div className="text-gray-600">
+                            {alert.assignedTo || 'IT Asset Manager'}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-700">Created:</span>
+                          <div className="text-gray-600">
+                            {new Date(alert.alertDate).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-700">Priority:</span>
+                          <div className="text-gray-600">{alert.severity}</div>
+                        </div>
+                      </div>
+
+                      {/* Alert Description */}
+                      <div className="border-t pt-3">
+                        <span className="font-medium text-gray-700 text-sm">Description:</span>
+                        <div className="text-sm text-gray-600 mt-1 bg-white p-3 rounded border">
+                          {alert.alertDescription}
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      {alert.status === 'Active' && (
+                        <div className="flex space-x-2 pt-3 border-t">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="text-yellow-600 border-yellow-200 hover:bg-yellow-50"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStatusUpdate(alert, 'Acknowledged');
+                            }}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Acknowledge
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            className="bg-green-600 hover:bg-green-700"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStatusUpdate(alert, 'Resolved');
+                            }}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Resolve
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="text-red-600 border-red-200 hover:bg-red-50"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStatusUpdate(alert, 'Dismissed');
+                            }}
+                          >
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Dismiss
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
               ))
             )}
           </div>
