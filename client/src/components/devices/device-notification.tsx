@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,7 @@ interface DeviceNotificationProps {
 
 export function DeviceNotification({ device, onDismiss, onViewDetails, notificationHistoryId, type = 'DEVICE_ADDED', retirementData }: DeviceNotificationProps) {
   const [isVisible, setIsVisible] = useState(false);
+  const [, setLocation] = useLocation();
 
   useEffect(() => {
     // Animate in
@@ -191,7 +193,8 @@ export function DeviceNotification({ device, onDismiss, onViewDetails, notificat
                 <Button
                   size="sm"
                   onClick={() => {
-                    window.location.href = '/asset-lifecycle';
+                    setLocation('/asset-lifecycle');
+                    handleDismiss();
                   }}
                   className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
                 >
