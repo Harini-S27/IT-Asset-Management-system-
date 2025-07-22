@@ -27,8 +27,18 @@ const Sidebar = () => {
   const [location] = useLocation();
   const { user, logout, canAccess } = useAuth();
 
-  // Navigation items in alphabetical order
+  // Navigation items - Dashboard and Devices first, then alphabetical order
   const navigationItems = [
+    {
+      name: "Dashboard",
+      href: "/",
+      icon: LayoutDashboard,
+    },
+    {
+      name: "Devices",
+      href: "/devices",
+      icon: Monitor,
+    },
     {
       name: "Alert Management",
       href: "/alerts",
@@ -48,16 +58,6 @@ const Sidebar = () => {
       name: "CMDB",
       href: "/cmdb",
       icon: Database,
-    },
-    {
-      name: "Dashboard",
-      href: "/",
-      icon: LayoutDashboard,
-    },
-    {
-      name: "Devices",
-      href: "/devices",
-      icon: Monitor,
     },
     {
       name: "Email Notifications",
