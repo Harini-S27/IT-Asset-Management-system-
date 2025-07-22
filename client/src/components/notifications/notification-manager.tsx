@@ -92,9 +92,21 @@ export function NotificationManager() {
 
   const handleDismissNotification = async (id: string) => {
     const notification = notifications.find(n => n.id === id);
-    if (!notification) return;
+    if (!notification) {
+      console.log('No notification found with id:', id);
+      return;
+    }
     
-    // Reject pending device
+    console.log('Dismissing notification:', notification.type, id);
+    
+    // For retirement alerts, just dismiss locally
+    if (notification.type === 'ASSET_RETIREMENT_ALERT') {
+      console.log('Dismissing retirement alert locally');
+      setNotifications(prev => prev.filter(n => n.id !== id));
+      return;
+    }
+    
+    // For device notifications, reject via API
     try {
       const response = await fetch(`/api/devices/reject/${notification.device.id}`, {
         method: 'POST'
@@ -112,15 +124,14 @@ export function NotificationManager() {
           description: `${notification.device.name} has been rejected and will not be added to the system`,
           duration: 3000,
         });
+      } else {
+        console.log('API rejection failed, dismissing locally');
+        setNotifications(prev => prev.filter(n => n.id !== id));
       }
     } catch (error) {
       console.error('Error rejecting device:', error);
-      toast({
-        title: "Error",
-        description: "Failed to reject device",
-        variant: "destructive",
-        duration: 3000,
-      });
+      // Even if API fails, dismiss locally
+      setNotifications(prev => prev.filter(n => n.id !== id));
     }
   };
 
