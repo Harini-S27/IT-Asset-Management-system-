@@ -184,10 +184,11 @@ export function NotificationsHistoryPage() {
               className="p-0" 
               align="start"
               alignOffset={-24}
-              sideOffset={0}
+              sideOffset={-8}
               style={{ 
                 width: 'var(--radix-dropdown-menu-trigger-width)',
-                minWidth: 'var(--radix-dropdown-menu-trigger-width)'
+                minWidth: 'var(--radix-dropdown-menu-trigger-width)',
+                marginTop: '-1px'
               }}
             >
               <div className="p-4 border-b">
