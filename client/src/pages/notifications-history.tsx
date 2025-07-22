@@ -183,6 +183,7 @@ export function NotificationsHistoryPage() {
             <DropdownMenuContent 
               className="p-0" 
               align="start"
+              alignOffset={-16}
               sideOffset={8}
               style={{ width: 'calc(100vw - 20rem)' }}
             >
