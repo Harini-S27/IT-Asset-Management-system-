@@ -8,10 +8,11 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LogOut, Settings, User as UserIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { useLocation } from 'wouter';
+import fineConsLogo from '@assets/finecons-logo.jpg';
 
 export function UserMenu() {
   const { user, logout } = useAuth();
@@ -39,8 +40,12 @@ export function UserMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-          <Avatar className={roleColor}>
-            <AvatarFallback>{userInitials}</AvatarFallback>
+          <Avatar className={user.username === 'finecons' ? 'bg-white' : roleColor}>
+            {user.username === 'finecons' ? (
+              <AvatarImage src={fineConsLogo} alt="Finecons Logo" className="object-cover" />
+            ) : (
+              <AvatarFallback>{userInitials}</AvatarFallback>
+            )}
           </Avatar>
         </Button>
       </DropdownMenuTrigger>

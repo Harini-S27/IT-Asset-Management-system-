@@ -309,7 +309,7 @@ export function NotificationsHistoryPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {renderNotificationTable(declinedNotifications, true)}
+              {renderNotificationTable(declinedNotifications)}
             </CardContent>
           </Card>
         </TabsContent>
