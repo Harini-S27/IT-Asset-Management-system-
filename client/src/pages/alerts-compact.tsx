@@ -185,80 +185,85 @@ export default function AlertsCompactPage() {
         </Select>
       </div>
 
-      {/* Scrollable Alert Dropdown */}
+      {/* Alert Management with Dropdown */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Bell className="h-5 w-5 mr-2" />
-              Alert Management
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="flex items-center">
-                  <Bell className="h-4 w-4 mr-2" />
-                  View Alerts ({filteredAlerts.length})
-                  <ChevronDown className="h-4 w-4 ml-2" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-96 max-h-80 overflow-y-auto">
-                {alertsLoading ? (
-                  <div className="p-4 text-center text-sm text-gray-500">Loading alerts...</div>
-                ) : filteredAlerts.length === 0 ? (
-                  <div className="p-4 text-center text-sm text-gray-500">
-                    <Bell className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-                    No alerts found
+          <CardTitle className="flex items-center">
+            <Bell className="h-5 w-5 mr-2" />
+            Alert Management
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-full flex items-center justify-between p-4 h-auto">
+                <div className="flex items-center">
+                  <Bell className="h-5 w-5 mr-3" />
+                  <div className="text-left">
+                    <div className="font-medium">View Alerts ({filteredAlerts.length})</div>
+                    <div className="text-sm text-gray-500 mt-1">Active alerts requiring attention</div>
                   </div>
-                ) : (
-                  filteredAlerts.map((alert, index) => (
+                </div>
+                <ChevronDown className="h-5 w-5 text-gray-400" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-full min-w-[800px] max-h-96 overflow-y-auto" align="start">
+              {alertsLoading ? (
+                <div className="p-6 text-center text-sm text-gray-500">
+                  Loading alerts...
+                </div>
+              ) : filteredAlerts.length === 0 ? (
+                <div className="p-6 text-center text-sm text-gray-500">
+                  <Bell className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <div className="font-medium mb-2">No alerts found</div>
+                  <div>All systems are operating normally</div>
+                </div>
+              ) : (
+                <div className="p-2">
+                  {filteredAlerts.map((alert, index) => (
                     <div key={alert.id}>
                       <DropdownMenuItem 
-                        className="p-4 cursor-pointer"
+                        className="p-4 cursor-pointer rounded-lg hover:bg-gray-50"
                         onClick={() => setSelectedAlert(alert)}
                       >
-                        <div className="flex items-start space-x-3 w-full">
+                        <div className="flex items-start space-x-4 w-full">
                           <div className="text-blue-600 mt-1">
-                            {ALERT_ICONS[alert.alertType as keyof typeof ALERT_ICONS] || <AlertTriangle className="h-4 w-4" />}
+                            {ALERT_ICONS[alert.alertType as keyof typeof ALERT_ICONS] || <AlertTriangle className="h-5 w-5" />}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium text-sm text-gray-900 truncate">
-                              {alert.alertTitle}
+                            <div className="flex items-center justify-between">
+                              <div className="font-medium text-gray-900">
+                                {alert.alertTitle}
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Badge className={SEVERITY_COLORS[alert.severity as keyof typeof SEVERITY_COLORS]}>
+                                  {alert.severity}
+                                </Badge>
+                                <Badge className={STATUS_COLORS[alert.status as keyof typeof STATUS_COLORS]}>
+                                  {alert.status}
+                                </Badge>
+                              </div>
                             </div>
-                            <div className="text-xs text-gray-600 mt-1 line-clamp-2">
-                              {alert.alertType === 'warranty_expiration' && 'Device warranty expires in 30 days'}
+                            <div className="text-sm text-gray-600 mt-1">
+                              {alert.alertType === 'warranty_expiration' && 'Asset scheduled for retirement on 7/24/2025. Begin replacement planning and data migration.'}
                               {alert.alertType === 'maintenance_due' && 'Scheduled maintenance is overdue'}  
                               {alert.alertType === 'end_of_life' && 'Asset scheduled for retirement'}
                               {alert.alertType === 'compliance_violation' && 'Compliance policy violation detected'}
                               {alert.alertType === 'security_risk' && 'Security risk assessment required'}
                             </div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              Device: {alert.deviceId} • {new Date(alert.alertDate).toLocaleDateString()}
-                            </div>
-                            <div className="flex items-center space-x-2 mt-2">
-                              <Badge className={`text-xs px-2 py-1 ${SEVERITY_COLORS[alert.severity as keyof typeof SEVERITY_COLORS]}`}>
-                                {alert.severity}
-                              </Badge>
-                              <Badge className={`text-xs px-2 py-1 ${STATUS_COLORS[alert.status as keyof typeof STATUS_COLORS]}`}>
-                                {alert.status}
-                              </Badge>
+                            <div className="text-xs text-gray-500 mt-2">
+                              Device: {alert.deviceId} • Date: {new Date(alert.alertDate).toLocaleDateString()} • Assigned to: {alert.assignedTo || 'IT Asset Manager'}
                             </div>
                           </div>
                         </div>
                       </DropdownMenuItem>
                       {index < filteredAlerts.length - 1 && <DropdownMenuSeparator />}
                     </div>
-                  ))
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center text-gray-500 py-8">
-            <Bell className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-            <div className="text-lg font-medium mb-2">Alert Management</div>
-            <div className="text-sm">Click "View Alerts" above to browse and manage all system alerts</div>
-          </div>
+                  ))}
+                </div>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </CardContent>
       </Card>
 
