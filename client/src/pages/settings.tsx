@@ -12,7 +12,6 @@ import {
   Building, 
   Settings as SettingsIcon, 
   Bell, 
-  Map,
   Save,
   RotateCcw
 } from "lucide-react";
@@ -21,7 +20,6 @@ import {
   OrganizationForm,
   SystemPreferencesForm,
   NotificationForm,
-  MapPreferencesForm,
   AccessControlForm,
 } from "@/components/settings/settings-form";
 
@@ -237,11 +235,7 @@ export default function SettingsPage() {
             <span className="hidden sm:inline">Notifications</span>
             <span className="sm:hidden">Alerts</span>
           </TabsTrigger>
-          <TabsTrigger value="map" className="flex items-center">
-            <Map className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Map Preferences</span>
-            <span className="sm:hidden">Map</span>
-          </TabsTrigger>
+
         </TabsList>
 
         {/* User Management Tab */}
@@ -321,10 +315,7 @@ export default function SettingsPage() {
           <NotificationForm key={`notifications-${resetCounter}`} />
         </TabsContent>
 
-        {/* Map Preferences Tab */}
-        <TabsContent value="map">
-          <MapPreferencesForm key={`map-${resetCounter}`} />
-        </TabsContent>
+
       </Tabs>
     </div>
   );
