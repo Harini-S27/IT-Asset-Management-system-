@@ -1,0 +1,29 @@
+[
+  {
+    "deviceId": 102,
+    "apiKey": "finecons_244df4832e0424d28a3de0142b32c78f19c4bdf863a17685b5e7f2e3e19b01f9",
+    "deviceName": "Router-Gateway",
+    "ipAddress": "192.168.1.1",
+    "macAddress": "00:11:22:33:44:55",
+    "createdAt": "2025-07-12T08:06:48.078Z",
+    "status": "active"
+  },
+  {
+    "deviceId": 103,
+    "apiKey": "finecons_1e3b6b32611a1e75ab04a031d53cd76836c55eb77b3480a8d6276d2cee69055b",
+    "deviceName": "Office-PC-01",
+    "ipAddress": "192.168.1.10",
+    "macAddress": "00:11:22:33:44:66",
+    "createdAt": "2025-07-12T08:06:48.105Z",
+    "status": "active"
+  },
+  {
+    "deviceId": 104,
+    "apiKey": "finecons_bfd5df77ac65949da84a1c13a02e7edbc5419eb8e9501643ab3f817f86d81ad4",
+    "deviceName": "iPhone-Executive",
+    "ipAddress": "192.168.1.15",
+    "macAddress": "00:11:22:33:44:77",
+    "createdAt": "2025-07-12T08:06:48.128Z",
+    "status": "active"
+  }
+]
